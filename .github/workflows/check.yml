@@ -1,0 +1,32 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-in-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generated files are up to date
+        run: python3 scripts/build.py --check
+      - name: SKILL.md frontmatter is valid
+        run: |
+          python3 - <<'EOF'
+          import re, sys, pathlib
+          p = pathlib.Path("skills/vibe-check/SKILL.md")
+          m = re.match(r"---\n(.*?)\n---\n", p.read_text(), re.S)
+          assert m, "missing frontmatter"
+          fm = m.group(1)
+          name = re.search(r"^name:\s*(\S+)", fm, re.M).group(1)
+          desc = re.search(r"^description:\s*(.+)$", fm, re.M).group(1)
+          assert name == p.parent.name, f"name '{name}' must match folder '{p.parent.name}'"
+          assert re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) and len(name) <= 64, "invalid name"
+          assert 0 < len(desc) <= 1024, "description must be 1-1024 chars"
+          print("frontmatter OK")
+          EOF
