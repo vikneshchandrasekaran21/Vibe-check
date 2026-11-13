@@ -27,10 +27,16 @@ AI coding tools are great at writing code that **works in the demo**. They often
 - 🔓 Any logged-in user can open someone else's data by changing an ID in the URL
 - 🗝️ Database rules left open (Supabase RLS off, Firebase in test mode) or secret keys sitting in the browser
 - 💸 Orders marked "paid" from a redirect page, prices taken from the browser, no spending cap on the AI API
-- 🧯 No timeouts, no backups, no error tracking. You find out it's broken from an angry user
+- 🖱️ Buttons that do nothing, links to pages that don't exist, forms that never save
+- 📧 Password-reset and verification emails that never arrive
+- 🧒 Students' or children's data collected with a tick-box "consent" and kept forever
+- 🔤 Paid fonts and stock images used without a web licence
+- 🧯 No timeouts, no backups, no CI, no error tracking. You find out it's broken from an angry user
 - ⚖️ A copy-pasted privacy policy that doesn't match the app, and analytics that run before cookie consent
 
 `vibe-check` is an open **[Agent Skill](https://agentskills.io)**. It turns your coding agent into a strict pre-launch reviewer that **finds** these problems, **explains** them in plain words and **fixes** the ones you approve, while leaving your design, features and use case alone.
+
+It works like a senior team in one command, covering what security, QA, legal and DevOps would each check. It asks a few questions about your app (who uses it, whether there are minors, payments or sensitive data) and runs only the checks that apply, at three depths: 🟢 **Quick**, 🟡 **Launch** and 🔵 **Enterprise**.
 
 ## What you get
 
@@ -273,6 +279,10 @@ On purpose. It audits first so you see what's wrong. Then say *"fix the safe ite
 Seen AI tools keep making a mistake that isn't covered? PRs are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerate `dist/` and `adapters/`. CI checks that they're in sync.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md). The latest release is always on the [Releases](https://github.com/vikneshchandrasekaran21/vibe-check/releases/latest) page.
 
 ## License
 

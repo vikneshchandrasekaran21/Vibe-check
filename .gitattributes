@@ -1,0 +1,6 @@
+# Count the skill as Markdown on GitHub, not the build script
+*.md linguist-detectable=true
+*.md linguist-documentation=false
+scripts/** linguist-vendored
+dist/** linguist-generated
+adapters/** linguist-generated
