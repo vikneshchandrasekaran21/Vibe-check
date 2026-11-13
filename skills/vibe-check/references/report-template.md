@@ -16,9 +16,17 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 ## 🔴 Blockers: fix before launch
 
-### 1. <Short title>
+### 1. <Short title> · ✅ Confirmed | 🔎 Likely
 - **What could happen:** <one plain sentence about the impact on the user or their customers>
-- **Where:** `path/to/file.ts:42` <and the evidence: snippet, command output or config value; secrets masked>
+- **Where:** `path/to/file.ts:42`
+- **Evidence:** <the exact proof, quoted; secrets masked>
+  ```ts
+  // path/to/file.ts:40-44 (re-read just before writing this report)
+  const invoice = await db.invoice.findUnique({ where: { id: params.id } });
+  return Response.json(invoice);
+  ```
+  <or: `$ curl -sI http://example.com` → `HTTP/1.1 200 OK` (no redirect to HTTPS)>
+- **Ruled out:** <what the second look checked, e.g. "No ownership check in middleware.ts or the RLS policy for invoices">
 - **Fix:** <the specific technical change> · **Safe to auto-fix:** yes / no (needs your decision)
 - **Prompt to fix it:**
   > <A ready-to-paste instruction for an AI coding tool, specific to this codebase. Example: "In app/api/invoices/[id]/route.ts, only return the invoice if invoice.user_id equals the current session user's id; return 404 otherwise. Add a test proving user A cannot fetch user B's invoice.">
@@ -27,11 +35,13 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 ## 🟡 Fix before scale or paying users
 
-| # | Issue | Where | Fix | Safe to auto-fix |
-|---|---|---|---|---|
-| 1 | | | | |
+| # | Issue | Confidence | Where + evidence | Fix | Safe to auto-fix |
+|---|---|---|---|---|---|
+| 1 | | ✅ / 🔎 | `file:line`, quoted line or command output | | |
 
 ## ❓ Questions for you
+
+Includes every ❓ **Needs checking** item: what we couldn't confirm, why, and exactly how to check it.
 
 Things that can't be checked from the code. Answer these and I'll update the report.
 
@@ -91,7 +101,9 @@ vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 20
 - Order blockers by severity: data leaks and account takeover first, then money loss, then legal, then outages.
 - One finding per real problem. Group repeats (for example, "12 routes are missing ownership checks", with all 12 listed).
 - For dependency findings, give the advisory ID, installed version and fixed version.
-- Never print a full secret. Show its first 4 characters and its location.
+- Never print a full secret.
+- Only ✅ Confirmed and 🔎 Likely findings go in Blockers or Fix before scale. ❓ items are questions.
+- Legal and policy statements cite the skill module or a URL opened in this run, never general memory. Show its first 4 characters and its location.
 - If something is fine, don't invent a problem to look thorough.
 
 ## Score card, badge and footer

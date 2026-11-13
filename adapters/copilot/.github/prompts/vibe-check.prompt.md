@@ -14,7 +14,8 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 ## Ground rules (never break these)
 
 1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
-2. **Evidence or it didn't happen.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value.
+2. **Evidence or it didn't happen: quote the proof.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value. Every FAIL **quotes the exact evidence**: the relevant code lines (re-read from the file just before writing the report, so line numbers and content are current), or the exact command and the part of its output that shows the problem. A finding you can't quote is not a finding. Drop it, or turn it into a question.
+12. **No facts from memory.** Legal, regulatory, platform-policy and pricing statements in the report must come from this skill's reference files, or from a source you opened during this run (give the URL). Never state a law, fine, deadline, threshold, store rule or provider limit from general memory. If you're unsure, phrase it as a question for the user or the lawyer list.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
 5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
@@ -132,6 +133,26 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 
 **vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
 
+## Step 4b: Verify before reporting (second look)
+
+AI reviewers produce false alarms and invented details. Before writing the report, re-check findings:
+
+1. **Second look at every 🔴 and 🟡 FAIL.** Re-open the evidence and **try to prove the finding wrong**. Check the common false-positive causes:
+   - Is it handled somewhere else? (middleware, a wrapper or base class, RLS or security rules, an API gateway, the platform's own setting, a DB constraint)
+   - Is the code actually used? (dead code, test fixtures, examples, `*.example` files, storybook, scripts not deployed)
+   - Is the "secret" actually public by design? (Supabase anon key with RLS on, Firebase web config, Stripe publishable key, public analytics IDs)
+   - Is it only in development? (dev-only config, local env, feature flag off in production)
+   - Does the version, framework or platform already protect against it by default?
+   - Did you read the whole function and its callers, not just the matching line?
+2. **Label the confidence of every finding:**
+   - ✅ **Confirmed:** reproduced (a command, request or test showed it), or the evidence is direct and unambiguous.
+   - 🔎 **Likely:** strong evidence in the code, not reproduced, and the second look found no protection elsewhere.
+   - ❓ **Needs checking:** depends on something you can't see (dashboard settings, production config, business facts).
+3. **Only ✅ Confirmed and 🔎 Likely findings can be 🔴 blockers or 🟡 items.** ❓ Needs checking goes under "Questions for you", with what to check and how.
+4. **Write down what you ruled out** for each 🔴 (one line, e.g. "Checked middleware.ts and RLS policies: no ownership check"), so the user can trust the finding.
+5. **Drop anything that didn't survive the second look.** Don't keep a finding "just in case". If it's worth mentioning, it's a question.
+6. **Passes need evidence too.** Don't mark items PASS because nothing looked wrong. Say what you checked.
+
 ## Step 5: Report
 
 Use the format in the **report-template** section below. It must contain, in this order:
@@ -156,6 +177,9 @@ Go through this list and fix anything missing **before** sending the report:
 - [ ] Every module that applies appears in the coverage table, and no module is silently missing (DevOps, functional QA and the policy pack included).
 - [ ] Every item in those modules has a result. ◐ or ❌ modules say what's missing and why.
 - [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
+- [ ] Every FAIL **quotes** its evidence (code lines re-read just now, or command output), and the line numbers match the current files.
+- [ ] Every 🔴 and 🟡 had a second look, is labelled ✅ Confirmed or 🔎 Likely, and each 🔴 says what was ruled out. Nothing labelled ❓ is presented as a blocker.
+- [ ] Every legal, policy, platform or pricing statement comes from this skill's files or a source opened in this run (URL given). Nothing comes from memory.
 - [ ] Every finding is marked safe to auto-fix yes/no.
 - [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
 - [ ] No secrets are printed in full. The score card contains no private details.
@@ -1225,9 +1249,17 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 ### 🔴 Blockers: fix before launch
 
-#### 1. <Short title>
+#### 1. <Short title> · ✅ Confirmed | 🔎 Likely
 - **What could happen:** <one plain sentence about the impact on the user or their customers>
-- **Where:** `path/to/file.ts:42` <and the evidence: snippet, command output or config value; secrets masked>
+- **Where:** `path/to/file.ts:42`
+- **Evidence:** <the exact proof, quoted; secrets masked>
+  ```ts
+  // path/to/file.ts:40-44 (re-read just before writing this report)
+  const invoice = await db.invoice.findUnique({ where: { id: params.id } });
+  return Response.json(invoice);
+  ```
+  <or: `$ curl -sI http://example.com` → `HTTP/1.1 200 OK` (no redirect to HTTPS)>
+- **Ruled out:** <what the second look checked, e.g. "No ownership check in middleware.ts or the RLS policy for invoices">
 - **Fix:** <the specific technical change> · **Safe to auto-fix:** yes / no (needs your decision)
 - **Prompt to fix it:**
   > <A ready-to-paste instruction for an AI coding tool, specific to this codebase. Example: "In app/api/invoices/[id]/route.ts, only return the invoice if invoice.user_id equals the current session user's id; return 404 otherwise. Add a test proving user A cannot fetch user B's invoice.">
@@ -1236,11 +1268,13 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 ### 🟡 Fix before scale or paying users
 
-| # | Issue | Where | Fix | Safe to auto-fix |
-|---|---|---|---|---|
-| 1 | | | | |
+| # | Issue | Confidence | Where + evidence | Fix | Safe to auto-fix |
+|---|---|---|---|---|---|
+| 1 | | ✅ / 🔎 | `file:line`, quoted line or command output | | |
 
 ### ❓ Questions for you
+
+Includes every ❓ **Needs checking** item: what we couldn't confirm, why, and exactly how to check it.
 
 Things that can't be checked from the code. Answer these and I'll update the report.
 
@@ -1300,7 +1334,9 @@ vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 20
 - Order blockers by severity: data leaks and account takeover first, then money loss, then legal, then outages.
 - One finding per real problem. Group repeats (for example, "12 routes are missing ownership checks", with all 12 listed).
 - For dependency findings, give the advisory ID, installed version and fixed version.
-- Never print a full secret. Show its first 4 characters and its location.
+- Never print a full secret.
+- Only ✅ Confirmed and 🔎 Likely findings go in Blockers or Fix before scale. ❓ items are questions.
+- Legal and policy statements cite the skill module or a URL opened in this run, never general memory. Show its first 4 characters and its location.
 - If something is fine, don't invent a problem to look thorough.
 
 ### Score card, badge and footer

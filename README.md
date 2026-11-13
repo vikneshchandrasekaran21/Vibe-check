@@ -64,6 +64,12 @@ vibe-check fixes **only the issues it finds**. Your product stays your product:
 
 It also **never changes code during the audit**, **never marks something as passed without evidence**, and **never prints your secrets in full**.
 
+### 🎯 Built not to make things up
+- **Quote the proof:** every problem includes the exact code lines (re-read just before reporting) or the exact command output. No quote, no finding.
+- **Second look:** before reporting, the agent tries to prove each finding **wrong**. Is it handled in middleware or RLS? Is the code even used? Is that "secret" actually a public key? Findings that don't survive are dropped.
+- **Confidence labels:** ✅ Confirmed (reproduced or direct proof), 🔎 Likely (strong evidence), ❓ Needs checking (becomes a question for you, never a blocker).
+- **No facts from memory:** legal, policy and platform statements come only from the skill's own checklists or a source opened during the run.
+
 ---
 
 ## Install

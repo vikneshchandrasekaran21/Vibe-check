@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.6.0 (2026-11-13)
+
+**Accuracy: built not to make things up.**
+- **Quote the proof:** every finding quotes the exact code lines (re-read just before reporting, so line numbers are current) or the exact command output. A finding that can't be quoted is dropped or becomes a question.
+- **New Step 4b, the second look:**
+  - Every 🔴 and 🟡 is re-checked by trying to prove it wrong.
+  - The common false-alarm causes it checks: handled in middleware or RLS, dead or dev-only code, public-by-design keys, framework defaults, not reading the whole function.
+  - Each blocker says what was ruled out.
+- **Confidence labels:** ✅ Confirmed, 🔎 Likely, ❓ Needs checking. Only Confirmed and Likely can be blockers. ❓ goes to Questions.
+- **No facts from memory:** legal, regulatory, store-policy and pricing statements must come from the skill's modules or a source opened during the run, with its URL.
+- **Passes need evidence too.**
+- **The self-check and the validator** now enforce all of the above.
+
 ## v2.5.0 (2026-11-13)
 
 **Nine new modules.** The profile now also asks what kind of product it is (web, mobile, desktop, extension, API), whether users interact or trade, which languages it supports, whether AI agents take actions, and which cloud it runs on.

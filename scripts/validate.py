@@ -99,10 +99,17 @@ if nums != list(range(1, len(nums) + 1)): err(f"SKILL.md: blind spots not number
 
 # 7. report template + self-check
 tpl = (REFS / "report-template.md").read_text()
-for sec in ["Verdict", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it"]:
+for sec in ["Verdict", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it",
+            "Evidence:", "Ruled out:", "✅ Confirmed", "🔎 Likely", "Needs checking", "Confidence"]:
     if sec not in tpl: err(f"report-template.md: missing '{sec}'")
-for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "re-check", ".vibe-check/"]:
-    if must.lower() not in skill.lower(): err(f"SKILL.md: self-check/report rules don't mention '{must}'")
+for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "re-check", ".vibe-check/",
+             "quote the proof", "second look", "Confirmed", "Likely", "Needs checking", "No facts from memory", "Ruled out", "try to prove the finding wrong"]:
+    if must.lower() not in skill.lower(): err(f"SKILL.md: report or accuracy rules don't mention '{must}'")
+# accuracy rules must also be in the self-check list
+selfcheck = skill.split("### Before you reply", 1)[1].split("## Step 6", 1)[0] if "### Before you reply" in skill else ""
+for must in ["quotes", "second look", "Confirmed", "Likely", "from memory"]:
+    if must.lower() not in selfcheck.lower(): err(f"SKILL.md self-check is missing the accuracy item '{must}'")
+if "## Step 4b: Verify before reporting" not in skill: err("SKILL.md: missing 'Step 4b: Verify before reporting'")
 # every module in coverage template rows
 cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
 for label in ["blind spots", "Security", "reliability", "DevOps", "Functional QA", "Legal", "UX", "Platform", "Lawsuit", "Supply chain", "Maintainability"]:
