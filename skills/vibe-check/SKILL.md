@@ -4,7 +4,7 @@ description: Pre-launch audit and fix guide for AI-built apps. Use before shippi
 license: MIT
 metadata:
   version: "2.1.0"
-  homepage: "https://github.com/vikneshchandrasekaran21/vibe-check"
+  homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
 # vibe-check: the pre-launch audit for AI-built apps

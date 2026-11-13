@@ -8,10 +8,10 @@ Before you ship, have your AI coding agent find and fix what it usually misses, 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-SKILL.md-blue.svg)](https://agentskills.io)
-[![check](https://github.com/vikneshchandrasekaran21/vibe-check/actions/workflows/check.yml/badge.svg)](https://github.com/vikneshchandrasekaran21/vibe-check/actions/workflows/check.yml)
+[![check](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml/badge.svg)](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml)
 
 ```bash
-npx skills add vikneshchandrasekaran21/vibe-check
+npx skills add vikneshchandrasekaran21/Vibe-check
 ```
 
 Works with **Claude Code · Codex · Cursor · GitHub Copilot · Gemini CLI · Windsurf · Cline · Roo · Goose · OpenCode · Amp · Junie · Kiro**, plus **Lovable · Bolt · v0 · Replit · ChatGPT** by copy-paste.
@@ -70,8 +70,8 @@ It also **never changes code during the audit**, **never marks something as pass
 
 | You use… | Do this |
 |---|---|
-| **Claude app** (desktop or claude.ai) | [Download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/vibe-check/releases/latest/download/vibe-check.zip), then **Settings → Customize → Skills → Add → Upload skill** and pick the zip. Don't unzip it |
-| **Claude Code, Codex, Cursor, Copilot, Gemini CLI** and other agents | In your Mac/PC terminal: `npx skills add vikneshchandrasekaran21/vibe-check`. Or just ask your agent to run that command for you |
+| **Claude app** (desktop or claude.ai) | [Download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip), then **Settings → Customize → Skills → Add → Upload skill** and pick the zip. Don't unzip it |
+| **Claude Code, Codex, Cursor, Copilot, Gemini CLI** and other agents | In your Mac/PC terminal: `npx skills add vikneshchandrasekaran21/Vibe-check`. Or just ask your agent to run that command for you |
 | **Lovable, Bolt, v0, Replit, ChatGPT** | Copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
 
 Then say **"vibe check this app"**. That's it. More options below.
@@ -79,8 +79,8 @@ Then say **"vibe check this app"**. That's it. More options below.
 ### 1. One command (recommended for coding agents)
 
 ```bash
-npx skills add vikneshchandrasekaran21/vibe-check        # this project
-npx skills add vikneshchandrasekaran21/vibe-check -g     # all your projects
+npx skills add vikneshchandrasekaran21/Vibe-check        # this project
+npx skills add vikneshchandrasekaran21/Vibe-check -g     # all your projects
 ```
 
 The [skills CLI](https://github.com/vercel-labs/skills) detects which agents you have installed and sets the skill up for each one.
@@ -113,7 +113,7 @@ Ready-made versions are in [`adapters/`](adapters). Copy the folder for your too
 
 ### 4. Claude app (desktop or claude.ai)
 
-1. Download **[vibe-check.zip](https://github.com/vikneshchandrasekaran21/vibe-check/releases/latest/download/vibe-check.zip)** (it's also in [`dist/`](dist/vibe-check.zip)).
+1. Download **[vibe-check.zip](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip)** (it's also in [`dist/`](dist/vibe-check.zip)).
 2. In Claude, open **Settings → Customize → Skills**.
 3. Click **Add → Upload skill** and pick the zip. Keep it zipped.
 4. Make sure the skill is switched on. Then in any chat or project, say *"vibe check this app"*, and attach your code or connect a folder so Claude can read it.
@@ -180,10 +180,10 @@ Start at 🔴? Most people do. Fix, re-run, and post your 🔴 → 🟢 with **#
 If you reach 🟢 at Launch level or above, add the badge to your README:
 
 ```markdown
-[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
+[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
 ```
 
-[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
+[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
 
 The report ends with a small "Checked with vibe-check" footer. Tell your agent *"no footer"* to remove it. It never adds anything to your app.
 
@@ -244,7 +244,7 @@ A paid **connector** you plug into Claude Code, Cursor and other agents, for the
 - 📊 **Dashboard**, report history and shareable **PDF reports**
 - 🔔 **Weekly monitoring and alerts**
 
-Your code stays on your machine. Only URLs, lockfiles and summaries are sent. 👉 **[Join the waitlist](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Pro%20waitlist&labels=pro-waitlist&body=Interested%20in%20vibe-check%20Pro.%20I%20build%20with%3A%20)**
+Your code stays on your machine. Only URLs, lockfiles and summaries are sent. 👉 **[Join the waitlist](https://github.com/vikneshchandrasekaran21/Vibe-check/issues/new?title=Pro%20waitlist&labels=pro-waitlist&body=Interested%20in%20vibe-check%20Pro.%20I%20build%20with%3A%20)**
 
 ---
 
@@ -302,7 +302,7 @@ Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerat
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). The latest release is always on the [Releases](https://github.com/vikneshchandrasekaran21/vibe-check/releases/latest) page.
+See [CHANGELOG.md](CHANGELOG.md). The latest release is always on the [Releases](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest) page.
 
 ## License
 
