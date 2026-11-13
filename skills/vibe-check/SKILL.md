@@ -1,6 +1,6 @@
 ---
 name: vibe-check
-description: Pre-launch production-readiness audit and fix guide for AI-built ("vibe-coded") apps. Use before shipping, deploying or launching, or when asked "is this ready to ship?", "audit my app", "security check", "launch checklist", or "what did the AI miss?". Covers security, auth, data, reliability, cost, AI features, legal/privacy and UX, with evidence and plain-language fixes.
+description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or when asked "is this ready to ship?", "vibe check", or "security audit".
 license: MIT
 metadata:
   version: "1.0.0"

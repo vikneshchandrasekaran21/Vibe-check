@@ -9,8 +9,10 @@ Usage: python3 scripts/build.py          # write outputs
 """
 from __future__ import annotations
 
+import io
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,7 +55,26 @@ def single_file() -> str:
     return "".join(parts)
 
 
-def outputs() -> dict[Path, str]:
+def skill_zip() -> bytes:
+    """Deterministic zip for the Claude app's 'Upload skill' (Settings > Customize > Skills)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        files = [SKILL_DIR / "SKILL.md"] + sorted((SKILL_DIR / "references").glob("*.md"))
+        for f in files:
+            text = f.read_text()
+            if f.name == "SKILL.md":
+                # keep only name + description in the uploaded copy for maximum compatibility
+                fm = re.match(r"---\n(.*?)\n---\n", text, re.S).group(1)
+                keep = [l for l in fm.splitlines() if l.startswith(("name:", "description:"))]
+                text = "---\n" + "\n".join(keep) + "\n---\n" + strip_frontmatter(text)
+            info = zipfile.ZipInfo(f"vibe-check/{f.relative_to(SKILL_DIR).as_posix()}", (2026, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            z.writestr(info, text)
+    return buf.getvalue()
+
+
+def outputs() -> dict[Path, str | bytes]:
     full = single_file()
     body = full[len(HEADER):]
     out: dict[Path, str] = {}
@@ -82,6 +103,7 @@ def outputs() -> dict[Path, str]:
         f'description = "{DESCRIPTION}"\n'
         'prompt = """\n' + body.replace("\\", "\\\\") + '\n\nUser request: {{args}}\n"""\n'
     )
+    out[ROOT / "dist" / "vibe-check.zip"] = skill_zip()
     return out
 
 
@@ -90,11 +112,15 @@ def main() -> int:
     stale = []
     for path, content in outputs().items():
         if check:
-            if not path.exists() or path.read_text() != content:
+            current = path.read_bytes() if path.exists() else None
+            if current != (content if isinstance(content, bytes) else content.encode()):
                 stale.append(path.relative_to(ROOT))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
+            if isinstance(content, bytes):
+                path.write_bytes(content)
+            else:
+                path.write_text(content)
             print(f"wrote {path.relative_to(ROOT)}")
     if stale:
         print("Out of date (run `python3 scripts/build.py`):", *stale, sep="\n  ")
