@@ -135,14 +135,14 @@ for label in ["blind-spots", "security", "reliability", "devops", "functional-qa
 
 # 10. scripts, IDs, test bench
 SCRIPTS = SK / "scripts"
-for s in ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py"]:
+for s in ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py", "profile.py"]:
     if not (SCRIPTS / s).exists(): err(f"skills/vibe-check/scripts/{s} is missing")
     else:
         try: compile((SCRIPTS / s).read_text(), s, "exec")
         except SyntaxError as e: err(f"scripts/{s} doesn't compile: {e}")
 # 11. privacy: only version_check.py may use the network, and only to read two fixed GitHub URLs
 NET = re.compile(r"^\s*(?:import|from)\s+(urllib|socket|http|requests|httpx|aiohttp|ftplib|smtplib)\b", re.M)
-for s in ["inventory.py", "sweep.py", "coverage.py", "versions.py"]:
+for s in ["inventory.py", "sweep.py", "coverage.py", "versions.py", "profile.py"]:
     src = (SCRIPTS / s).read_text() if (SCRIPTS / s).exists() else ""
     if NET.search(src): err(f"scripts/{s} imports a network module: only version_check.py may use the network")
     for cmd in re.findall(r"subprocess\.(?:run|Popen|call|check_output)\(\s*\[\s*\"([^\"]+)\"", src):
@@ -297,6 +297,22 @@ live = (REFS / "live-tests.md").read_text() if (REFS / "live-tests.md").exists()
 for must in ["never against production", "user's OK", "two test accounts", "zap-baseline.py", "nuclei", "exclude intrusive"]:
     if must not in live: err(f"live-tests.md is missing '{must}' (safety)")
 
+# 17. v3.1: the code decides the profile, evidence is re-opened, re-check, receipt, fix everything
+for must in ["scripts/profile.py", "never remove what the code shows", "DEAD CODE:", "Your answers vs your code",
+             "ledger.d", "coverage.py --sample", "R-001", "--verify-report", "REPORT VERIFIED", "--fix-plan",
+             "### Fix everything", "fresh helper that didn't do the audit", "DRAFT: needs legal review"]:
+    if must not in skill: err(f"SKILL.md is missing '{must}' (v3.1)")
+for must in ["Your answers vs your code", "Checked twice", "--verify-report"]:
+    if must not in tpl: err(f"report-template.md is missing '{must}' (v3.1)")
+cov_src2 = (SCRIPTS / "coverage.py").read_text()
+for must in ["def check_evidence", "def sample_ids", "--verify-report", "--fix-plan", "ledger.d", "modules_with_evidence", "DEAD CODE:"]:
+    if must not in cov_src2: err(f"coverage.py is missing '{must}' (v3.1)")
+prof_src = (SCRIPTS / "profile.py").read_text() if (SCRIPTS / "profile.py").exists() else ""
+for mod in ["kids-education", "fintech", "health", "ai-features", "ai-agents", "community", "mobile", "desktop-extensions", "cloud-infra", "i18n"]:
+    if f'"{mod}"' not in prof_src: err(f"profile.py has no signals for the {mod} module")
+    elif mod not in {f.replace(".md", "") for f in ref_files}: err(f"profile.py names {mod}, which isn't a module file")
+if "LEG-036" not in all_ids: err("legal-privacy.md lost LEG-036 (real audience assessed from evidence)")
+
 core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
 core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)
 cov_src = (SCRIPTS / "coverage.py").read_text() if (SCRIPTS / "coverage.py").exists() else ""
@@ -317,7 +333,7 @@ for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updatin
 if re.search(r"phone home|nothing (?:is )?sent anywhere", readme, re.I) and "version check" not in readme.lower():
     err("README.md promises it never contacts anything, but doesn't mention the version check")
 
-for f in sorted(ref_files) + ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py", "test_scripts.py", "release.sh"]:
+for f in sorted(ref_files) + ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py", "profile.py", "test_scripts.py", "release.sh"]:
     if f not in readme: err(f"README.md repo layout doesn't list {f}")
 for link in re.findall(r"\]\((?!https?://|#|mailto:)([^)]+)\)", readme):
     if not (ROOT / link.split("#")[0]).exists(): err(f"README.md links to missing file: {link}")

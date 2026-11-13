@@ -66,7 +66,11 @@ Never retry, never look the version up any other way, and never let this step de
 
 ## Step 1: Profile the app
 
-Work out as much as you can from the code, then ask the user **only** what you couldn't determine (one short message):
+**The code decides the profile, not the answers.** First run `python3 <skill-folder>/scripts/profile.py .`: it searches the code, schema, forms and config for evidence behind each question below (date-of-birth or age fields, school or student data, payment SDKs and payment links, health, bank or ID data, AI calls, chat, mobile, languages…) and writes `.vibe-check/profile.md`. Then show the user what the code shows (*"I see a `dob` field in `app/signup/page.tsx:2` and a Razorpay link in `lib/pricing.ts:2`"*) and ask **only** what the code can't tell you, in one short message.
+
+**An answer can add to the profile but never remove what the code shows.** If the user says "no payments" or "no children" but `.vibe-check/profile.md` lists evidence, the module still runs, and the report says so under **Your answers vs your code**. A module with evidence can only be skipped by proving the code is unused (`N/A` with `DEAD CODE:` and the proof, for example "no file imports it"); `coverage.py` enforces this.
+
+The questions (answer from the code first):
 
 1. **Who uses it?** Public consumers, a business's staff, schools or students, patients, or other companies.
 2. **Can children or students use it?** Anyone under 18, or school or college users.
@@ -159,6 +163,8 @@ Date: YYYY-MM-DD
 - **Results:** `PASS`, `FAIL ✅ Confirmed` / `FAIL 🔎 Likely`, `N/A`, `CAN'T TELL`. Every row needs its own evidence or reason. Copy-pasted evidence is rejected.
 - **Ranges and `*` are for N/A only** (a platform section you don't use, a profile module that doesn't apply). Core modules are never N/A as a whole.
 - **`INV-<category>` rows:** checked/found for every inventory category that has items. **`H-` rows:** a verdict for every sweep hit. **`V-` rows:** a verdict for every component in `.vibe-check/versions.md`, with its source.
+- **Split the work when you can.** In tools with helper agents (subagents), give each module, or group of small modules, to its own fresh helper with the inventory, sweep, versions and profile files. Each helper writes its rows to `.vibe-check/ledger.d/<module>.md`; `coverage.py` reads them together with the main ledger. Without helpers, work one module at a time and resume with `coverage.py --remaining`.
+- **Evidence is checked against the files.** Every `file:line` you cite must exist, and code you quote in backticks must appear in the cited file exactly: `coverage.py` re-opens the files and rejects anything that doesn't match. Re-read before you quote.
 - **One module at a time.** Re-open the module file and read it **just before** checking it (never from memory), check every item, and **write its rows to the ledger immediately.** That saves progress: on a big app, if the conversation gets long, run `python3 <skill-folder>/scripts/coverage.py --remaining` and continue from what's left instead of getting shallower.
 - **Tools run:** add a `## Tools run` table to the ledger: every tool you ran or tried (`npm audit`, type-check, lint, tests, build, secret scanner, Lighthouse…), the exact command, and the result, including *"not installed"* or *"failed: <error>"*.
 
@@ -239,7 +245,8 @@ AI reviewers produce false alarms and invented details. Before writing the repor
 4. **Write down what you ruled out** for each 🔴 (one line, e.g. "Checked middleware.ts and RLS policies: no ownership check"), so the user can trust the finding.
 5. **Drop anything that didn't survive the second look.** Don't keep a finding "just in case". If it's worth mentioning, it's a question.
 6. **Passes need evidence too.** Don't mark items PASS because nothing looked wrong. Say what you checked.
-7. **Run the count:** `python3 <skill-folder>/scripts/coverage.py` (add `--level quick` for Quick). It fails on any check without a result, invented IDs, missing evidence, FAILs without a confidence label, sweep hits without a verdict and inventory categories not accounted for. **Close every gap by actually checking the item**, never by writing filler. Anything you truly can't finish becomes `CAN'T TELL` with the reason and goes under "Not checked". Run it again until it prints `COMPLETE`.
+7. **Independent re-check (Full and Enterprise):** run `coverage.py --sample`. It picks every 🔴 FAIL and a sample of PASS rows. Have a **fresh helper that didn't do the audit** (or, without helpers, a fresh pass that re-opens each file) re-check each one, and record `| R-001 | <check ID> | CONFIRMED or OVERTURNED | evidence |`. If a check is overturned, change its result. The audit never grades itself.
+8. **Run the count:** `python3 <skill-folder>/scripts/coverage.py` (add `--level quick` for Quick). It fails on any check without a result, invented IDs, missing evidence, FAILs without a confidence label, sweep hits without a verdict and inventory categories not accounted for. **Close every gap by actually checking the item**, never by writing filler. Anything you truly can't finish becomes `CAN'T TELL` with the reason and goes under "Not checked". Run it again until it prints `COMPLETE`.
 
 ## Step 5: Report
 
@@ -256,12 +263,17 @@ Use the format in the **report-template** section below. It must contain, in thi
 
 **Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md`, and copy the ledger next to it as `.vibe-check/reports/YYYY-MM-DD-ledger.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
 
+**Then verify the report against the ledger:** `python3 <skill-folder>/scripts/coverage.py --verify-report .vibe-check/reports/YYYY-MM-DD.md` must print `REPORT VERIFIED`. If a number in the report doesn't match the ledger, fix the report (never the other way round).
+
 **In the chat**, reply with the verdict, the score card, every 🔴 blocker with its fix prompt, the top 🟡 items, the coverage table, the most important questions, the report path, and then: *"Fix the N safe items now? Other fixes need your decision first."* If this was a Quick run, add: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
 
 ### Before you reply: self-check
 
 Go through this list and fix anything missing **before** sending the report:
 
+- [ ] `profile.py` ran first; any answer that contradicts the code is listed under **Your answers vs your code**, and no module with code evidence was skipped without a `DEAD CODE:` proof.
+- [ ] The independent re-check ran (`coverage.py --sample`, `R-` rows from a fresh helper or fresh pass), and anything overturned was changed.
+- [ ] `coverage.py --verify-report` printed `REPORT VERIFIED` for the saved report.
 - [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
 - [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
 - [ ] The Standards table from `coverage.py` is in the report, called a coverage view (not a certification), plus *Only a human can confirm* and *When to run vibe-check again*.
@@ -282,7 +294,15 @@ Go through this list and fix anything missing **before** sending the report:
 
 ## Step 6: Fix (only after the user approves)
 
-After the report, offer: **"Fix the N safe items now? Other fixes need your decision first."** Then fix only what the user approves. Approval can be "fix safe items", "fix blockers 1 and 3", "fix everything", or similar. In a new session, read the latest report in `.vibe-check/reports/` before fixing.
+After the report, offer: **"Fix the N safe items now? Other fixes need your decision first. Or say 'fix everything' and I'll work through the whole list with you."** Then fix only what the user approves. Approval can be "fix safe items", "fix blockers 1 and 3", "fix everything", or similar. In a new session, read the latest report in `.vibe-check/reports/` before fixing.
+
+### Fix everything (the whole list, across sessions)
+1. **Make the plan:** `coverage.py --fix-plan` writes `.vibe-check/fix-plan.md`: every FAIL and CAN'T TELL, plus every 🎯 hunt finding, in priority order, each `TODO`. Re-running it keeps the statuses, so the plan survives new sessions.
+2. **Work top down,** one item at a time, updating its status: `IN PROGRESS`, then `DONE` or `NEEDS DECISION` or `BLOCKED` (with why).
+3. **Ask one decision per item, only when needed:** the single question that unblocks it (*"Email-plus or ID check for parental consent?"*), with the least disruptive option first. Items that need no decision and are safe go ahead. Items that change what users see still need a yes (scope guard).
+4. **Prove each fix:** add or run a test, then **re-check that exact check ID** (and its variants from the hunt). Only mark `DONE` when it passes, and write how in *Verified*.
+5. **Some things code can't finish:** legal pages become drafts marked *"DRAFT: needs legal review"*; dashboard settings, key rotation and DNS get exact steps plus a question to confirm they're done. None is marked `DONE` on your word alone.
+6. **Finish with a re-check:** update the ledger rows for everything fixed, run `coverage.py` and `--verify-report` again, and show the before-and-after score card (*"was 🔴 171/392, now 🟢 380/392"*).
 
 Follow the **fixes** section below: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
 
@@ -694,6 +714,9 @@ Record each broken item with the page, the element (its text or selector), what 
 ### Final legal pass
 
 - [ ] 🔴 LEG-035 **List everything for a lawyer**, with the specific question to ask, the jurisdiction, and the relevant page or file.
+
+### Who really uses the app
+- [ ] 🔴 LEG-036 **The real audience is assessed from evidence, not assumed:** the answer to "can children use it?" is checked against `.vibe-check/profile.md` (date-of-birth or age fields, school, student, teacher or parent data, kid-oriented wording or design), the app-store age rating and category, the marketing site, and public reviews that mention children. Not asking for a date of birth, or banning minors in the terms, doesn't settle it: some laws apply when children are **likely** to use a service or when it's **directed** to them by its content, whether or not it asks for age. If the evidence points to minors, run `references/kids-education.md`, record the evidence, and put the legal question under *Needs a lawyer*.
 
 <a id="launch-ux"></a>
 
@@ -1506,6 +1529,11 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 **Score:** <passed> / <applicable> checks passed · 🔴 <n> blockers · 🟡 <n> to fix before scale · ❓ <n> questions
 
+### ⚠️ Your answers vs your code
+*Only when an answer and the code disagree (from `.vibe-check/profile.md`). The code wins: these modules ran anyway.*
+- You said **no payments**, but `lib/pricing.ts:2` links to a Razorpay checkout (`rzp.io/l/pro-plan`). Payment checks ran.
+- You said **no children**, but `app/signup/page.tsx:2` asks for a date of birth. The children's checks ran, and the legal question is under *Needs a lawyer*.
+
 ### 🔴 Blockers: fix before launch
 
 #### 1. <Short title> · ✅ Confirmed | 🔎 Likely
@@ -1591,6 +1619,8 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Forms · buttons and links | |
 | Env vars · tables · storage buckets · file uploads | |
 | Payments · email · AI calls · third-party scripts | |
+
+**Checked twice:** evidence for every `file:line` and quote was re-opened by `coverage.py`; an independent re-check of <N> items (every 🔴 plus a sample of passes) confirmed <C> and overturned <O>; the numbers in this report were verified against the ledger (`--verify-report`).
 
 **Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
 

@@ -57,3 +57,6 @@
 ## Final legal pass
 
 - [ ] 🔴 LEG-035 **List everything for a lawyer**, with the specific question to ask, the jurisdiction, and the relevant page or file.
+
+## Who really uses the app
+- [ ] 🔴 LEG-036 **The real audience is assessed from evidence, not assumed:** the answer to "can children use it?" is checked against `.vibe-check/profile.md` (date-of-birth or age fields, school, student, teacher or parent data, kid-oriented wording or design), the app-store age rating and category, the marketing site, and public reviews that mention children. Not asking for a date of birth, or banning minors in the terms, doesn't settle it: some laws apply when children are **likely** to use a service or when it's **directed** to them by its content, whether or not it asks for age. If the evidence points to minors, run `references/kids-education.md`, record the evidence, and put the legal question under *Needs a lawyer*.

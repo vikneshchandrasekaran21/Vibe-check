@@ -74,6 +74,9 @@ It also **never changes code during the audit**, **never marks something as pass
 An AI can't promise it found every bug, but vibe-check makes sure **every check is actually done, and anything not done is labelled.**
 - **Every check has a permanent ID** (`SEC-014`). Each result goes into a ledger with its evidence: passed, failed, doesn't apply, or couldn't check.
 - **The coverage is counted by a script.** `coverage.py` compares the ledger with the checklist and won't let the report through if a check is missing, an ID is invented, the evidence is vague or copy-pasted, or a failure has no confidence label.
+- **The code decides the profile, not the answers.** `profile.py` looks for date-of-birth fields, school or student data, payment SDKs and payment links, health, bank or ID data, AI calls, chat and more. If you say "no payments" but there's a Razorpay link in the code, the payment checks run anyway, and the report shows *Your answers vs your code*.
+- **Evidence is re-opened, and the audit doesn't grade itself.** `coverage.py` checks that every cited `file:line` exists and every quoted line of code is really there. A fresh helper re-checks every 🔴 and a sample of passes. `--verify-report` rejects a report whose numbers don't match the ledger.
+- **"Fix everything" works through the whole list:** a fix plan that survives new sessions, one decision per item, each fix re-checked by its own check ID, and a before-and-after score.
 - **It lists every version the app runs.** `versions.py` finds the runtime, frameworks, CMS and plugins, Docker images and key packages with exact versions. Each one is checked against today's security releases, end-of-life dates and the actively-exploited list, with the source linked. Never from memory.
 - **It lists the whole app first.** `inventory.py` lists every page, API route, function, webhook, form, button, env var, table, bucket, upload, payment, email and AI call. The report shows counts like *API routes checked: 47/47*.
 - **It reads every file.** `sweep.py` searches every file, and the git history, for 51 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
@@ -339,6 +342,7 @@ Your code stays on your machine. Only URLs, lockfiles and summaries are sent. �
 skills/vibe-check/          ← the skill (source of truth)
 ├── SKILL.md                  workflow, ground rules, AI blind spots, scope guard
 ├── scripts/                  read-only helpers the agent runs in the user's project (Python 3, no installs)
+│   ├── profile.py            the code decides the profile: dob fields, payment SDKs and links, health, AI, chat… (answers can't remove it)
 │   ├── inventory.py          lists everything in the app: pages, routes, forms, env vars, tables…
 │   ├── sweep.py              searches every file and git history for risky patterns (secrets masked)
 │   ├── versions.py           lists everything the app runs with exact versions (runtime, frameworks, plugins, images)

@@ -70,6 +70,60 @@ def load_checklist():
     return order, checks, prefixes
 
 
+REF_RX = re.compile(r"(?<![\w/.:@-])((?:\.{1,2}/)?(?:[\w@()\[\].-]+/)*(?:[\w@()\[\]-][\w@()\[\].-]*\.[A-Za-z]{1,8}|Dockerfile|Makefile|Procfile|Containerfile)):(\d+)(?:-(\d+))?")
+CMD_WORDS = ("npm", "pnpm", "yarn", "npx", "bun", "curl", "git", "python", "python3", "pip", "pip-audit", "composer", "docker",
+             "grep", "rg", "wp", "gh", "osv-scanner", "trivy", "semgrep", "nuclei", "bundle", "cargo", "govulncheck", "dotnet",
+             "tsc", "eslint", "node", "deno", "supabase", "firebase", "vercel", "wrangler", "lighthouse", "zap-baseline.py")
+_file_cache = {}
+
+
+def _read(path: Path):
+    if path not in _file_cache:
+        try:
+            _file_cache[path] = path.read_text("utf-8", "replace") if path.is_file() and path.stat().st_size < 5_000_000 else None
+        except OSError:
+            _file_cache[path] = None
+    return _file_cache[path]
+
+
+def check_evidence(key: str, ev: str, root: Path):
+    """Problems with the evidence: cited files or lines that don't exist, quoted code that isn't in the cited files."""
+    problems, cited = [], []
+    for m in REF_RX.finditer(ev):
+        rel, line = m.group(1), int(m.group(2))
+        path = (root / rel).resolve()
+        text = _read(path)
+        if text is None:
+            problems.append(f"{key}: evidence cites {rel}:{line}, but {rel} doesn't exist in the project")
+            continue
+        n_lines = text.count("\n") + 1
+        if line < 1 or line > n_lines + 1:
+            problems.append(f"{key}: evidence cites {rel}:{line}, but {rel} has only {n_lines} lines")
+            continue
+        cited.append(text)
+    if cited:
+        norm_files = [re.sub(r"\s+", " ", t) for t in cited]
+        for span in re.findall(r"`([^`]{8,200})`", ev):
+            s = span.strip()
+            if "…" in s or "..." in s or s.split(" ")[0] in CMD_WORDS or " --" in s or REF_RX.fullmatch(s):
+                continue
+            if not re.search(r"[(){}\[\]=<>;.'\"/]|[a-z][A-Z]", s):
+                continue
+            ns = re.sub(r"\s+", " ", s)
+            if not any(ns in f for f in norm_files):
+                problems.append(f"{key}: quoted code `{s[:50]}` isn't in the cited file(s): re-read the file and quote it exactly")
+    return problems
+
+
+def sample_ids(results, checks, seed: str):
+    """Deterministic re-check sample: every 🔴 FAIL (up to 13) plus 12 PASS rows, picked by a hash of the ledger date."""
+    import hashlib
+    h = lambda c: hashlib.sha256((seed + c).encode()).hexdigest()
+    fails = sorted([c for c, r in results.items() if r[0] == "FAIL" and checks.get(c, ("", ""))[1] == "🔴"], key=h)[:13]
+    passes = sorted([c for c, r in results.items() if r[0] == "PASS"], key=h)[:12]
+    return fails + passes
+
+
 def load_standards():
     """Return [(standard title, [(item id, name, [check ids], human note)])] from references/standards.md."""
     path = SKILL / "references" / "standards.md"
@@ -128,12 +182,23 @@ def main() -> int:
     if "--level" in argv:
         i = argv.index("--level"); level = argv[i + 1].lower(); del argv[i:i + 2]
     remaining_only = "--remaining" in argv
+    want_sample = "--sample" in argv
+    want_fix_plan = "--fix-plan" in argv
+    report_path = None
+    if "--verify-report" in argv:
+        i = argv.index("--verify-report"); report_path = Path(argv[i + 1]); del argv[i:i + 2]
     args = [a for a in argv if not a.startswith("--")]
     ledger_path = Path(args[0] if args else ".vibe-check/ledger.md")
     if not ledger_path.exists():
         print(f"No ledger at {ledger_path}. Create it first (see SKILL.md Step 4).")
         return 1
     text = ledger_path.read_text("utf-8")
+    # helpers working in parallel each write .vibe-check/ledger.d/<module>.md; read them as one ledger
+    for part in sorted((ledger_path.parent / "ledger.d").glob("*.md")):
+        text += "\n" + part.read_text("utf-8")
+    root = ledger_path.resolve().parent.parent
+    seed_m = re.search(r"^\s*Date:\s*(.+)$", text, re.M)
+    seed = seed_m.group(1).strip() if seed_m else root.name
     if level is None:
         m = re.search(r"^\s*Level:\s*\**\s*(quick|full|launch|enterprise)", text, re.I | re.M)
         level = (m.group(1).lower() if m else "full")
@@ -144,6 +209,8 @@ def main() -> int:
     results = {}   # id -> (result, evidence, confidence)
     inv_rows, hit_rows, ver_rows = {}, {}, {}
     hunt_rows = []
+    recheck_rows = {}
+    evidence_problems = []
     pass_evidence = {}
     for line in text.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.strip().startswith("|") else []
@@ -152,6 +219,15 @@ def main() -> int:
         key, res, ev = cells[0].strip("`"), cells[1], " | ".join(cells[2:]).strip()
         if re.match(r"^T-\d+$", key):
             hunt_rows.append((key, cells))
+            if len(cells) >= 5 and cells[3].upper().startswith(("PROVEN", "DISPROVEN")):
+                evidence_problems += check_evidence(key, " | ".join(cells[4:]), root)
+            continue
+        if re.match(r"^R-\d+$", key):
+            if len(cells) < 4:
+                errors.append(f"{key}: re-check rows are | R-001 | <check ID> | CONFIRMED or OVERTURNED | evidence |")
+            else:
+                recheck_rows[cells[1].strip("` ")] = (key, cells[2].upper().strip(), " | ".join(cells[3:]))
+                evidence_problems += check_evidence(key, " | ".join(cells[3:]), root)
             continue
         if key.startswith("INV-"):
             inv_rows[key[4:]] = (res, ev)
@@ -188,6 +264,8 @@ def main() -> int:
             errors.append(f"{key}: core module '{checks[ids[0]][0]}' can't be N/A as a whole; mark sections or items")
         if not ev or ev.lower().strip(" .") in LAZY or len(ev) < 8:
             errors.append(f"{key}: {r} needs real evidence or a reason (got '{ev or 'nothing'}')")
+        if r in ("PASS", "FAIL"):
+            evidence_problems += check_evidence(key, ev, root)
         if r in ("PASS", "FAIL") and not CHECKABLE.search(ev):
             errors.append(f"{key}: {r} evidence must point to something checkable (file:line, command, URL, "
                           f"config value, dashboard setting or inventory/sweep item), got '{ev[:60]}'")
@@ -221,6 +299,75 @@ def main() -> int:
                 if all(results.get(c, ("",))[0] == "N/A" for c, v in checks.items() if v[0] == mod):
                     errors.append(f"Enterprise level: module '{mod}' can't be N/A as a whole")
     missing = [c for c in required if c not in results]
+    errors += evidence_problems[:40]
+    if len(evidence_problems) > 40:
+        errors.append(f"…and {len(evidence_problems) - 40} more evidence problems")
+
+    sample = sample_ids(results, checks, seed) if level in ("full", "enterprise") else []
+    if want_sample:
+        print("Independent re-check sample (have a fresh helper, or a fresh pass that re-reads the files, check each one):")
+        for c in sample:
+            print(f"  {c}  {results[c][0]}  {checks[c][2]}  ({results[c][1][:70]})")
+        print("Record each as | R-001 | <ID> | CONFIRMED or OVERTURNED | evidence |. If OVERTURNED, change that check's result.")
+        return 0
+    if sample and not missing:
+        no_row = [c for c in sample if c not in recheck_rows]
+        if no_row:
+            errors.append(f"independent re-check: {len(no_row)} sampled checks have no R- row ({', '.join(no_row[:8])}"
+                          f"{' …' if len(no_row) > 8 else ''}). Run coverage.py --sample, and have a fresh helper re-check them")
+        for c in sample:
+            if c in recheck_rows:
+                rk, verdict, rev = recheck_rows[c]
+                if not verdict.startswith(("CONFIRMED", "OVERTURNED")):
+                    errors.append(f"{rk}: verdict must be CONFIRMED or OVERTURNED")
+                elif len(rev) < 8 or not CHECKABLE.search(rev):
+                    errors.append(f"{rk}: the re-check needs its own evidence (file:line, command or setting)")
+                elif verdict.startswith("OVERTURNED") and results[c][0] == "PASS":
+                    errors.append(f"{rk}: {c} was overturned by the re-check but is still PASS: change its result")
+
+    if want_fix_plan:
+        plan = ledger_path.parent / "fix-plan.md"
+        old = {}
+        if plan.exists():
+            for line in plan.read_text("utf-8").splitlines():
+                cells = [x.strip() for x in line.strip().strip("|").split("|")]
+                if len(cells) >= 7 and re.match(r"^[A-Z0-9]+-\d{2,3}$|^T-\d+$", cells[1]):
+                    old[cells[1]] = cells[4:7]
+        items = [(c, checks[c][1], checks[c][2], results[c]) for c in results if c in checks and results[c][0] in ("FAIL", "CAN'T TELL")]
+        items.sort(key=lambda x: ({"🔴": 0, "🟡": 1, "🟢": 2}[x[1]], 0 if x[3][0] == "FAIL" else 1, x[0]))
+        new_hunt = [(k, cells) for k, cells in hunt_rows if len(cells) >= 5 and cells[3].upper().startswith("PROVEN NEW")]
+        out = ["# vibe-check fix plan", "", "Statuses: `TODO`, `IN PROGRESS`, `NEEDS DECISION`, `DONE`, `BLOCKED` (with why). "
+               "A fix is only `DONE` when its check was re-run and passes (Verified = how). Generated by `coverage.py --fix-plan`; "
+               "re-running it keeps the statuses.", "",
+               "| # | ID | Severity | Item | Status | Decision needed | Verified |", "|---|---|---|---|---|---|---|"]
+        n = 0
+        for c, sev, name, r in items:
+            n += 1
+            st, dec, ver = old.get(c, ["TODO", "-" if r[0] == "FAIL" else "answer the question first", "-"])
+            label = name + (" (can't tell yet)" if r[0] == CT else "")
+            out.append("| %d | %s | %s | %s | %s | %s | %s |" % (n, c, sev, label, st, dec, ver))
+        for k, cells in new_hunt:
+            n += 1
+            st, dec, ver = old.get(k, ["TODO", "-", "-"])
+            out.append(f"| {n} | {k} | 🎯 | {cells[1][:80]} | {st} | {dec} | {ver} |")
+        plan.write_text("\n".join(out) + "\n")
+        print(f"fix plan: {n} items -> {plan}")
+        return 0
+
+    # profile from the code: a module the code shows can't be N/A as a whole (answers can't remove evidence)
+    prof_path = ledger_path.parent / "profile.json"
+    if prof_path.exists():
+        must = json.loads(prof_path.read_text("utf-8")).get("modules_with_evidence", {})
+        for mod, where in must.items():
+            ids = [c for c, v in checks.items() if v[0] == mod]
+            if not ids:
+                continue
+            rs = [results.get(c) for c in ids]
+            if all(r and r[0] == "N/A" for r in rs) and not any("DEAD CODE:" in r[1] and CHECKABLE.search(r[1]) for r in rs):
+                errors.append(f"profile: the code shows '{mod}' applies (e.g. {where[0]}), so it can't be N/A as a whole. "
+                              "Check its items one by one, or prove the code is unused: N/A with 'DEAD CODE: <proof>'")
+    elif level != "quick":
+        warns.append("no profile.json next to the ledger: run profile.py first (or say why in the report)")
 
     # inventory accounting
     inv_path = ledger_path.parent / "inventory.json"
@@ -427,6 +574,31 @@ def main() -> int:
             print(f"| {title} | {tally['ok']} | {tally['fail']} | {tally['part']} | {tally['na']} | {', '.join(failed) or '-'} |")
         print("\n◐ = some mapped checks couldn't be confirmed, weren't done, or need a human specialist (see references/standards.md).")
     print(f"\nScore line: {tot['PASS']}/{applicable} checks passed · {blockers} blockers · {unresolved} unresolved 🔴 can't-tell")
+
+    if report_path is not None:
+        rep_text = report_path.read_text("utf-8") if report_path.exists() else ""
+        if not rep_text:
+            errors.append(f"REPORT: {report_path} not found")
+        else:
+            seen_rows = 0
+            for mod, status, n, cnt, miss in rows:
+                m = re.search(r"^\|\s*\**%s\**\s*\|[^|\n]*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|" % re.escape(mod), rep_text, re.M)
+                if not m:
+                    errors.append(f"REPORT: the coverage table has no row for {mod} (paste the table coverage.py printed)")
+                    continue
+                seen_rows += 1
+                real = [n, cnt["PASS"], cnt["FAIL"], cnt["N/A"], cnt[CT], miss]
+                got = [int(x) for x in m.groups()]
+                if got != real:
+                    errors.append(f"REPORT: coverage row for {mod} says {got}, the ledger says {real}")
+            sc = re.search(r"vibe-check:\s*\S+[^·\n]*·\s*(\d+)\s*/\s*(\d+)\s*checks\s*·\s*(\d+)\s*blockers", rep_text)
+            if not sc:
+                errors.append("REPORT: no score card line ('vibe-check: … · passed/applicable checks · N blockers')")
+            elif [int(x) for x in sc.groups()] != [tot["PASS"], applicable, blockers]:
+                errors.append(f"REPORT: the score card says {sc.group(1)}/{sc.group(2)} checks and {sc.group(3)} blockers; "
+                              f"the ledger says {tot['PASS']}/{applicable} and {blockers}")
+            if not errors:
+                print(f"\nREPORT VERIFIED: {report_path} matches the ledger ({seen_rows} coverage rows and the score card).")
 
     for w in warns:
         print("warning:", w)

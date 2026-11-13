@@ -92,6 +92,9 @@ FILES = {
     "docker-compose.yml": "services:\n  db:\n    image: postgres:12\n  cache:\n    image: redis\n",
     "blog/wp-includes/version.php": "<?php $wp_version = '6.2.1';\n",
     "blog/wp-content/plugins/cf7/cf7.php": "<?php\n/*\n * Plugin Name: Contact Form 7\n * Version: 5.3.1\n */\n",
+    # v3.1: profile evidence the founder might deny
+    "app/signup/page.tsx": "export default function Signup() {\n  return <form><input name=\"email\" /><input type=\"date\" name=\"dob\" /></form>\n}\n",
+    "lib/pricing.ts": "// old payment link, still linked from the pricing page\nexport const PRO = 'https://rzp.io/l/pro-plan'\n",
     # clean file: must produce no hits
     "lib/clean.ts": ("const url = 'http://localhost:3000'\ntry { run() } catch (e) { report(e) }\nexport const ok = true\n"
                      "if (crypto.timingSafeEqual(a, b)) { done() }\nconst base = process.env.APP_URL\nif (signature === null) { fail() }\n"),
@@ -141,17 +144,26 @@ def all_ids() -> list:
 THREAT = ("## Threat model\n- Assets: credits, private notes, admin panel\n- Actors: visitor, user, other user, admin, webhook\n"
           "- Boundaries: browser -> /api, /api -> database\n- Entry points: every route in the inventory\n\n")
 METHODS = ["INVARIANT", "ABUSE", "PATH", "ASSUMPTION", "VARIANT", "CHAIN", "THREAT"]
+REAL = [k for k in FILES if k not in (".env",)]   # files that exist in the planted app (evidence must cite real files)
 HUNT = [f"| T-{n:03d} | Hypothesis number {n}: something the app assumes can be broken | {METHODS[n % len(METHODS)]} | "
-        f"DISPROVEN | routes/x{n}.js:{n} stops it with a check |" for n in range(1, 13)]
+        f"DISPROVEN | {REAL[n % len(REAL)]}:1 stops it with a check (hypothesis {n}) |" for n in range(1, 13)]
 
 
-def ledger(out: Path, rows: list, level: str = "Full", hunt: list | None = None, threat: bool = True) -> Path:
+def ledger(out: Path, rows: list, level: str = "Full", hunt: list | None = None, threat: bool = True,
+           recheck: bool = True, overturn: str = "") -> Path:
+    """Write a ledger; by default also add the independent re-check rows coverage.py asks for (--sample)."""
     p = out / "ledger.md"
     hunt = HUNT if hunt is None else hunt
-    body = (f"# vibe-check ledger\n\nLevel: {level}\n\n" + (THREAT if threat else "")
+    body = (f"# vibe-check ledger\n\nLevel: {level}\nDate: test\n\n" + (THREAT if threat else "")
             + "| ID | Result | Evidence / reason |\n|---|---|---|\n" + "\n".join(rows) + "\n\n## Hunt\n"
             + "| ID | Hypothesis | Method | Result | Evidence |\n|---|---|---|---|---|\n" + "\n".join(hunt) + "\n")
     p.write_text(body)
+    if recheck and level.lower() != "quick":
+        r = run("coverage.py", str(p), "--sample")
+        sampled = re.findall(r"^  ([A-Z0-9]+-\d{2,3})  ", r.stdout, re.M)
+        rr = [f"| R-{n:03d} | {c} | {'OVERTURNED' if c == overturn else 'CONFIRMED'} | {REAL[n % len(REAL)]}:1 re-read by a fresh helper ({c}) |"
+              for n, c in enumerate(sampled, 1)]
+        p.write_text(body + "\n## Re-check\n| ID | Check | Verdict | Evidence |\n|---|---|---|---|\n" + "\n".join(rr) + "\n")
     return p
 
 
@@ -202,7 +214,14 @@ def main() -> int:
         inv_rows = [f"| INV-{k} | {n}/{n} | each one traced and checked |" for k, n in counts.items() if n]
         hit_rows = [f"| H-001..H-{len(sw['hits']):03d} | RULED OUT | test bench: reviewed in the test |"]
         hit_rows += [f"| V-001..V-{len(comps):03d} | CURRENT | checked with osv-scanner and https://endoflife.date (test bench) |"]
-        full = [f"| {i} | PASS | src/mod{n}.ts:{n} handles it |" for n, i in enumerate(ids, 1)]
+        full = [f"| {i} | PASS | {REAL[n % len(REAL)]}:1 handles it ({i}) |" for n, i in enumerate(ids, 1)]
+        r = run("profile.py", str(app))
+        prof = json.loads((out / "profile.json").read_text())["modules_with_evidence"]
+        for mod in ("kids-education", "fintech", "ai-features"):
+            check(mod in prof, f"profile: the code shows {mod}, but profile.py missed it (got {sorted(prof)})")
+        evid = json.loads((out / "profile.json").read_text())["evidence"]
+        for label, where in [("hosted payment or checkout link", "lib/pricing.ts"), ("date-of-birth or birthday field", "app/signup/page.tsx")]:
+            check(any(e["label"] == label and e["where"].startswith(where) for e in evid), f"profile: missed '{label}' in {where}")
         r = run("coverage.py", str(ledger(out, full + inv_rows + hit_rows)))
         check(r.returncode == 0, f"coverage: complete ledger should pass:\n{r.stdout[-800:]}")
         check(f"{len(ids)}/{len(ids)} checks passed" in r.stdout, "coverage: score line is wrong")
@@ -210,11 +229,11 @@ def main() -> int:
         # coverage: each sloppy ledger must fail
         bad = {
             "missing one check": full[:-1] + inv_rows + hit_rows,
-            "invented ID": full + ["| SEC-999 | PASS | src/x.ts:1 handled here |"] + inv_rows + hit_rows,
+            "invented ID": full + ["| SEC-999 | PASS | app/page.tsx:1 handled here |"] + inv_rows + hit_rows,
             "FAIL without confidence": [full[0].replace("PASS", "FAIL")] + full[1:] + inv_rows + hit_rows,
             "lazy evidence": ["| BS-01 | PASS | looks fine |"] + full[1:] + inv_rows + hit_rows,
             "evidence with nothing checkable": ["| BS-01 | PASS | the code handles this correctly |"] + full[1:] + inv_rows + hit_rows,
-            "copy-pasted evidence": [f"| {i} | PASS | src/auth.ts:1 handles it |" for i in ids[:5]] + full[5:] + inv_rows + hit_rows,
+            "copy-pasted evidence": [f"| {i} | PASS | app/page.tsx:1 handles it |" for i in ids[:5]] + full[5:] + inv_rows + hit_rows,
             "range PASS": full + ["| SEC-001..SEC-010 | PASS | all fine in src/a.ts |"] + inv_rows + hit_rows,
             "core module N/A as a whole": [r_ for r_ in full if not r_.startswith("| SEC-")] + ["| SEC-* | N/A | no security needed here |"] + inv_rows + hit_rows,
             "sweep hit not reviewed": full + inv_rows,
@@ -235,7 +254,7 @@ def main() -> int:
             "no INVARIANT": [h.replace("| INVARIANT |", "| PATH |") for h in HUNT],
             "PROVEN with a made-up check ID": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | ABUSE | PROVEN SEC-999 | proofs/coupon.test.js shows it |"],
             "PROVEN without proof": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | ABUSE | PROVEN NEW | trust me |"],
-            "bad method": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | GUESS | DISPROVEN | routes/c.js:3 unique key |"],
+            "bad method": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | GUESS | DISPROVEN | app/page.tsx:1 unique key |"],
         }
         for name, hunt in bad_hunt.items():
             r = run("coverage.py", str(ledger(out, good, hunt=hunt)))
@@ -244,7 +263,7 @@ def main() -> int:
         check(r.returncode == 1 and "Threat model" in r.stdout, "coverage: should require a threat model")
         r = run("coverage.py", str(ledger(out, good, level="Enterprise")))
         check(r.returncode == 1 and "at least 25" in r.stdout, "coverage: Enterprise should need 25 hypotheses")
-        new_row = ["| T-013 | Two spends at once take credits below zero | INVARIANT | PROVEN NEW | .vibe-check/proofs/credits.test.js: balance 10 -> -10 |"]
+        new_row = ["| T-013 | Two spends at once take credits below zero | INVARIANT | PROVEN NEW | lib/ai.ts:2 two parallel calls, balance 10 -> -10 |"]
         r = run("coverage.py", str(ledger(out, good, hunt=HUNT + new_row)))
         check(r.returncode == 0 and "1 new, not in any checklist" in r.stdout, f"coverage: a proven new hunt finding should count:\n{r.stdout[-500:]}")
 
@@ -255,6 +274,64 @@ def main() -> int:
         # BS-01 (authorization) failing must show up against the standards it maps to
         check("| OWASP Top 10:2025 |" in r.stdout and "A01:2025" in r.stdout and "CWE-862" in r.stdout and "V8" in r.stdout,
               f"coverage: a failed check should mark its standards items as failed:\n{r.stdout[-900:]}")
+        # v3.1: evidence must be real
+        ev_bad = {
+            "cites a file that doesn't exist": "| BS-01 | PASS | src/nowhere.ts:4 checks the owner |",
+            "cites a line past the end of the file": "| BS-01 | PASS | lib/clean.ts:400 checks the owner |",
+            "quotes code that isn't there": "| BS-01 | PASS | app/page.tsx:1 has `requireOwner(session, note)` |",
+        }
+        for name, row in ev_bad.items():
+            r = run("coverage.py", str(ledger(out, [row] + full[1:] + inv_rows + hit_rows)))
+            check(r.returncode == 1 and "GAP:" in r.stdout and "BS-01" in r.stdout, f"coverage: should reject evidence that {name}")
+        real_quote = "| BS-01 | FAIL ✅ Confirmed | app/notes/[id]/page.tsx:2 renders `dangerouslySetInnerHTML={{ __html: note.body }}` |"
+        r = run("coverage.py", str(ledger(out, [real_quote] + full[1:] + inv_rows + hit_rows)))
+        check(r.returncode == 0, f"coverage: a correct quote should be accepted:\n{r.stdout[-600:]}")
+
+        # v3.1: the code decides the profile (a founder's "no kids" can't make the kids module N/A)
+        no_kids = [x for x in full if not x.startswith("| KID-")]
+        r = run("coverage.py", str(ledger(out, no_kids + ["| KID-* | N/A | the founder says there are no children |"] + inv_rows + hit_rows)))
+        check(r.returncode == 1 and "profile:" in r.stdout and "kids-education" in r.stdout, "coverage: kids module N/A despite a dob field should be rejected")
+        r = run("coverage.py", str(ledger(out, no_kids + ["| KID-* | N/A | DEAD CODE: app/signup/page.tsx:1 is never imported (grep Signup: 0 imports) |"] + inv_rows + hit_rows)))
+        check(r.returncode == 0, f"coverage: N/A with a dead-code proof should be accepted:\n{r.stdout[-600:]}")
+
+        # v3.1: independent re-check
+        r = run("coverage.py", str(ledger(out, good, recheck=False)))
+        check(r.returncode == 1 and "independent re-check" in r.stdout, "coverage: missing re-check rows should be rejected")
+        samp = re.findall(r"^  ([A-Z0-9]+-\d{2,3})  PASS", run("coverage.py", str(ledger(out, good, recheck=False)), "--sample").stdout, re.M)
+        r = run("coverage.py", str(ledger(out, good, overturn=samp[0])))
+        check(r.returncode == 1 and "overturned" in r.stdout, "coverage: an overturned check still marked PASS should be rejected")
+
+        # v3.1: report receipt (numbers in the report must match the ledger)
+        r = run("coverage.py", str(ledger(out, ok_rows)))
+        table = r.stdout[r.stdout.index("| Module |"):r.stdout.index("**Total**")]
+        sl = re.search(r"Score line: (\d+)/(\d+) checks passed · (\d+) blockers", r.stdout).groups()
+        report = out / "report.md"
+        report.write_text(f"# report\n\n{table}\n```text\nvibe-check: 🔴 DO NOT SHIP · {sl[0]}/{sl[1]} checks · {sl[2]} blockers · Full check · 14 Nov 2026\n```\n")
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 0 and "REPORT VERIFIED" in r.stdout, f"coverage: a report pasted from coverage.py should verify:\n{r.stdout[-500:]}")
+        report.write_text(report.read_text().replace(f"{sl[0]}/{sl[1]} checks", f"{int(sl[0]) + 5}/{sl[1]} checks"))
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "REPORT:" in r.stdout, "coverage: a report with typed numbers should be rejected")
+
+        # v3.1: fix plan keeps statuses between runs
+        r = run("coverage.py", str(out / "ledger.md"), "--fix-plan")
+        plan = (out / "fix-plan.md").read_text()
+        check("| BS-01 |" in plan and "TODO" in plan, f"fix plan: missing the failed check: {plan[:300]}")
+        (out / "fix-plan.md").write_text(plan.replace("| BS-01 | 🔴 |", "| BS-01 | 🔴 |", 1).replace("| TODO |", "| DONE |", 1))
+        run("coverage.py", str(out / "ledger.md"), "--fix-plan")
+        check("| DONE |" in (out / "fix-plan.md").read_text(), "fix plan: regenerating lost the DONE status")
+
+        # v3.1: helpers can write ledger parts in .vibe-check/ledger.d/
+        sec = [x for x in good if x.startswith("| SEC-")]
+        rest = [x for x in good if not x.startswith("| SEC-")]
+        p_ = ledger(out, rest)
+        (out / "ledger.d").mkdir(exist_ok=True)
+        (out / "ledger.d" / "security.md").write_text("| ID | Result | Evidence |\n|---|---|---|\n" + "\n".join(sec) + "\n")
+        ledger(out, rest)   # re-run so the re-check sample sees the merged ledger
+        r = run("coverage.py", str(p_))
+        check(r.returncode == 0, f"coverage: rows split into ledger.d/ should count:\n{r.stdout[-500:]}")
+        import shutil; shutil.rmtree(out / "ledger.d")
+
         quick = [x for x in full if x.startswith("| BS-")] + inv_rows + hit_rows
         r = run("coverage.py", str(ledger(out, quick, "Quick")))
         check(r.returncode == 1, "coverage: Quick still needs every 🔴 core check")
@@ -306,7 +383,7 @@ def main() -> int:
           and time.time() - t0 < 15,
           f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
 
-    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 23 ledger cases, 6 version-check cases, {len(EXPECT_VERSIONS)} planted versions")
+    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 34 ledger cases, 6 version-check cases, {len(EXPECT_VERSIONS)} planted versions")
     for f in failures:
         print("FAIL:", f)
     print("OK: scripts catch every planted problem." if not failures else f"{len(failures)} failure(s).")

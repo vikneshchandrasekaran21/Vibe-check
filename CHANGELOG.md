@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.1.0 (2026-11-14)
+
+**Nothing skipped, nothing faked, nothing denied.**
+- **The code decides the profile (`scripts/profile.py`):** before any questions, vibe-check searches the code, schema, forms and config for:
+  - date-of-birth or age fields, parent or guardian data, school, student or teacher data, Google Classroom
+  - payment SDKs, **payment links** (`rzp.io`, `buy.stripe.com`…), in-app purchases, wallets and credits
+  - health, bank, card, tax or government-ID data, location and biometrics
+  - AI calls, agents and MCP, chat or posts, mobile, desktop, cloud and languages
+
+  **An answer can add to the profile but never remove it:** `coverage.py` refuses to let a module with code evidence be N/A as a whole, unless the code is proven unused (`DEAD CODE:` with proof). The report gets a **Your answers vs your code** section.
+- **New check LEG-036:** the real audience is assessed from evidence (the code, store rating, marketing and reviews), not assumed from "we don't ask age" or the terms.
+- **Evidence is re-opened:** `coverage.py` checks that every cited `file:line` exists and every quoted line of code is really in the cited file. Made-up evidence fails the count.
+- **Independent re-check:** `coverage.py --sample` picks every 🔴 FAIL plus a sample of passes. A fresh helper that didn't do the audit re-checks them as `R-` rows, and overturned checks must change.
+- **Report receipt:** `coverage.py --verify-report <report>` compares the report's coverage table and score card with the ledger, so typed numbers are caught.
+- **Split work:** helpers write `.vibe-check/ledger.d/<module>.md`, which is counted together with the main ledger.
+- **Fix everything mode:**
+  - `coverage.py --fix-plan` writes a fix plan that keeps statuses across sessions
+  - one decision per item, and every fix proven by re-checking its own check ID
+  - legal drafts are marked for legal review, and dashboard steps must be confirmed
+  - a before-and-after score at the end
+- The test bench adds 11 cases: fake files, lines past the end, misquoted code, a correct quote, a "no kids" N/A despite a `dob` field, a dead-code proof, a missing re-check, an overturned PASS, report receipt pass and fail, fix-plan statuses, and split ledgers.
+
 ## v3.0.0 (2026-11-14)
 
 **Standards, real tests on the running app, and what only a human can confirm.**

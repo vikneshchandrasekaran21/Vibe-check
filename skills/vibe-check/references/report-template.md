@@ -18,6 +18,11 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 **Score:** <passed> / <applicable> checks passed · 🔴 <n> blockers · 🟡 <n> to fix before scale · ❓ <n> questions
 
+## ⚠️ Your answers vs your code
+*Only when an answer and the code disagree (from `.vibe-check/profile.md`). The code wins: these modules ran anyway.*
+- You said **no payments**, but `lib/pricing.ts:2` links to a Razorpay checkout (`rzp.io/l/pro-plan`). Payment checks ran.
+- You said **no children**, but `app/signup/page.tsx:2` asks for a date of birth. The children's checks ran, and the legal question is under *Needs a lawyer*.
+
 ## 🔴 Blockers: fix before launch
 
 ### 1. <Short title> · ✅ Confirmed | 🔎 Likely
@@ -103,6 +108,8 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Forms · buttons and links | |
 | Env vars · tables · storage buckets · file uploads | |
 | Payments · email · AI calls · third-party scripts | |
+
+**Checked twice:** evidence for every `file:line` and quote was re-opened by `coverage.py`; an independent re-check of <N> items (every 🔴 plus a sample of passes) confirmed <C> and overturned <O>; the numbers in this report were verified against the ledger (`--verify-report`).
 
 **Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
 
