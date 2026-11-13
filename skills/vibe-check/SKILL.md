@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.6.0"
+  version: "2.7.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -26,7 +26,7 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
 9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
 10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
-11. **Check everything that applies, item by item.** Read each module file that applies in full, and give every item a result. Don't sample, skim or stop early because the app "looks fine". If you run out of time or context, say exactly which modules or items are unfinished in the coverage table; never present a partial check as complete.
+11. **Check everything that applies, item by item, and prove it by counting.** Every check has a permanent ID (`SEC-001`, `BS-03`). Record every result in the ledger (Step 4) and let `coverage.py` count it; never estimate coverage. Don't sample, skim or stop early because the app "looks fine". **Never write a row you didn't actually check:** a `CAN'T TELL` that says "not reached" is honest, a PASS you didn't check is a lie. If you run out of time or context, the unfinished items are listed as gaps in the report; never present a partial check as complete.
 
 ## Step 1: Profile the app
 
@@ -43,13 +43,24 @@ Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when 
 
 | Level | When | Covers |
 |---|---|---|
-| 🟢 **Quick** | Only when the user says "quick" (e.g. before a small deploy) | Step 3 blind spots + every 🔴 item in the core modules |
+| 🟢 **Quick** | Only when the user says "quick" (e.g. before a small deploy) | Step 3 blind spots + every 🔴 item in the core modules (the sweep still runs) |
 | 🟡 **Full** (default) | Any "vibe check", "audit my app" or "is this ready to ship?" | Everything in the core modules + every profile module that applies |
 | 🔵 **Enterprise** | Selling to companies or government, or regulated data | Full + `enterprise.md` + the full policy pack |
 
-## Step 2: Map the project
+## Step 2: Map the project (inventory first)
 
-Write down:
+**Run the scripts first.** They ship in the `scripts/` folder next to this SKILL.md. They are read-only, need only Python 3, and write to `.vibe-check/` in the project:
+
+```bash
+python3 <skill-folder>/scripts/inventory.py .            # lists every page, route, function, form, button, env var, table, bucket…
+python3 <skill-folder>/scripts/sweep.py . --history      # searches every file (and git history) for risky patterns
+```
+
+- `.vibe-check/inventory.md` is your **checklist of things in the app.** Bugs hide in the one route nobody opened, so every item in it must be checked, and the report shows counts like *API routes checked: 47/47*. The script finds the common patterns; **add anything it missed** (and raise the "found" count).
+- `.vibe-check/sweep.md` lists every risky-pattern match, with secrets masked. Each hit is a **lead, not a finding**: give every hit a verdict in the ledger after the second look.
+- **If the scripts aren't available or Python can't run** (single-file versions for other tools, some builder platforms), do both by hand: list the inventory categories from `inventory.py`'s list yourself, search for the blind-spot #3 patterns and the patterns in `references/sweep-patterns.md`, and write *"coverage counted by hand: scripts couldn't run"* in the report.
+
+Then write down:
 - **Stack:** framework and version, hosting, DB, auth, payments, email, storage, AI providers, analytics, every third-party API.
 - **Builder platform:** Lovable, Bolt, v0, Replit, Cursor, Claude Code and so on.
 - **Data map:** every piece of personal data (forms, uploads, photo metadata such as GPS, logs, analytics, data sent to LLMs). For each, record where it's stored, which third parties get it, and how long it's kept.
@@ -61,28 +72,53 @@ Write down:
 
 ## Step 3: AI blind spots (every level)
 
-| # | Check | How to verify |
+| ID | Check | How to verify |
 |---|---|---|
-| 1 | 🔴 **Authorization, not just login** | Every route that reads or writes by ID filters by owner or tenant on the server. Try fetching user B's record as user A (IDOR). |
-| 2 | 🔴 **RLS / security rules on** | Supabase: RLS is on for every table, no `using (true)` on user data, and `service_role` is used only on the server. Firebase: rules aren't in test mode. Storage buckets for private files aren't public. |
-| 3 | 🔴 **No secrets in code or the browser** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`), `.gitignore`, and git history (`git log --all -p -- '*.env*'`). |
-| 4 | 🔴 **Server-side validation** | Every write validates input against a schema on the server. |
-| 5 | 🔴 **No mass assignment** | Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
-| 6 | 🔴 **Prices and payments decided on the server** | Amounts come from the server. Access is granted only from a **verified** webhook. Webhooks are idempotent. |
-| 7 | 🔴 **Failure paths exist** | Timeouts and error handling on every external call. No empty `catch`, and no stack traces shown to users. |
-| 8 | 🔴 **Race conditions on money and limits** | Atomic updates, constraints or transactions. Never read-then-write. |
-| 9 | 🔴 **Dependencies real, current and safe** | Run `npm audit` / `pip-audit`. For each finding give the **advisory ID, installed version and fixed version**. Every package exists and is maintained. |
-| 10 | 🔴 **Spend is capped** | Per-user limits and `max_tokens` on LLM and paid APIs. Billing alerts (ask the user). |
-| 11 | 🔴 **Admin, debug and extra domains locked** | Admin routes are checked on the server. Debug is off. No test or seed accounts. No public source maps, `.git` or `.env`. Platform default domains (`*.workers.dev`, `*.vercel.app` and so on) are disabled or redirected. |
-| 12 | 🔴 **Email actually sends** | Verification, password reset and alert emails reach an inbox: a provider is configured and SPF, DKIM and DMARC are set. Apps break silently when email is missing. |
-| 13 | 🔴 **AI features are safe** (if the app uses an LLM) | See `ai-features.md`. |
-| 14 | 🟡 **No N+1 queries or unbounded reads** | Pagination, and no queries inside loops. |
-| 15 | 🟡 **Tests actually test** | No tests that always pass, mirror the code, or were skipped to make CI green. |
-| 16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
-| 17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
-| 18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
+| BS-01 | 🔴 **Authorization, not just login** | Every route that reads or writes by ID filters by owner or tenant on the server. Try fetching user B's record as user A (IDOR). |
+| BS-02 | 🔴 **RLS / security rules on** | Supabase: RLS is on for every table, no `using (true)` on user data, and `service_role` is used only on the server. Firebase: rules aren't in test mode. Storage buckets for private files aren't public. |
+| BS-03 | 🔴 **No secrets in code or the browser** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`), `.gitignore`, and git history (`git log --all -p -- '*.env*'`). |
+| BS-04 | 🔴 **Server-side validation** | Every write validates input against a schema on the server. |
+| BS-05 | 🔴 **No mass assignment** | Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
+| BS-06 | 🔴 **Prices and payments decided on the server** | Amounts come from the server. Access is granted only from a **verified** webhook. Webhooks are idempotent. |
+| BS-07 | 🔴 **Failure paths exist** | Timeouts and error handling on every external call. No empty `catch`, and no stack traces shown to users. |
+| BS-08 | 🔴 **Race conditions on money and limits** | Atomic updates, constraints or transactions. Never read-then-write. |
+| BS-09 | 🔴 **Dependencies real, current and safe** | Run `npm audit` / `pip-audit`. For each finding give the **advisory ID, installed version and fixed version**. Every package exists and is maintained. |
+| BS-10 | 🔴 **Spend is capped** | Per-user limits and `max_tokens` on LLM and paid APIs. Billing alerts (ask the user). |
+| BS-11 | 🔴 **Admin, debug and extra domains locked** | Admin routes are checked on the server. Debug is off. No test or seed accounts. No public source maps, `.git` or `.env`. Platform default domains (`*.workers.dev`, `*.vercel.app` and so on) are disabled or redirected. |
+| BS-12 | 🔴 **Email actually sends** | Verification, password reset and alert emails reach an inbox: a provider is configured and SPF, DKIM and DMARC are set. Apps break silently when email is missing. |
+| BS-13 | 🔴 **AI features are safe** (if the app uses an LLM) | See `ai-features.md`. |
+| BS-14 | 🟡 **No N+1 queries or unbounded reads** | Pagination, and no queries inside loops. |
+| BS-15 | 🟡 **Tests actually test** | No tests that always pass, mirror the code, or were skipped to make CI green. |
+| BS-16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
+| BS-17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
+| BS-18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
 
-## Step 4: Run the modules
+## Step 4: Run the modules (one at a time, into the ledger)
+
+**The ledger is the audit's memory.** Create `.vibe-check/ledger.md` at the start:
+
+```markdown
+# vibe-check ledger
+Level: Full
+Date: YYYY-MM-DD
+
+| ID | Result | Evidence / reason |
+|---|---|---|
+| SEC-001 | PASS | src/lib/auth.ts:4 uses Clerk; no custom password code (grep "bcrypt\|jwt.sign": 0 hits) |
+| SEC-030 | FAIL 🔎 Likely | app/notes/[id]/page.tsx:41 renders note.body with dangerouslySetInnerHTML |
+| SEC-047 | CAN'T TELL | invite codes come from an external service; question for the user |
+| PLT-011..PLT-015 | N/A | not on Firebase |
+| HLT-* | N/A | no health, medical or fitness data |
+| INV-api_routes | 47/47 | every route traced to its auth check |
+| H-001..H-003 | RULED OUT | Supabase anon key: public by design, RLS on (SEC-017 PASS) |
+| H-004 | FINDING SEC-022 | live Stripe key in src/lib/stripe.ts:3 |
+```
+
+- **Results:** `PASS`, `FAIL ✅ Confirmed` / `FAIL 🔎 Likely`, `N/A`, `CAN'T TELL`. Every row needs its own evidence or reason. Copy-pasted evidence is rejected.
+- **Ranges and `*` are for N/A only** (a platform section you don't use, a profile module that doesn't apply). Core modules are never N/A as a whole.
+- **`INV-<category>` rows:** checked/found for every inventory category that has items. **`H-` rows:** a verdict for every sweep hit.
+- **One module at a time.** Re-open the module file and read it **just before** checking it (never from memory), check every item, and **write its rows to the ledger immediately.** That saves progress: on a big app, if the conversation gets long, run `python3 <skill-folder>/scripts/coverage.py --remaining` and continue from what's left instead of getting shallower.
+- **Tools run:** add a `## Tools run` table to the ledger: every tool you ran or tried (`npm audit`, type-check, lint, tests, build, secret scanner, Lighthouse…), the exact command, and the result, including *"not installed"* or *"failed: <error>"*.
 
 **Core modules** (Full and Enterprise):
 
@@ -118,11 +154,11 @@ Write down:
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
-Keep a running tally per module (passed / failed / N/A / can't tell). You need it for the coverage table in Step 5.
+The ledger is the tally. Don't keep counts in your head: `coverage.py` produces the coverage table and score line in Step 5.
 
 ### Tools and fallbacks
 
-Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say in the report which method you used.
+**Always try the project's own tools** and record each in the ledger's *Tools run* table: the package audit (`npm audit` / `pnpm audit` / `pip-audit`), type-check (`tsc --noEmit` or the framework's check), lint, the test suite, and the build. Then use what's available: gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say which method you used.
 
 | Check | Fallback |
 |---|---|
@@ -154,21 +190,22 @@ AI reviewers produce false alarms and invented details. Before writing the repor
 4. **Write down what you ruled out** for each 🔴 (one line, e.g. "Checked middleware.ts and RLS policies: no ownership check"), so the user can trust the finding.
 5. **Drop anything that didn't survive the second look.** Don't keep a finding "just in case". If it's worth mentioning, it's a question.
 6. **Passes need evidence too.** Don't mark items PASS because nothing looked wrong. Say what you checked.
+7. **Run the count:** `python3 <skill-folder>/scripts/coverage.py` (add `--level quick` for Quick). It fails on any check without a result, invented IDs, missing evidence, FAILs without a confidence label, sweep hits without a verdict and inventory categories not accounted for. **Close every gap by actually checking the item**, never by writing filler. Anything you truly can't finish becomes `CAN'T TELL` with the reason and goes under "Not checked". Run it again until it prints `COMPLETE`.
 
 ## Step 5: Report
 
 Use the format in `references/report-template.md`. It must contain, in this order:
 
-1. **Verdict and score line.**
+1. **Verdict and score line** (the score line comes from `coverage.py`).
 2. **🔴 Blockers:** each with plain-language impact, evidence, the fix, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
 3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
 4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
 5. **What passed**, with evidence.
-6. **Coverage table:** one row per module (blind spots, every core module, every profile module), each marked ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with passed, failed, N/A and can't-tell counts, and the method (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
+6. **Coverage:** paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
 7. **Not checked:** anything skipped, with the exact command or step for the user.
 8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
 
-**Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
+**Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md`, and copy the ledger next to it as `.vibe-check/reports/YYYY-MM-DD-ledger.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
 
 **In the chat**, reply with the verdict, the score card, every 🔴 blocker with its fix prompt, the top 🟡 items, the coverage table, the most important questions, the report path, and then: *"Fix the N safe items now? Other fixes need your decision first."* If this was a Quick run, add: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
 
@@ -176,8 +213,10 @@ Use the format in `references/report-template.md`. It must contain, in this orde
 
 Go through this list and fix anything missing **before** sending the report:
 
-- [ ] Every module that applies appears in the coverage table, and no module is silently missing (DevOps, functional QA and the policy pack included).
-- [ ] Every item in those modules has a result. ◐ or ❌ modules say what's missing and why.
+- [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
+- [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
+- [ ] Every inventory category is accounted for (checked/found), and every sweep hit has a verdict (FINDING or RULED OUT).
+- [ ] The *Tools run* table lists every tool tried, with its command and result, including "not installed".
 - [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
 - [ ] Every FAIL **quotes** its evidence (code lines re-read just now, or command output), and the line numbers match the current files.
 - [ ] Every 🔴 and 🟡 had a second look, is labelled ✅ Confirmed or 🔎 Likely, and each 🔴 says what was ruled out. Nothing labelled ❓ is presented as a blocker.

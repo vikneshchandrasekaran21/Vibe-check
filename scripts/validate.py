@@ -12,6 +12,8 @@ Checks:
   8. README mentions every module and links only to files that exist.
   9. Generated files are up to date; dist/vibe-check.md contains every module; the zip has every file;
      the Gemini TOML parses.
+ 10. Every check has a permanent ID (PREFIX-NNN), unique, one prefix per module; coverage.py agrees with
+     SKILL.md on the core modules; the scripts compile and the test bench (tests/test_scripts.py) passes.
 Usage: python3 scripts/validate.py   (exit code 1 on any error)
 """
 from __future__ import annotations
@@ -55,7 +57,7 @@ else:
 ref_files = {p.name for p in REFS.glob("*.md")}
 mentioned = set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill))
 for f in sorted(mentioned - ref_files): err(f"SKILL.md mentions missing file references/{f}")
-support = {"fixes.md", "report-template.md"}
+support = {"fixes.md", "report-template.md", "sweep-patterns.md"}
 for f in sorted(ref_files - mentioned - support): err(f"references/{f} is not listed in SKILL.md's module tables")
 # bare `x.md` mentions anywhere in the skill must exist
 all_text = skill + "".join((REFS / f).read_text() for f in ref_files)
@@ -71,6 +73,8 @@ for f in sorted(set(order) - ref_files): err(f"scripts/build.py REF_ORDER lists 
 # 4/5. module structure, severities, duplicates
 names_by_module: dict[str, list[str]] = {}
 total = blockers = 0
+all_ids: dict[str, str] = {}
+prefix_owner: dict[str, str] = {}
 for f in sorted(ref_files - support):
     text = (REFS / f).read_text()
     if not text.startswith("# "): err(f"{f}: must start with a '# ' title")
@@ -81,6 +85,14 @@ for f in sorted(ref_files - support):
         sev = re.match(r"(🔴|🟡|🟢) ", it)
         if not sev: err(f"{f}: item without severity: {it[:60]}"); continue
         total += 1; blockers += sev.group(1) == "🔴"
+        idm = re.match(r"(?:🔴|🟡|🟢) ([A-Z0-9]+)-(\d{3}) ", it)
+        if not idm: err(f"{f}: item without a check ID (PREFIX-NNN after the severity): {it[:60]}")
+        else:
+            cid, pre = f"{idm.group(1)}-{idm.group(2)}", idm.group(1)
+            if cid in all_ids: err(f"{f}: duplicate check ID {cid} (also in {all_ids[cid]})")
+            all_ids[cid] = f
+            if prefix_owner.setdefault(pre, f) != f: err(f"{f}: ID prefix {pre} is already used by {prefix_owner[pre]}")
+            it = re.sub(r"^(🔴|🟡|🟢) [A-Z0-9]+-\d{3} ", r"\1 ", it)
         nm = re.match(r"(?:🔴|🟡|🟢) \*\*(.+?)\*\*", it)
         if not nm and f != "platforms.md": warn(f"{f}: item without a bold name: {it[:60]}")
         names.append(re.sub(r"[^a-z0-9 ]", "", (nm.group(1) if nm else it[3:60]).lower()).strip())
@@ -94,30 +106,51 @@ for f, names in names_by_module.items():
         seen.setdefault(n, f)
 
 # 6. blind spots numbering
-nums = [int(n) for n in re.findall(r"^\| (\d+) \| (?:🔴|🟡|🟢)", skill, re.M)]
+nums = [int(n) for n in re.findall(r"^\| BS-(\d{2}) \| (?:🔴|🟡|🟢)", skill, re.M)]
+for f in sorted(ref_files - support):
+    owners = {p for p, o in prefix_owner.items() if o == f}
+    if len(owners) > 1: err(f"{f}: uses more than one ID prefix: {sorted(owners)}")
 if nums != list(range(1, len(nums) + 1)): err(f"SKILL.md: blind spots not numbered 1..N: {nums}")
 
 # 7. report template + self-check
 tpl = (REFS / "report-template.md").read_text()
 for sec in ["Verdict", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it",
-            "Evidence:", "Ruled out:", "✅ Confirmed", "🔎 Likely", "Needs checking", "Confidence"]:
+            "Evidence:", "Ruled out:", "✅ Confirmed", "🔎 Likely", "Needs checking", "Confidence",
+            "coverage.py", "Inventory", "Sweep", "Tools run", "Not done"]:
     if sec not in tpl: err(f"report-template.md: missing '{sec}'")
 for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "re-check", ".vibe-check/",
-             "quote the proof", "second look", "Confirmed", "Likely", "Needs checking", "No facts from memory", "Ruled out", "try to prove the finding wrong"]:
+             "quote the proof", "second look", "Confirmed", "Likely", "Needs checking", "No facts from memory", "Ruled out", "try to prove the finding wrong",
+             "scripts/inventory.py", "scripts/sweep.py", "scripts/coverage.py", ".vibe-check/ledger.md", "--remaining", "COMPLETE",
+             "Tools run", "INV-", "RULED OUT", "references/sweep-patterns.md", "just before", "Never write a row you didn't actually check"]:
     if must.lower() not in skill.lower(): err(f"SKILL.md: report or accuracy rules don't mention '{must}'")
 # accuracy rules must also be in the self-check list
 selfcheck = skill.split("### Before you reply", 1)[1].split("## Step 6", 1)[0] if "### Before you reply" in skill else ""
-for must in ["quotes", "second look", "Confirmed", "Likely", "from memory"]:
+for must in ["quotes", "second look", "Confirmed", "Likely", "from memory", "coverage.py", "COMPLETE", "inventory", "sweep hit", "Tools run", "pasted from"]:
     if must.lower() not in selfcheck.lower(): err(f"SKILL.md self-check is missing the accuracy item '{must}'")
 if "## Step 4b: Verify before reporting" not in skill: err("SKILL.md: missing 'Step 4b: Verify before reporting'")
 # every module in coverage template rows
 cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
-for label in ["blind spots", "Security", "reliability", "DevOps", "Functional QA", "Legal", "UX", "Platform", "Lawsuit", "Supply chain", "Maintainability"]:
+for label in ["blind-spots", "security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms", "lawsuits", "supply-chain", "maintainability"]:
     if label.lower() not in cov.lower(): err(f"report-template.md coverage table is missing '{label}'")
+
+# 10. scripts, IDs, test bench
+SCRIPTS = SK / "scripts"
+for s in ["inventory.py", "sweep.py", "coverage.py"]:
+    if not (SCRIPTS / s).exists(): err(f"skills/vibe-check/scripts/{s} is missing")
+    else:
+        try: compile((SCRIPTS / s).read_text(), s, "exec")
+        except SyntaxError as e: err(f"scripts/{s} doesn't compile: {e}")
+core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
+core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)
+cov_src = (SCRIPTS / "coverage.py").read_text() if (SCRIPTS / "coverage.py").exists() else ""
+cov_core = re.findall(r'"([a-z-]+)"', cov_src.split("CORE = [", 1)[1].split("]", 1)[0]) if "CORE = [" in cov_src else []
+if sorted(core_files) != sorted(cov_core): err(f"coverage.py CORE {sorted(cov_core)} doesn't match SKILL.md core modules {sorted(core_files)}")
+tb = subprocess.run([sys.executable, str(ROOT / "tests" / "test_scripts.py")], capture_output=True, text=True)
+if tb.returncode: err("test bench failed:\n" + tb.stdout[-1500:] + tb.stderr[-500:])
 
 # 8. README
 readme = (ROOT / "README.md").read_text()
-for f in sorted(ref_files):
+for f in sorted(ref_files) + ["inventory.py", "sweep.py", "coverage.py", "test_scripts.py"]:
     if f not in readme: err(f"README.md repo layout doesn't list {f}")
 for link in re.findall(r"\]\((?!https?://|#|mailto:)([^)]+)\)", readme):
     if not (ROOT / link.split("#")[0]).exists(): err(f"README.md links to missing file: {link}")
@@ -131,8 +164,8 @@ for f in ref_files:
     if title not in dist: err(f"dist/vibe-check.md is missing module '{title}'")
 with zipfile.ZipFile(ROOT / "dist" / "vibe-check.zip") as z:
     zn = set(z.namelist())
-    for f in ref_files | {"SKILL.md"}:
-        p = f"vibe-check/{f}" if f == "SKILL.md" else f"vibe-check/references/{f}"
+    for f in ref_files | {"SKILL.md"} | {"scripts/" + s.name for s in SCRIPTS.glob("*.py")}:
+        p = f"vibe-check/{f}" if f == "SKILL.md" or f.startswith("scripts/") else f"vibe-check/references/{f}"
         if p not in zn: err(f"dist/vibe-check.zip is missing {p}")
 if tomllib is None:
     warn("Python < 3.11 without tomli: skipped the Gemini TOML parse check (CI runs it)")
@@ -142,7 +175,7 @@ else:
     except Exception as e:
         err(f"Gemini TOML doesn't parse: {e}")
 
-print(f"Modules: {len(ref_files - support)} · checks: {total} (🔴 {blockers}) · blind spots: {len(nums)}")
+print(f"Modules: {len(ref_files - support)} · checks: {total} (🔴 {blockers}) · IDs: {len(all_ids)} · blind spots: {len(nums)}")
 for w in warnings: print("warning:", w)
 for e in errors: print("ERROR:", e)
 print("OK: skill is complete and consistent." if not errors else f"{len(errors)} error(s).")

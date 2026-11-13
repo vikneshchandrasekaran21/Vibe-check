@@ -22,9 +22,9 @@ Check which documents exist, whether they're linked where users need them, and w
 | 🟢 **Status page and SLA** | Paid or B2B | Uptime target, credits if any, how incidents are communicated | Footer, contracts |
 
 ## Checks
-- [ ] 🔴 **Required documents exist:** each one is reachable without logging in and linked where users need it.
-- [ ] 🔴 **Documents match the app today,** including recently added fields and features (compare against the data map).
-- [ ] 🔴 **No overstated claims:** ("cannot be reversed", "fully anonymous", "bank-grade", "100% secure", "compliant" without proof).
-- [ ] 🟡 **Dated and versioned:** each document has an effective date and a version history, and users are told about material changes.
-- [ ] 🟡 **In the users' languages,** and the translations match.
-- [ ] 🟡 **Contact details work** (the email inbox is monitored).
+- [ ] 🔴 POL-001 **Required documents exist:** each one is reachable without logging in and linked where users need it.
+- [ ] 🔴 POL-002 **Documents match the app today,** including recently added fields and features (compare against the data map).
+- [ ] 🔴 POL-003 **No overstated claims:** ("cannot be reversed", "fully anonymous", "bank-grade", "100% secure", "compliant" without proof).
+- [ ] 🟡 POL-004 **Dated and versioned:** each document has an effective date and a version history, and users are told about material changes.
+- [ ] 🟡 POL-005 **In the users' languages,** and the translations match.
+- [ ] 🟡 POL-006 **Contact details work** (the email inbox is monitored).

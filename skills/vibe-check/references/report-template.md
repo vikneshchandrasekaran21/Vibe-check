@@ -64,21 +64,50 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 ## 🧭 Coverage
 
-| Module | Status | Passed | Failed | N/A | Can't tell | Method |
-|---|---|---|---|---|---|---|
-| AI blind spots | ✅ checked | 15 | 2 | 1 | 0 | code review, `npm audit`, grep |
-| Security & auth | ✅ checked | | | | | |
-| Data, reliability & testing | ✅ checked | | | | | |
-| DevOps & operations | ◐ partly | | | | | <why: e.g. "backups, MFA, billing alerts are dashboard settings: see questions"> |
-| Functional QA | ◐ partly | | | | | <e.g. "static review of handlers; no browser run: `npx playwright …` to complete"> |
-| Legal, privacy & licensing | ✅ checked | | | | | |
-| UX & launch | ✅ checked | | | | | |
-| Platform traps (<platforms>) | ✅ checked | | | | | |
-| Lawsuit magnets & jurisdictions (<regions>) | ✅ checked | | | | | |
-| Supply chain & CI | ✅ checked | | | | | |
-| Maintainability & handover | ✅ checked | | | | | |
-| <profile modules that apply: AI features / AI agents & MCP / Kids & education / Health / Fintech / Policy pack / Enterprise / Mobile / Community / Cloud infra / Desktop & extensions / Internationalisation> | | | | | | |
-| <profile modules that don't apply> | ➖ not applicable | | | | | <reason, e.g. "no health data"> |
+*Pasted from `coverage.py` (counted from the ledger, not estimated). Ledger: `.vibe-check/reports/YYYY-MM-DD-ledger.md`.*
+
+| Module | Status | Checks | ✅ Pass | ❌ Fail | ➖ N/A | ❓ Can't tell | Not done |
+|---|---|---|---|---|---|---|---|
+| blind-spots | ✅ | 18 | 15 | 2 | 1 | 0 | 0 |
+| security | ✅ | 64 | | | | | |
+| reliability | ✅ | 51 | | | | | |
+| devops | ◐ | 40 | | | | | |
+| functional-qa | ◐ | 40 | | | | | |
+| legal-privacy | ✅ | 35 | | | | | |
+| launch-ux | ✅ | 29 | | | | | |
+| platforms | ✅ | 51 | | | | | |
+| lawsuits | ✅ | 14 | | | | | |
+| supply-chain | ✅ | 22 | | | | | |
+| maintainability | ✅ | 16 | | | | | |
+| <each profile module> | ✅ / ➖ | | | | | | |
+| **Total** | | | | | | | |
+
+**Why ◐ or ❌, and the method per module:**
+- devops ◐: <e.g. "backups, MFA and billing alerts are dashboard settings: see questions">
+- functional-qa ◐: <e.g. "static review of every handler; no browser run: `npx playwright test` to complete">
+- <profile module> ➖: <reason, e.g. "no health data">
+
+**Inventory** (from `inventory.py`, plus anything added by hand):
+
+| Category | Checked / found |
+|---|---|
+| Pages and screens | 23/23 |
+| API routes and endpoints | 47/47 |
+| Server actions · functions · webhooks · cron | |
+| Forms · buttons and links | |
+| Env vars · tables · storage buckets · file uploads | |
+| Payments · email · AI calls · third-party scripts | |
+
+**Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
+
+**Tools run:**
+
+| Tool | Command | Result |
+|---|---|---|
+| Package audit | `npm audit --omit=dev` | 2 high (see 🔴 2) |
+| Type-check | `npx tsc --noEmit` | 0 errors |
+| Lint · tests · build | `npm run lint` · `npm test` · `npm run build` | <result, or "no test script"> |
+| Secret scanner | `gitleaks detect` | not installed: used `sweep.py --history` |
 
 ## Not checked
 
@@ -89,6 +118,8 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 ```text
 vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
+
+*The numbers come from `coverage.py`'s score line: passed / applicable checks, and 🔴 FAILs as blockers.*
 
 <only if 🟢: the badge snippet and the ⭐ line, see below>
 

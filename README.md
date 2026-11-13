@@ -70,6 +70,18 @@ It also **never changes code during the audit**, **never marks something as pass
 - **Confidence labels:** ✅ Confirmed (reproduced or direct proof), 🔎 Likely (strong evidence), ❓ Needs checking (becomes a question for you, never a blocker).
 - **No facts from memory:** legal, policy and platform statements come only from the skill's own checklists or a source opened during the run.
 
+### 🔍 Built not to skip anything
+An AI can't promise it found every bug, but vibe-check makes sure **every check is actually done, and anything not done is labelled.**
+- **Every check has a permanent ID** (`SEC-014`). Each result goes into a ledger with its evidence: passed, failed, doesn't apply, or couldn't check.
+- **The coverage is counted by a script.** `coverage.py` compares the ledger with the checklist and won't let the report through if a check is missing, an ID is invented, the evidence is vague or copy-pasted, or a failure has no confidence label.
+- **It lists the whole app first.** `inventory.py` lists every page, API route, function, webhook, form, button, env var, table, bucket, upload, payment, email and AI call. The report shows counts like *API routes checked: 47/47*.
+- **It reads every file.** `sweep.py` searches every file, and the git history, for 37 risky patterns (leaked keys, unsafe HTML, SQL built from strings, open CORS, Google Fonts, trackers…). Every match gets a verdict after the second look.
+- **One module at a time, saved as it goes,** so a long audit on a big app resumes where it stopped instead of getting shallower.
+- **The project's own tools run,** with every result recorded: package audit, type-check, lint, tests and build, including any tool that wasn't installed.
+- **A test bench** of planted bugs checks the scripts on every change.
+
+The scripts are read-only, need only Python 3, and come with the skill folder (Claude Code, Codex, the `npx skills` install and the Claude app zip). Single-file versions for other tools do the same steps by hand.
+
 ---
 
 ## Install
@@ -280,6 +292,10 @@ Your code stays on your machine. Only URLs, lockfiles and summaries are sent. �
 ```text
 skills/vibe-check/          ← the skill (source of truth)
 ├── SKILL.md                  workflow, ground rules, AI blind spots, scope guard
+├── scripts/                  read-only helpers the agent runs in the user's project (Python 3, no installs)
+│   ├── inventory.py          lists everything in the app: pages, routes, forms, env vars, tables…
+│   ├── sweep.py              searches every file and git history for risky patterns (secrets masked)
+│   └── coverage.py           counts the ledger against the checklist; fails on any gap
 └── references/
     ├── security.md           core: security, auth, encryption, data leakage
     ├── reliability.md        core: data, reliability, load and stress, testing
@@ -304,12 +320,14 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
     ├── i18n.md               profile: languages, regions, formats
     ├── fixes.md              fix playbook
-    └── report-template.md    report format
+    ├── report-template.md    report format
+    └── sweep-patterns.md     the sweep patterns, for doing it by hand  [generated]
 dist/vibe-check.md          ← everything in one file (for paste-in tools)   [generated]
 dist/vibe-check.zip         ← upload-ready skill for the Claude app           [generated]
 adapters/                   ← Cursor, Copilot, Windsurf, Cline, Gemini, AGENTS.md  [generated]
 scripts/build.py            ← regenerates dist/ and adapters/
 scripts/validate.py         ← checks the skill is complete and consistent (runs in CI)
+tests/test_scripts.py       ← test bench: a small app with planted bugs the scripts must catch
 ```
 
 ## FAQ

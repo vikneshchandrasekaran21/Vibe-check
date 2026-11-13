@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.7.0 (2026-11-13)
+
+**Depth: built not to skip anything.**
+- **Permanent check IDs** on all 587 checks (`SEC-001`, `LAW-002`…) and the 18 blind spots (`BS-01`…).
+- **The ledger** (`.vibe-check/ledger.md`): one row per check with its result and evidence, written module by module as the audit goes. It saves progress so long audits can resume.
+- **`scripts/inventory.py`** lists everything in the app before checking: pages, API routes, server actions, functions, webhooks, cron, admin areas, forms, buttons and links, env vars (flagging browser-public ones), tables, buckets, uploads, payments, email, AI calls and third-party scripts. The report shows checked/found for each.
+- **`scripts/sweep.py`** searches every file, and the git history, for 37 risky patterns, with secrets masked. Every hit needs a verdict (FINDING or RULED OUT).
+- **`scripts/coverage.py`** counts the ledger against the checklist. It fails on missing checks, invented IDs, vague or copy-pasted evidence, FAILs without a confidence label, unreviewed sweep hits and unaccounted inventory. The report's coverage table and score line are pasted from its output.
+- **One module at a time:** each module file is re-read just before it is checked, never from memory.
+- **Tools run table:** package audit, type-check, lint, tests, build and secret scanners are always tried, and every result is recorded, including "not installed".
+- **Test bench** (`tests/test_scripts.py`): a small app with 18 planted problems. The scripts must catch every one, with no false alarms in a clean file, and `coverage.py` must reject 11 kinds of sloppy ledger. It runs in CI through the validator.
+- **The validator** now checks IDs (unique, one prefix per module), the scripts, and the new rules in SKILL.md, the self-check and the report template.
+
 ## v2.6.0 (2026-11-13)
 
 **Accuracy: built not to make things up.**
