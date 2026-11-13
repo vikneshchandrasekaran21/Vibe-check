@@ -156,15 +156,35 @@ def outputs() -> dict[Path, str | bytes]:
     return out
 
 
+def zip_entries(data: bytes):
+    """Names, permissions and uncompressed contents. Compressed bytes differ between zlib
+    versions (Mac vs Linux), so --check compares these, never the raw bytes."""
+    import io
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        return [(i.filename, i.external_attr, i.date_time, z.read(i)) for i in z.infolist()]
+
+
+def same(path: Path, content) -> bool:
+    if not path.exists():
+        return False
+    current = path.read_bytes()
+    new = content if isinstance(content, bytes) else content.encode()
+    if path.suffix == ".zip":
+        try:
+            return zip_entries(current) == zip_entries(new)
+        except zipfile.BadZipFile:
+            return False
+    return current == new
+
+
 def main() -> int:
     check = "--check" in sys.argv
     stale = []
     for path, content in outputs().items():
         if check:
-            current = path.read_bytes() if path.exists() else None
-            if current != (content if isinstance(content, bytes) else content.encode()):
+            if not same(path, content):
                 stale.append(path.relative_to(ROOT))
-        else:
+        elif not same(path, content):
             path.parent.mkdir(parents=True, exist_ok=True)
             if isinstance(content, bytes):
                 path.write_bytes(content)
