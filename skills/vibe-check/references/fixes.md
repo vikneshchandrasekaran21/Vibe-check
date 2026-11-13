@@ -207,3 +207,25 @@ Load analytics, ads pixels and session replay only after consent: keep the conse
 
 ### GPL/AGPL dependency in closed-source code
 Replace the package with a permissively licensed alternative, or isolate it. Put the license question on the "Needs a lawyer" list. Don't decide this yourself.
+
+### Outdated, end-of-life or vulnerable runtime, framework or plugin
+1. Find the fixed version on the official advisory or release page opened during this run, and quote it. Never pick a version from memory.
+2. Prefer the smallest safe step: a patch release on the same line (for example 8.3.35 → 8.3.36) before a major upgrade.
+3. Update every place the version lives: the Docker `FROM` tag, `.nvmrc`/`.python-version`/`.tool-versions`, `engines`, `composer.json` `config.platform`, the hosting dashboard, and the lockfile (`npm install next@<fixed>`, `composer update vendor/package`). Then run the tests and the build.
+4. If the upgrade can't ship today, apply the advisory's official workaround (quoted), add a dated follow-up to the report, and ask the user to schedule the upgrade.
+5. Major upgrades (a new framework major, an end-of-life runtime) change behavior: **don't do them as an auto-fix**. Give the user a migration plan and do it on a branch with their OK.
+
+### Reset and magic links built from the Host header
+Build every emailed link from one configured base URL (`APP_URL`, `NEXT_PUBLIC_SITE_URL`, `config('app.url')`), never from the request's Host header. Add a test that sends a reset request with `Host: evil.example` and checks that the email link still uses the real domain.
+
+### Email, password or 2FA changes without re-authentication
+Require the current password (or a fresh login within the last few minutes) for email, password, 2FA, payout and linked-login changes. On an email change, notify the **old** address with an "undo / this wasn't me" link and confirm the new one before switching. On a password change, end all other sessions. Add tests for each.
+
+### Secrets compared with ==
+Use the platform's constant-time compare: `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` after checking the lengths match (Node), `hmac.compare_digest` (Python), `hash_equals` (PHP), `ActiveSupport::SecurityUtils.secure_compare` (Rails), or the provider SDK's own webhook verify function.
+
+### Sensitive files reachable on the live site
+Block them at the server or host: deny `/.git`, `/.env*`, backups and `phpinfo` in the web server or platform config, keep them out of the deploy (`.dockerignore`, `.vercelignore`, build output folder only), then re-check each URL returns 404. If `.git` or `.env` was ever public, treat every secret in them as leaked: rotate.
+
+### Container runs as root or has secrets baked in
+Add a non-root user (`RUN adduser -D app` / `USER app`, or the image's built-in `node`/`www-data` user), move secrets from `ENV`/`ARG` to runtime platform secrets, add `.env` and `.git` to `.dockerignore`, rebuild, and confirm with `docker history` that no layer contains them. Rotate any secret that was in an image that was ever pushed.

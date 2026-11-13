@@ -27,6 +27,7 @@ REF_ORDER = [
     "platforms.md",
     "lawsuits.md",
     "supply-chain.md",
+    "vulnerabilities.md",
     "maintainability.md",
     "ai-features.md",
     "ai-agents.md",

@@ -44,7 +44,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 
 | | |
 |---|---|
-| 🔍 **Audit** | **18 AI blind-spot checks** plus **600+ checks** in 23 modules. It asks a few questions about your app and runs only the modules that apply |
+| 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 24 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
 | 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
@@ -74,8 +74,9 @@ It also **never changes code during the audit**, **never marks something as pass
 An AI can't promise it found every bug, but vibe-check makes sure **every check is actually done, and anything not done is labelled.**
 - **Every check has a permanent ID** (`SEC-014`). Each result goes into a ledger with its evidence: passed, failed, doesn't apply, or couldn't check.
 - **The coverage is counted by a script.** `coverage.py` compares the ledger with the checklist and won't let the report through if a check is missing, an ID is invented, the evidence is vague or copy-pasted, or a failure has no confidence label.
+- **It lists every version the app runs.** `versions.py` finds the runtime, frameworks, CMS and plugins, Docker images and key packages with exact versions. Each one is checked against today's security releases, end-of-life dates and the actively-exploited list, with the source linked. Never from memory.
 - **It lists the whole app first.** `inventory.py` lists every page, API route, function, webhook, form, button, env var, table, bucket, upload, payment, email and AI call. The report shows counts like *API routes checked: 47/47*.
-- **It reads every file.** `sweep.py` searches every file, and the git history, for 37 risky patterns (leaked keys, unsafe HTML, SQL built from strings, open CORS, Google Fonts, trackers…). Every match gets a verdict after the second look.
+- **It reads every file.** `sweep.py` searches every file, and the git history, for 51 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
 - **One module at a time, saved as it goes,** so a long audit on a big app resumes where it stopped instead of getting shallower.
 - **The project's own tools run,** with every result recorded: package audit, type-check, lint, tests and build, including any tool that wasn't installed.
 - **A test bench** of planted bugs checks the scripts on every change.
@@ -202,7 +203,7 @@ Just ask your agent:
 |---|---|
 | *"vibe check this app"* · *"is this ready to ship?"* · *"audit my app"* | 🟡 **Full check** (default): every module that applies to your app |
 | *"enterprise vibe check"* | 🔵 **Enterprise:** the full check plus enterprise and government readiness and the full policy pack |
-| *"quick vibe check"* | 🟢 **Quick:** only the 18 AI blind spots and 🔴 blockers. For small, everyday deploys |
+| *"quick vibe check"* | 🟢 **Quick:** only the 19 AI blind spots and 🔴 blockers. For small, everyday deploys |
 | *"fix the safe items"* | Applies only the fixes that are invisible to users and easy to undo |
 | *"fix the vibe-check blockers"* · *"fix #1 and #3"* | Fixes only those issues, using the fix playbook and the scope guard |
 
@@ -270,6 +271,7 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), responsive design, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse |
 | ⚖️ **Lawsuit magnets & jurisdictions** | What people actually get sued over: **Google Fonts and other IP leaks**, **pixels, session replay and chat widgets before consent** (California wiretap suits), embeds, **ADA accessibility on revenue paths** (and overlays that don't help), **auto-renewal and click-to-cancel**, marketing opt-in (CASL, TCPA), fake urgency, fair cookie banners, **Impressum**, **Quebec French**, biometrics, plus a **country table** (EU, DACH, UK, US, Canada, India, Brazil, Australia, Asia, app stores) |
 | 🔗 **Supply chain & CI** | Lockfiles, typosquats, install scripts, dependency confusion, **GitHub Actions pinned to SHAs**, `pull_request_target`, token permissions, secrets in logs, third-party scripts, SRI, tag managers, secret scanning |
+| 🧯 **Known vulnerabilities** | Every component the app runs, with exact versions (`versions.py`): runtime (PHP, Node, Python…), framework, CMS **and each plugin**, packages in every ecosystem, Docker images, database engines, SDKs. Checked against **today's** security releases and advisories, end-of-life dates and CISA's **actively exploited** list, with the right audit tool per ecosystem and official workarounds |
 | 🧹 **Maintainability & handover** | Strict types, linting, dead and duplicated code, README and `.env.example`, architecture notes, AI rules files, **who owns every account**, credentials in a vault, due-diligence pack |
 | 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, **Cloudflare** (TLS minimum, `workers.dev`, R2), Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
 
@@ -299,7 +301,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 ## Free & open source: what's included
 
 **Everything in this repo is free, forever (MIT):**
-- ✅ All 18 blind spots, 600+ checks and 23 modules, at all three levels
+- ✅ All 19 blind spots, 600+ checks and 24 modules, at all three levels
 - ✅ The fix playbook, "fix safe items", the scope guard and report history
 - ✅ Works in every tool listed above, with your own AI subscription
 - ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
@@ -332,6 +334,7 @@ skills/vibe-check/          ← the skill (source of truth)
 ├── scripts/                  read-only helpers the agent runs in the user's project (Python 3, no installs)
 │   ├── inventory.py          lists everything in the app: pages, routes, forms, env vars, tables…
 │   ├── sweep.py              searches every file and git history for risky patterns (secrets masked)
+│   ├── versions.py           lists everything the app runs with exact versions (runtime, frameworks, plugins, images)
 │   ├── coverage.py           counts the ledger against the checklist; fails on any gap
 │   └── version_check.py      tells you when a newer vibe-check is out (sends nothing about you)
 └── references/
@@ -344,6 +347,7 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── platforms.md          core: Supabase, Firebase, Cloudflare, Vercel, builders, ...
     ├── lawsuits.md           core: lawsuit magnets & jurisdictions
     ├── supply-chain.md       core: dependencies, CI/CD, third-party scripts
+    ├── vulnerabilities.md    core: known vulnerabilities in the runtime, frameworks, CMS, plugins, images; end-of-life; actively exploited
     ├── maintainability.md    core: code health, docs, ownership, handover
     ├── ai-features.md        profile: LLM and AI features
     ├── ai-agents.md          profile: AI agents, tools and MCP servers

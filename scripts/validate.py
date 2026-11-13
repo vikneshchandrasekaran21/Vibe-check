@@ -130,19 +130,19 @@ for must in ["quotes", "second look", "Confirmed", "Likely", "from memory", "cov
 if "## Step 4b: Verify before reporting" not in skill: err("SKILL.md: missing 'Step 4b: Verify before reporting'")
 # every module in coverage template rows
 cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
-for label in ["blind-spots", "security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms", "lawsuits", "supply-chain", "maintainability"]:
+for label in ["blind-spots", "security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms", "lawsuits", "supply-chain", "vulnerabilities", "maintainability"]:
     if label.lower() not in cov.lower(): err(f"report-template.md coverage table is missing '{label}'")
 
 # 10. scripts, IDs, test bench
 SCRIPTS = SK / "scripts"
-for s in ["inventory.py", "sweep.py", "coverage.py", "version_check.py"]:
+for s in ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py"]:
     if not (SCRIPTS / s).exists(): err(f"skills/vibe-check/scripts/{s} is missing")
     else:
         try: compile((SCRIPTS / s).read_text(), s, "exec")
         except SyntaxError as e: err(f"scripts/{s} doesn't compile: {e}")
 # 11. privacy: only version_check.py may use the network, and only to read two fixed GitHub URLs
 NET = re.compile(r"^\s*(?:import|from)\s+(urllib|socket|http|requests|httpx|aiohttp|ftplib|smtplib)\b", re.M)
-for s in ["inventory.py", "sweep.py", "coverage.py"]:
+for s in ["inventory.py", "sweep.py", "coverage.py", "versions.py"]:
     src = (SCRIPTS / s).read_text() if (SCRIPTS / s).exists() else ""
     if NET.search(src): err(f"scripts/{s} imports a network module: only version_check.py may use the network")
     for cmd in re.findall(r"subprocess\.(?:run|Popen|call|check_output)\(\s*\[\s*\"([^\"]+)\"", src):
@@ -171,6 +171,27 @@ rel = (ROOT / "scripts" / "release.sh").read_text() if (ROOT / "scripts" / "rele
 for must in ["skills/vibe-check/SKILL.md", 'gh release create "v$V"', "CHANGELOG.md", "scripts/validate.py"]:
     if must not in rel: err(f"scripts/release.sh is missing '{must}' (release tag must come from SKILL.md)")
 
+# 12. known vulnerabilities and sweep patterns stay wired to real checks
+import importlib.util as _u
+_spec = _u.spec_from_file_location("vc_sweep_v", SCRIPTS / "sweep.py")
+_mod = _u.module_from_spec(_spec); _spec.loader.exec_module(_mod)
+bs_ids = {f"BS-{n:02d}" for n in nums}
+for pid, cid, *_ in _mod.PATTERNS:
+    if cid not in all_ids and cid not in bs_ids:
+        err(f"sweep.py pattern {pid} points at {cid}, which isn't a check ID")
+sweep_src = (SCRIPTS / "sweep.py").read_text()
+for extra, cid in [("ENV-TRACKED", "SEC-022"), ("DOCKER-ROOT", "OPS-041")]:
+    if extra not in sweep_src: err(f"sweep.py lost the {extra} file check")
+    elif cid not in all_ids: err(f"sweep.py {extra} points at {cid}, which isn't a check ID")
+n_patterns = len(_mod.PATTERNS) + 2
+for must in ["scripts/versions.py", ".vibe-check/versions.md", "V-", "CURRENT", "OUTDATED", "EOL", "VULNERABLE", "references/vulnerabilities.md"]:
+    if must not in skill: err(f"SKILL.md is missing '{must}' (known vulnerabilities)")
+vul = (REFS / "vulnerabilities.md").read_text() if (REFS / "vulnerabilities.md").exists() else ""
+for must in ["Never from memory", "CISA", "endoflife.date", "Never paste the user's dependency list", "composer audit", "osv-scanner", "trivy"]:
+    if must not in vul: err(f"references/vulnerabilities.md is missing '{must}'")
+for must in ["Known vulnerabilities", "versions.py", "actively exploited"]:
+    if must not in tpl: err(f"report-template.md is missing '{must}' (known vulnerabilities table)")
+
 core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
 core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)
 cov_src = (SCRIPTS / "coverage.py").read_text() if (SCRIPTS / "coverage.py").exists() else ""
@@ -181,13 +202,17 @@ if tb.returncode: err("test bench failed:\n" + tb.stdout[-1500:] + tb.stderr[-50
 
 # 8. README
 readme = (ROOT / "README.md").read_text()
+n_modules = len(ref_files - support) + 1  # + blind spots
+for claim, real in [(r"(\d+) AI blind[- ]spot", len(nums)), (r"for (\d+) risky patterns", n_patterns), (r"in (\d+) modules", n_modules)]:
+    for m in re.finditer(claim, readme):
+        if int(m.group(1)) != real: err(f"README.md says '{m.group(0)}' but the real number is {real}")
 for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit",
              "https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check"]:
     if must not in readme: err(f"README.md is missing '{must}' (updating / version check)")
 if re.search(r"phone home|nothing (?:is )?sent anywhere", readme, re.I) and "version check" not in readme.lower():
     err("README.md promises it never contacts anything, but doesn't mention the version check")
 
-for f in sorted(ref_files) + ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "test_scripts.py", "release.sh"]:
+for f in sorted(ref_files) + ["inventory.py", "sweep.py", "coverage.py", "version_check.py", "versions.py", "test_scripts.py", "release.sh"]:
     if f not in readme: err(f"README.md repo layout doesn't list {f}")
 for link in re.findall(r"\]\((?!https?://|#|mailto:)([^)]+)\)", readme):
     if not (ROOT / link.split("#")[0]).exists(): err(f"README.md links to missing file: {link}")

@@ -144,6 +144,58 @@
   ```regex
   \b(?:it|test|describe)\.(?:skip|only)\s*\(|\bx(?:it|describe)\s*\(|@pytest\.mark\.skip
   ```
+- **SSTI** → `SEC-065`: User input compiled as a template
+  ```regex
+  render_template_string\s*\(|\.from_string\s*\(|createTemplate\s*\(|Blade::render\s*\(|(?:ejs|Handlebars|handlebars|pug|nunjucks|Mustache)\.(?:render|compile)\s*\(\s*(?:req|request|body|params|input|data\.)
+  ```
+- **XXE** → `SEC-066`: XML parser with external entities or DTDs allowed
+  ```regex
+  resolve_entities\s*=\s*True|libxml_disable_entity_loader\s*\(\s*false|LIBXML_NOENT|\bnoent\s*:\s*true|SUPPORT_DTD\s*,\s*true|setExpandEntityReferences\s*\(\s*true|DocumentBuilderFactory\.newInstance\s*\(
+  ```
+- **PROTO-POLLUTION** → `SEC-067`: Request data deep-merged into an object (prototype pollution)
+  ```regex
+  (?:_\.merge|_\.defaultsDeep|\bmerge|deepMerge|deepmerge|\$\.extend|\bextend)\s*\([^)\n]*(?:req\.body|request\.body|req\.query|ctx\.request\.body)|\[\s*["']__proto__["']\s*\]
+  ```
+- **HEADER-INJECTION** → `SEC-068`: User input written into a response header or redirect
+  ```regex
+  (?:setHeader|\.header|\.set)\s*\(\s*["'][\w-]+["']\s*,\s*[^)\n]*(?:req\.(?:query|body|params)|request\.(?:args|form|GET|POST))|header\s*\(\s*["'](?:Location|Set-Cookie|Content-Disposition):[^)\n]*\$_(?:GET|POST|REQUEST|SERVER)
+  ```
+- **HOST-HEADER** → `SEC-069`: Host header used (check it never builds links in emails)
+  ```regex
+  req\.headers\.host\b|req\.headers\[\s*["']host["']\s*\]|req\.(?:get|header)\(\s*["']host["']\s*\)|\$_SERVER\[\s*["']HTTP_HOST["']\s*\]|request\.get_host\s*\(|request\.host\b|headers\(\)\.get\(\s*["']host["']|request\.headers\.get\(\s*["']host["']
+  ```
+- **TIMING-COMPARE** → `SEC-072`: Secret or signature compared with == (use a constant-time compare)
+  ```regex
+  \b[\w-]*(?i:signature|secret|hmac|digest|otp)\w*["']?\]?\s*(?:===|!==|==|!=)\s*(?!null\b|undefined\b|None\b|true\b|false\b|0\b|["']["'])[\w$\[(]|(?:===|!==|==|!=)\s*\w*(?i:signature|secret|hmac|digest)\b(?!\s*\()
+  ```
+- **GRAPHQL-OPEN** → `SEC-074`: GraphQL introspection or playground switched on
+  ```regex
+  introspection\s*:\s*true|graphiql\s*:\s*true|playground\s*:\s*true
+  ```
+- **ARCHIVE-EXTRACT** → `SEC-077`: Archive extraction (check for zip slip and zip bombs)
+  ```regex
+  \.extractall\s*\(|extractAllTo\s*\(|unzipper\.Extract|->extractTo\s*\(|\btar\.(?:x|extract)\s*\(|decompress\s*\(
+  ```
+- **PHP-UNSAFE** → `SEC-038`: PHP unserialize / extract / include on request data
+  ```regex
+  unserialize\s*\(\s*\$_(?:GET|POST|REQUEST|COOKIE)|\bextract\s*\(\s*\$_(?:GET|POST|REQUEST)|\b(?:include|require)(?:_once)?\s*\(?\s*\$_(?:GET|POST|REQUEST)
+  ```
+- **PHPINFO** → `SEC-079`: phpinfo() exposes server details
+  ```regex
+  \bphpinfo\s*\(
+  ```
+- **EXPOSE-VERSION** → `VUL-012`: Server advertises its version (case-insensitive)
+  ```regex
+  expose_php\s*=\s*On|server_tokens\s+on\b|ServerTokens\s+Full
+  ```
+- **DOCKER-SECRET** → `OPS-042`: Secret baked into a Docker image (ENV/ARG) (case-insensitive)
+  ```regex
+  ^\s*(?:ENV|ARG)\s+\w*(?:SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY|ACCESS_KEY)\w*(?:\s*=\s*|\s+)\S+
+  ```
+- **DEFAULT-CREDS** → `SEC-080`: Default or trivial password in code or config (case-insensitive)
+  ```regex
+  \b(?:password|passwd|pwd|admin_pass\w*)\b["']?\s*[:=]\s*["'](?:admin|password|123456|12345678|changeme|secret|root|test|letmein|qwerty)["']
+  ```
 - **TODO-SECURITY** → `BS-04`: TODO / FIXME about security (case-insensitive)
   ```regex
   (?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)

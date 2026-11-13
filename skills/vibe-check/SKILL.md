@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.7.2"
+  version: "2.8.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -80,10 +80,12 @@ Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when 
 ```bash
 python3 <skill-folder>/scripts/inventory.py .            # lists every page, route, function, form, button, env var, table, bucket…
 python3 <skill-folder>/scripts/sweep.py . --history      # searches every file (and git history) for risky patterns
+python3 <skill-folder>/scripts/versions.py .             # lists the runtime, frameworks, CMS, plugins, images and key packages, with exact versions
 ```
 
 - `.vibe-check/inventory.md` is your **checklist of things in the app.** Bugs hide in the one route nobody opened, so every item in it must be checked, and the report shows counts like *API routes checked: 47/47*. The script finds the common patterns; **add anything it missed** (and raise the "found" count).
 - `.vibe-check/sweep.md` lists every risky-pattern match, with secrets masked. Each hit is a **lead, not a finding**: give every hit a verdict in the ledger after the second look.
+- `.vibe-check/versions.md` lists **everything the app runs, with exact versions**, and the audit tool for each ecosystem. Every component gets a `V-` row in the ledger with a verdict (`CURRENT`, `OUTDATED`, `EOL`, `VULNERABLE` or `CAN'T TELL`) and the source URL opened during the run, or the audit tool that checked it (`references/vulnerabilities.md`). Versions are never judged from memory.
 - **If the scripts aren't available or Python can't run** (single-file versions for other tools, some builder platforms), do both by hand: list the inventory categories from `inventory.py`'s list yourself, search for the blind-spot #3 patterns and the patterns in `references/sweep-patterns.md`, and write *"coverage counted by hand: scripts couldn't run"* in the report.
 
 Then write down:
@@ -118,6 +120,7 @@ Then write down:
 | BS-16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
 | BS-17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
 | BS-18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
+| BS-19 | 🔴 **Versions from training data** | AI tools pin the versions they remember: old runtimes, framework majors, Docker tags and plugin versions, sometimes already end-of-life or with published security fixes. Run `scripts/versions.py` and check each component against today's release pages (`references/vulnerabilities.md`). |
 
 ## Step 4: Run the modules (one at a time, into the ledger)
 
@@ -138,11 +141,13 @@ Date: YYYY-MM-DD
 | INV-api_routes | 47/47 | every route traced to its auth check |
 | H-001..H-003 | RULED OUT | Supabase anon key: public by design, RLS on (SEC-017 PASS) |
 | H-004 | FINDING SEC-022 | live Stripe key in src/lib/stripe.ts:3 |
+| V-002 | OUTDATED | PHP 8.3.35, security release 8.3.36 is out: https://www.php.net/releases/ (opened today) |
+| V-005..V-031 | CURRENT | npm audit --omit=dev: 0 vulnerabilities |
 ```
 
 - **Results:** `PASS`, `FAIL ✅ Confirmed` / `FAIL 🔎 Likely`, `N/A`, `CAN'T TELL`. Every row needs its own evidence or reason. Copy-pasted evidence is rejected.
 - **Ranges and `*` are for N/A only** (a platform section you don't use, a profile module that doesn't apply). Core modules are never N/A as a whole.
-- **`INV-<category>` rows:** checked/found for every inventory category that has items. **`H-` rows:** a verdict for every sweep hit.
+- **`INV-<category>` rows:** checked/found for every inventory category that has items. **`H-` rows:** a verdict for every sweep hit. **`V-` rows:** a verdict for every component in `.vibe-check/versions.md`, with its source.
 - **One module at a time.** Re-open the module file and read it **just before** checking it (never from memory), check every item, and **write its rows to the ledger immediately.** That saves progress: on a big app, if the conversation gets long, run `python3 <skill-folder>/scripts/coverage.py --remaining` and continue from what's left instead of getting shallower.
 - **Tools run:** add a `## Tools run` table to the ledger: every tool you ran or tried (`npm audit`, type-check, lint, tests, build, secret scanner, Lighthouse…), the exact command, and the result, including *"not installed"* or *"failed: <error>"*.
 
@@ -158,6 +163,7 @@ Date: YYYY-MM-DD
 | UX, accessibility, launch basics, email, abuse | `references/launch-ux.md` |
 | Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | `references/lawsuits.md` |
 | Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | `references/supply-chain.md` |
+| Known vulnerabilities in everything the app runs: runtime, framework, CMS and plugins, packages in every ecosystem, server and container image, end-of-life, actively exploited (CISA KEV) | `references/vulnerabilities.md` |
 | Maintainability and handover: code health, docs, account ownership | `references/maintainability.md` |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
 
@@ -241,7 +247,7 @@ Go through this list and fix anything missing **before** sending the report:
 
 - [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
 - [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
-- [ ] Every inventory category is accounted for (checked/found), and every sweep hit has a verdict (FINDING or RULED OUT).
+- [ ] Every inventory category is accounted for (checked/found), every sweep hit has a verdict (FINDING or RULED OUT), and every component in `.vibe-check/versions.md` has a version verdict with its source.
 - [ ] The *Tools run* table lists every tool tried, with its command and result, including "not installed".
 - [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
 - [ ] Every FAIL **quotes** its evidence (code lines re-read just now, or command output), and the line numbers match the current files.

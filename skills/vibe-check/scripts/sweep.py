@@ -32,7 +32,7 @@ SKIP_FILES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "
 MAX_BYTES = 1_500_000
 CODE = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".vue", ".svelte", ".astro", ".py", ".rb", ".php",
         ".go", ".java", ".kt", ".swift", ".dart", ".cs", ".rs", ".html", ".sql", ".rules", ".json", ".yaml",
-        ".yml", ".toml", ".env", ".sh", ".tf", ".md", ".mdx", ".txt", ".xml", ".plist", ".gradle", ".properties")
+        ".yml", ".toml", ".env", ".sh", ".tf", ".md", ".mdx", ".txt", ".xml", ".plist", ".gradle", ".properties", ".ini", ".conf", ".twig", ".blade.php", ".ejs", ".hbs", ".pug", ".erb", ".j2", ".jinja")
 
 # (id, related check, title, regex, flags, kind)  kind: secret (masked, also used for --history) | code
 PATTERNS = [
@@ -90,6 +90,30 @@ PATTERNS = [
     ("TRACKERS", "LAW-002", "Tracker or analytics script (check it waits for consent)",
      r"googletagmanager\.com|google-analytics\.com|\bgtag\(|connect\.facebook\.net|\bfbq\(|static\.hotjar\.com|clarity\.ms|snap\.licdn\.com|analytics\.tiktok\.com|cdn\.segment\.com|posthog\.init|mixpanel\.init", 0, "code"),
     ("SKIPPED-TESTS", "BS-15", "Skipped or focused tests", r"\b(?:it|test|describe)\.(?:skip|only)\s*\(|\bx(?:it|describe)\s*\(|@pytest\.mark\.skip", 0, "code"),
+    ("SSTI", "SEC-065", "User input compiled as a template",
+     r"""render_template_string\s*\(|\.from_string\s*\(|createTemplate\s*\(|Blade::render\s*\(|(?:ejs|Handlebars|handlebars|pug|nunjucks|Mustache)\.(?:render|compile)\s*\(\s*(?:req|request|body|params|input|data\.)""", 0, "code"),
+    ("XXE", "SEC-066", "XML parser with external entities or DTDs allowed",
+     r"resolve_entities\s*=\s*True|libxml_disable_entity_loader\s*\(\s*false|LIBXML_NOENT|\bnoent\s*:\s*true|SUPPORT_DTD\s*,\s*true|setExpandEntityReferences\s*\(\s*true|DocumentBuilderFactory\.newInstance\s*\(", 0, "code"),
+    ("PROTO-POLLUTION", "SEC-067", "Request data deep-merged into an object (prototype pollution)",
+     r"""(?:_\.merge|_\.defaultsDeep|\bmerge|deepMerge|deepmerge|\$\.extend|\bextend)\s*\([^)\n]*(?:req\.body|request\.body|req\.query|ctx\.request\.body)|\[\s*["']__proto__["']\s*\]""", 0, "code"),
+    ("HEADER-INJECTION", "SEC-068", "User input written into a response header or redirect",
+     r"""(?:setHeader|\.header|\.set)\s*\(\s*["'][\w-]+["']\s*,\s*[^)\n]*(?:req\.(?:query|body|params)|request\.(?:args|form|GET|POST))|header\s*\(\s*["'](?:Location|Set-Cookie|Content-Disposition):[^)\n]*\$_(?:GET|POST|REQUEST|SERVER)""", 0, "code"),
+    ("HOST-HEADER", "SEC-069", "Host header used (check it never builds links in emails)",
+     r"""req\.headers\.host\b|req\.headers\[\s*["']host["']\s*\]|req\.(?:get|header)\(\s*["']host["']\s*\)|\$_SERVER\[\s*["']HTTP_HOST["']\s*\]|request\.get_host\s*\(|request\.host\b|headers\(\)\.get\(\s*["']host["']|request\.headers\.get\(\s*["']host["']""", 0, "code"),
+    ("TIMING-COMPARE", "SEC-072", "Secret or signature compared with == (use a constant-time compare)",
+     r"""\b[\w-]*(?i:signature|secret|hmac|digest|otp)\w*["']?\]?\s*(?:===|!==|==|!=)\s*(?!null\b|undefined\b|None\b|true\b|false\b|0\b|["']["'])[\w$\[(]|(?:===|!==|==|!=)\s*\w*(?i:signature|secret|hmac|digest)\b(?!\s*\()""", 0, "code"),
+    ("GRAPHQL-OPEN", "SEC-074", "GraphQL introspection or playground switched on",
+     r"introspection\s*:\s*true|graphiql\s*:\s*true|playground\s*:\s*true", 0, "code"),
+    ("ARCHIVE-EXTRACT", "SEC-077", "Archive extraction (check for zip slip and zip bombs)",
+     r"\.extractall\s*\(|extractAllTo\s*\(|unzipper\.Extract|->extractTo\s*\(|\btar\.(?:x|extract)\s*\(|decompress\s*\(", 0, "code"),
+    ("PHP-UNSAFE", "SEC-038", "PHP unserialize / extract / include on request data",
+     r"unserialize\s*\(\s*\$_(?:GET|POST|REQUEST|COOKIE)|\bextract\s*\(\s*\$_(?:GET|POST|REQUEST)|\b(?:include|require)(?:_once)?\s*\(?\s*\$_(?:GET|POST|REQUEST)", 0, "code"),
+    ("PHPINFO", "SEC-079", "phpinfo() exposes server details", r"\bphpinfo\s*\(", 0, "code"),
+    ("EXPOSE-VERSION", "VUL-012", "Server advertises its version", r"expose_php\s*=\s*On|server_tokens\s+on\b|ServerTokens\s+Full", re.I, "code"),
+    ("DOCKER-SECRET", "OPS-042", "Secret baked into a Docker image (ENV/ARG)",
+     r"^\s*(?:ENV|ARG)\s+\w*(?:SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY|ACCESS_KEY)\w*(?:\s*=\s*|\s+)\S+", re.I, "code"),
+    ("DEFAULT-CREDS", "SEC-080", "Default or trivial password in code or config",
+     r"""\b(?:password|passwd|pwd|admin_pass\w*)\b["']?\s*[:=]\s*["'](?:admin|password|123456|12345678|changeme|secret|root|test|letmein|qwerty)["']""", re.I, "code"),
     ("TODO-SECURITY", "BS-04", "TODO / FIXME about security",
      r"(?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)", re.I, "code"),
 ]
@@ -119,7 +143,7 @@ def files(root: Path):
             p = Path(dirpath) / fn
             if fn in SKIP_FILES or fn.endswith((".min.js", ".min.css", ".map")):
                 continue
-            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess")):
+            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess", "Containerfile") or fn.startswith("Dockerfile.")):
                 continue
             try:
                 if p.stat().st_size > MAX_BYTES:
@@ -194,6 +218,12 @@ def main() -> int:
                 if m:
                     hits.append({"pattern": pid, "check": check, "title": title, "file": rel, "line": n,
                                  "text": show(line, m, kind), "test_or_example": is_test_or_example(rel)})
+    for p, text in files(root):
+        if re.match(r"(Dockerfile|Containerfile)(\..+)?$|.+\.Dockerfile$", p.name):
+            users = re.findall(r"^\s*USER\s+(\S+)", text, re.M)
+            if not users or users[-1] in ("root", "0", "0:0"):
+                hits.append({"pattern": "DOCKER-ROOT", "check": "OPS-041", "title": "Container runs as root (no non-root USER)",
+                             "file": p.relative_to(root).as_posix(), "line": 0, "text": "no USER line, or the last USER is root"})
     for f in tracked_env_files(root):
         hits.append({"pattern": "ENV-TRACKED", "check": "SEC-022", "title": ".env file committed to git",
                      "file": f, "line": 0, "text": "tracked by git (rotate any real secrets in it)"})
@@ -209,7 +239,7 @@ def main() -> int:
         h["id"] = f"H-{i:03d}"
 
     out.mkdir(parents=True, exist_ok=True)
-    meta = {"tool": "vibe-check sweep", "version": "2.7.0", "root": str(root),
+    meta = {"tool": "vibe-check sweep", "version": "2.8.0", "root": str(root),
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "files_scanned": scanned, "history_scanned": "--history" in sys.argv,
             "patterns": [p[0] for p in PATTERNS], "hits": hits}

@@ -82,6 +82,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | platforms | ✅ | 51 | | | | | |
 | lawsuits | ✅ | 14 | | | | | |
 | supply-chain | ✅ | 22 | | | | | |
+| vulnerabilities | ✅ | 15 | | | | | |
 | maintainability | ✅ | 16 | | | | | |
 | <each profile module> | ✅ / ➖ | | | | | | |
 | **Total** | | | | | | | |
@@ -103,6 +104,15 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Payments · email · AI calls · third-party scripts | |
 
 **Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
+
+**Known vulnerabilities** (from `versions.py` and the audit tools; every verdict links the source opened in this run):
+
+| Component | Version | Status | Advisory / end-of-life | Fixed in / workaround | Source |
+|---|---|---|---|---|---|
+| PHP (Dockerfile:3) | 8.3.35 | 🔴 VULNERABLE · ⚠️ actively exploited | CVE-… (on CISA KEV) | 8.3.36; workaround quoted from the advisory | <URL opened today> |
+| Node.js (.nvmrc) | 16 | 🔴 EOL | end-of-life since <date> | move to a supported LTS | <endoflife.date URL> |
+| next (package-lock.json) | 13.4.1 | 🟡 OUTDATED | GHSA-… (high, not reachable: <why>) | 14.x | `npm audit --omit=dev` |
+| <every other component> | | ✅ CURRENT | | | <URL or tool> |
 
 **Tools run:**
 

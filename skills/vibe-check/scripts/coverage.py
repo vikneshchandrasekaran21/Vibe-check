@@ -16,6 +16,8 @@ Ledger rows (markdown table, one per check):
   | INV-api_routes | 47/47 | every route traced to its auth check |
   | H-001..H-004 | RULED OUT | Supabase anon key: public by design, RLS on |
   | H-005 | FINDING SEC-022 | live Stripe key in src/lib/stripe.ts |
+  | V-003 | OUTDATED | PHP 8.3.35 < 8.3.36 security release: https://www.php.net/releases/ (opened 2026-11-14) |
+  | V-010..V-014 | CURRENT | npm audit --omit=dev: 0 vulnerabilities |
 Results: PASS, FAIL (+ ✅ Confirmed or 🔎 Likely), N/A, CAN'T TELL. Ranges and * are allowed for N/A only.
 Core modules can't be N/A as a whole.
 
@@ -34,10 +36,12 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent
 CORE = ["security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms",
-        "lawsuits", "supply-chain", "maintainability"]
+        "lawsuits", "supply-chain", "vulnerabilities", "maintainability"]
 LAZY = {"ok", "fine", "looks fine", "looks good", "good", "yes", "pass", "passed", "n/a", "na", "none", "-", "checked",
         "done", "no issues", "nothing found", "all good", "seems fine", "looks ok", "verified", "correct"}
 CT = "CAN'T TELL"
+SOURCE = re.compile(r"https?://|\b(?:npm audit|pnpm audit|yarn npm audit|composer audit|pip-audit|bundle audit|govulncheck|"
+                    r"cargo audit|osv-scanner|trivy|docker scout|dependency-check|dotnet list package|wpscan|wp plugin list)\b", re.I)
 CHECKABLE = re.compile(r"\w\.\w|/|`|:\d|https?:|\b(?:dashboard|config|setting|header|inventory|sweep|"
                        r"user confirmed|command|grep|npm|pnpm|yarn|pip|curl|git|gh|lighthouse|axe|playwright|policy|"
                        r"migration|env|DNS|SPF|DKIM|DMARC|CLI)\b", re.I)
@@ -118,7 +122,7 @@ def main() -> int:
     order, checks, prefixes = load_checklist()
     errors, warns = [], []
     results = {}   # id -> (result, evidence, confidence)
-    inv_rows, hit_rows = {}, {}
+    inv_rows, hit_rows, ver_rows = {}, {}, {}
     pass_evidence = {}
     for line in text.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.strip().startswith("|") else []
@@ -127,6 +131,14 @@ def main() -> int:
         key, res, ev = cells[0].strip("`"), cells[1], " | ".join(cells[2:]).strip()
         if key.startswith("INV-"):
             inv_rows[key[4:]] = (res, ev)
+            continue
+        if key.startswith("V-"):
+            m = re.match(r"^V-(\d+)(?:\s*\.\.\s*V-(\d+))?$", key)
+            if not m:
+                errors.append(f"{key}: components are written V-001 or V-001..V-009")
+                continue
+            for n in range(int(m.group(1)), int(m.group(2) or m.group(1)) + 1):
+                ver_rows[f"V-{n:03d}"] = (res, ev)
             continue
         if key.startswith("H-"):
             m = re.match(r"^H-(\d+)(?:\s*\.\.\s*H-(\d+))?$", key)
@@ -234,6 +246,34 @@ def main() -> int:
     else:
         warns.append("no sweep.json next to the ledger: run sweep.py first (or say why in the report)")
 
+    # component versions: each needs a verdict backed by a source opened in this run, or an audit tool
+    ver_path = ledger_path.parent / "versions.json"
+    ver_total = ver_open = 0
+    ver_bad = []
+    if ver_path.exists():
+        comps = json.loads(ver_path.read_text("utf-8")).get("components", [])
+        ver_total = len(comps)
+        for c in comps:
+            row = ver_rows.get(c["id"])
+            if not row:
+                ver_open += 1
+                continue
+            v = row[0].upper().replace("’", "'")
+            status = next((s for s in ("CURRENT", "OUTDATED", "EOL", "VULNERABLE", "CAN'T TELL") if v.startswith(s)), None)
+            if not status:
+                errors.append(f"{c['id']}: verdict must be CURRENT, OUTDATED, EOL, VULNERABLE or CAN'T TELL")
+            elif status != "CAN'T TELL" and not SOURCE.search(row[1]):
+                errors.append(f"{c['id']} ({c['name']} {c['version']}): {status} needs the source URL opened in this run "
+                              "or the audit tool that checked it (no versions from memory)")
+            elif len(row[1]) < 8:
+                errors.append(f"{c['id']}: verdict needs a reason")
+            elif status in ("OUTDATED", "EOL", "VULNERABLE"):
+                ver_bad.append(f"{c['id']} {c['name']} {c['version']}: {status}")
+        if ver_open:
+            errors.append(f"versions: {ver_open} of {ver_total} components have no verdict (V- rows)")
+    elif level != "quick":
+        warns.append("no versions.json next to the ledger: run versions.py first (or say why in the report)")
+
     if remaining_only:
         by_mod = {}
         for c in missing:
@@ -245,6 +285,8 @@ def main() -> int:
                 print(f"  {mod:<20} {len(ids):>3} left: {', '.join(ids[:12])}{' …' if len(ids) > 12 else ''}")
         if sweep_unreviewed:
             print(f"  sweep hits without a verdict: {sweep_unreviewed}")
+        if ver_open:
+            print(f"  components without a version verdict: {ver_open}")
         return 0 if not missing else 1
 
     # coverage table
@@ -282,6 +324,10 @@ def main() -> int:
             print(f"| {cat} | {done}/{total}{'' if done >= total else ' ◐'} |")
     if sweep_path.exists():
         print(f"\nSweep: {sweep_total} hits, {sweep_total - sweep_unreviewed} reviewed.")
+    if ver_path.exists():
+        print(f"\nVersions: {ver_total} components, {ver_total - ver_open} checked, {len(ver_bad)} outdated / end-of-life / vulnerable.")
+        for b in ver_bad:
+            print(f"  - {b}")
     print(f"\nScore line: {tot['PASS']}/{applicable} checks passed · {blockers} blockers · {unresolved} unresolved 🔴 can't-tell")
 
     for w in warns:

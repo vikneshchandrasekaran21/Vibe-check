@@ -57,3 +57,8 @@ Load this file for every Full and Enterprise check. It covers how the app is bui
 ## Incidents
 - [ ] 🟡 OPS-039 **Incident runbook:** who gets alerted, first steps (roll back, disable feature, rotate key), how users are told, and the legal notification timelines (e.g. CERT-In 6 hours in India, GDPR 72 hours).
 - [ ] 🟢 OPS-040 **Post-incident notes** are written, so the same failure doesn't repeat.
+
+## Containers
+- [ ] 🔴 OPS-041 **Containers don't run as root:** the Dockerfile sets a non-root `USER`, and the container doesn't need `--privileged` or the Docker socket.
+- [ ] 🔴 OPS-042 **No secrets baked into images:** no secrets in `ENV`, `ARG`, copied `.env` files or earlier layers (`docker history` shows them). Secrets arrive at runtime from the platform, and `.dockerignore` excludes `.env`, `.git` and keys.
+- [ ] 🟡 OPS-043 **Images are small and pinned:** a slim or distroless base, pinned by tag (or digest), multi-stage builds so compilers and dev tools don't ship, and a rebuild schedule so base-image patches land.

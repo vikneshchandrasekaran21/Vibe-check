@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.8.0 (2026-11-14)
+
+**Known vulnerabilities, and the checks developers and testers miss.**
+- **New core module `vulnerabilities.md` (15 checks, `VUL-`):** every component the app runs is checked against **today's** security releases and advisories: the runtime (PHP, Node, Python, Ruby, Go, Java, .NET), framework, CMS **and each plugin or theme**, packages in every ecosystem, web server, Docker image, database engine and mobile SDK. It also covers end-of-life software, CISA's actively-exploited (KEV) list, which production version is really running, official workarounds when an upgrade can't happen today, version disclosure, and staying patched. It includes an audit tool for each ecosystem (npm, Composer, pip, Bundler, Go, Cargo, Maven/Gradle, .NET, Docker, WordPress) and a severity table.
+- **`scripts/versions.py`** lists everything the app runs with exact versions, from lockfiles, `composer.json`, `.nvmrc`/`.python-version`/`.tool-versions`, Dockerfiles and compose files, WordPress core, plugins and themes, Gradle/Podfile SDK targets and Workers compatibility dates. Each component needs a ledger verdict (`CURRENT`, `OUTDATED`, `EOL`, `VULNERABLE`, `CAN'T TELL`) with the source URL opened during the run or the audit tool that checked it. `coverage.py` enforces it, so no version is judged from memory.
+- **18 new security checks for what's often missed (SEC-065 to SEC-082):** template injection, XXE, prototype pollution, header/CRLF injection, **Host-header poisoning of reset links**, cache poisoning and deception and request smuggling, **re-authentication for email and password changes**, constant-time comparisons, Unicode-normalized identifiers, GraphQL lockdown, object- and function-level access on every API endpoint (BOLA/BFLA), WebSocket auth, zip slip, file processors (SVG, PDF renderers, image libraries), **exposed `/.git`, `.env` and backups**, default credentials and open admin tools, **subdomain takeover**, and static analysis (Semgrep, CodeQL…).
+- **Container checks (OPS-041 to OPS-043):** non-root user, no secrets in image layers, slim pinned images.
+- **New blind spot BS-19, "Versions from training data":** AI tools pin the versions they remember.
+- **The sweep goes from 37 to 51 patterns:** template injection, XXE, prototype pollution, header injection, Host-header use, timing-unsafe secret comparisons, open GraphQL, archive extraction, unsafe PHP (`unserialize`/`extract`/`include` on request data), `phpinfo()`, version disclosure, secrets in Docker `ENV`/`ARG`, default passwords, and containers running as root.
+- **The validator checks** that every sweep pattern points at a real check ID, and that the README's numbers (blind spots, patterns, modules) match reality.
+
 ## v2.7.2 (2026-11-14)
 
 **Update notices everywhere.**

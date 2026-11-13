@@ -70,13 +70,42 @@ FILES = {
         "const api = process.env.API_URL\n"
     ),
     "tests/notes.test.ts": "it.skip('only the owner can read a note', () => {})\n",
+    # v2.8: often-missed bugs
+    "app/api/reset/route.ts": (
+        "export async function POST(req) {\n"
+        "  const link = `https://${req.headers.host}/reset?t=${token}`\n"
+        "  if (req.headers['x-signature'] === expectedSignature) { ok() }\n"
+        "  res.setHeader('X-Name', req.query.name)\n"
+        "  const merged = _.merge({}, req.body)\n}\n"
+    ),
+    "server/graphql.js": "new ApolloServer({ typeDefs, resolvers, introspection: true })\n",
+    "server/import.py": "import zipfile\nzipfile.ZipFile(f).extractall(dest)\nhtml = render_template_string(request.args['tpl'])\nparser = etree.XMLParser(resolve_entities=True)\n",
+    "public/legacy.php": "<?php\n$data = unserialize($_COOKIE['cart']);\nphpinfo();\n",
+    "php.ini": "expose_php = On\n",
+    "config/seed.ts": "export const admin = { email: 'admin@x.com', password: 'admin' }\n",
+    "Dockerfile": "FROM node:16 AS build\nRUN npm ci\nFROM php:8.3.35-apache\nENV STRIPE_SECRET_KEY=placeholder\nCOPY --from=build /app /var/www\n",
+    ".nvmrc": "16\n",
+    "composer.json": '{"require": {"php": "^8.1", "laravel/framework": "^10.0"}}\n',
+    "composer.lock": '{"packages": [{"name": "laravel/framework", "version": "v10.0.0"}]}\n',
+    "package.json": '{"name": "app", "dependencies": {"next": "^13.4.0", "express": "^4.17.0"}}\n',
+    "package-lock.json": '{"lockfileVersion": 3, "packages": {"": {}, "node_modules/next": {"version": "13.4.1"}, "node_modules/express": {"version": "4.17.1"}}}\n',
+    "docker-compose.yml": "services:\n  db:\n    image: postgres:12\n  cache:\n    image: redis\n",
+    "blog/wp-includes/version.php": "<?php $wp_version = '6.2.1';\n",
+    "blog/wp-content/plugins/cf7/cf7.php": "<?php\n/*\n * Plugin Name: Contact Form 7\n * Version: 5.3.1\n */\n",
     # clean file: must produce no hits
-    "lib/clean.ts": "const url = 'http://localhost:3000'\ntry { run() } catch (e) { report(e) }\nexport const ok = true\n",
+    "lib/clean.ts": ("const url = 'http://localhost:3000'\ntry { run() } catch (e) { report(e) }\nexport const ok = true\n"
+                     "if (crypto.timingSafeEqual(a, b)) { done() }\nconst base = process.env.APP_URL\nif (signature === null) { fail() }\n"),
     ".env": "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=placeholder\nRESEND_API_KEY=placeholder\n",
 }
 EXPECT_PATTERNS = {"SECRET-STRIPE", "SECRET-AWS", "PUBLIC-ENV-SECRET", "XSS-HTML", "SQL-CONCAT", "CMD-EXEC", "TLS-OFF",
                    "CORS-ANY", "RLS-TRUE", "EMPTY-CATCH", "CLIENT-PRICE", "GOOGLE-FONTS", "TRACKERS", "TOKEN-STORAGE",
-                   "SKIPPED-TESTS", "ENV-TRACKED", "WEAK-RANDOM", "EVAL"}
+                   "SKIPPED-TESTS", "ENV-TRACKED", "WEAK-RANDOM", "EVAL",
+                   "HOST-HEADER", "TIMING-COMPARE", "HEADER-INJECTION", "PROTO-POLLUTION", "GRAPHQL-OPEN",
+                   "ARCHIVE-EXTRACT", "SSTI", "XXE", "PHP-UNSAFE", "PHPINFO", "EXPOSE-VERSION", "DEFAULT-CREDS",
+                   "DOCKER-SECRET", "DOCKER-ROOT"}
+EXPECT_VERSIONS = [("runtime", "PHP", "8.3.35-apache"), ("runtime", "Node.js", "16"), ("framework", "laravel/framework", "v10.0.0"),
+                   ("framework", "next", "13.4.1"), ("cms", "WordPress core", "6.2.1"), ("plugin", "WordPress plugin: Contact Form 7", "5.3.1"),
+                   ("image", "php", "8.3.35-apache"), ("service", "postgres", "12"), ("service", "redis", "latest (not pinned)")]
 EXPECT_INVENTORY = {
     "pages": ["/", "/notes/[id]"], "api_routes": ["/api/notes", "GET /api/users/:id"], "server_actions": ["app/actions.ts"],
     "functions": ["supabase:send-email"], "webhooks": ["app/api/stripe/webhook/route.ts"], "db_tables": ["notes"],
@@ -144,11 +173,24 @@ def main() -> int:
         check(STRIPE not in text and AWS not in text, "sweep: a secret was printed in full (must be masked)")
         check(any(h["pattern"] == "SECRET-AWS" and "@" in h["file"] for h in sw["hits"]), "sweep: --history missed the deleted AWS key")
 
+        # versions
+        r = run("versions.py", str(app))
+        check(r.returncode == 0, f"versions.py failed: {r.stderr}")
+        vj = json.loads((out / "versions.json").read_text())
+        comps = vj["components"]
+        for kind, name, ver in EXPECT_VERSIONS:
+            ok = any(c["name"] == name and c["version"] == ver and (c["kind"] == kind or kind == "runtime") for c in comps)
+            if kind == "runtime" and name == "PHP":   # the PHP runtime version comes from the Docker image tag
+                ok = any(c["name"] == "php" and c["version"] == ver for c in comps)
+            check(ok, f"versions: missed {kind} {name} {ver} (got {[(c['name'], c['version']) for c in comps][:20]})")
+        check({"npm", "composer", "docker", "wordpress"} <= set(vj["ecosystems"]), f"versions: ecosystems missed: {vj['ecosystems']}")
+
         # coverage: a complete ledger passes
         ids = all_ids()
         counts = inv["counts"]
         inv_rows = [f"| INV-{k} | {n}/{n} | each one traced and checked |" for k, n in counts.items() if n]
         hit_rows = [f"| H-001..H-{len(sw['hits']):03d} | RULED OUT | test bench: reviewed in the test |"]
+        hit_rows += [f"| V-001..V-{len(comps):03d} | CURRENT | checked with osv-scanner and https://endoflife.date (test bench) |"]
         full = [f"| {i} | PASS | src/mod{n}.ts:{n} handles it |" for n, i in enumerate(ids, 1)]
         r = run("coverage.py", str(ledger(out, full + inv_rows + hit_rows)))
         check(r.returncode == 0, f"coverage: complete ledger should pass:\n{r.stdout[-800:]}")
@@ -166,6 +208,9 @@ def main() -> int:
             "core module N/A as a whole": [r_ for r_ in full if not r_.startswith("| SEC-")] + ["| SEC-* | N/A | no security needed here |"] + inv_rows + hit_rows,
             "sweep hit not reviewed": full + inv_rows,
             "inventory not accounted": full + hit_rows,
+            "component without a verdict": full + inv_rows + hit_rows[:1] + [f"| V-001..V-{len(comps) - 1:03d} | CURRENT | checked with osv-scanner (test bench) |"],
+            "version judged from memory": full + inv_rows + hit_rows[:1] + [f"| V-001..V-{len(comps):03d} | CURRENT | I know these are the latest versions |"],
+            "bad version verdict": full + inv_rows + hit_rows[:1] + [f"| V-001..V-{len(comps):03d} | FINE | https://endoflife.date checked |"],
             "inventory undercounted": full + [x.replace(f"{counts['pages']}/{counts['pages']}", "1/1") if x.startswith("| INV-pages") else x for x in inv_rows] + hit_rows,
         }
         for name, rows in bad.items():
@@ -208,7 +253,7 @@ def main() -> int:
           and time.time() - t0 < 15,
           f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
 
-    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 13 ledger cases, 6 version-check cases")
+    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 16 ledger cases, 6 version-check cases, {len(EXPECT_VERSIONS)} planted versions")
     for f in failures:
         print("FAIL:", f)
     print("OK: scripts catch every planted problem." if not failures else f"{len(failures)} failure(s).")
