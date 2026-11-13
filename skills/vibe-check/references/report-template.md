@@ -5,7 +5,9 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 ````markdown
 # vibe-check report: <app name>
 
-> ⬆️ **A newer vibe-check is out** (v<latest>; this check ran on v<installed>). Update with `npx skills update`, then start a new session. *(Only if Step 0 said UPDATE AVAILABLE.)*
+> ⬆️ **A newer vibe-check is out** (v<latest>; this check ran on v<installed>). <update step for this tool, from SKILL.md Step 0>, then start a new session. *(Only if Step 0 found a newer version.)*
+
+> **Update check:** couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest · <update step for this tool>. *(Only if Step 0 couldn't connect; leave out if up to date or turned off.)*
 
 **vibe-check:** v<installed> · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
@@ -165,4 +167,4 @@ Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash).
 One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/Vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.
 
 ### Footer (always, removable)
-The last line of the saved report: `<sub>Checked with vibe-check v<installed> · github.com/vikneshchandrasekaran21/Vibe-check · update: npx skills update</sub>`. Leave it out if the user has asked for no footer (or `.vibe-check/config` contains `footer: false`). Never add it to the user's app, pages or code, only to the report.
+The last line of the saved report: `<sub>Checked with vibe-check v<installed> · latest: github.com/vikneshchandrasekaran21/Vibe-check/releases/latest · update: <update step for this tool></sub>`. Leave it out if the user has asked for no footer (or `.vibe-check/config` contains `footer: false`). Never add it to the user's app, pages or code, only to the report.

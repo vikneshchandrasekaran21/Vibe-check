@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.7.2 (2026-11-14)
+
+**Update notices everywhere.**
+- **Replit and Lovable install as skills:** Replit with `npx skills add … -a replit` (scripts included), Lovable by importing `…/tree/main/skills/vibe-check` from GitHub. Bolt, v0 and ChatGPT stay paste-in.
+- **Step 0 works without the script:** single-file versions and builders read the version line from GitHub with the tool's own web fetch or one `curl -s --max-time 3`. Still only that one URL, still sending nothing.
+- **When the check can't connect** (offline, or Codex's default sandbox), the report says so with the latest-release link, instead of saying nothing.
+- **Update steps for each tool** are in the skill, so the notice tells people exactly what to do in Claude Code, Codex, Cursor, Replit, Lovable, the Claude app, copied files and paste-in.
+- The README recommends `npx skills add` over copying files wherever a tool supports it, for the scripts and one-command updates.
+
 ## v2.7.1 (2026-11-14)
 
 **Know when to update.**

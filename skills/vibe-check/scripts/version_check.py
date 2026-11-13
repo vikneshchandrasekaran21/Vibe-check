@@ -26,6 +26,7 @@ import urllib.request
 from pathlib import Path
 
 LATEST_RELEASE_URL = "https://api.github.com/repos/vikneshchandrasekaran21/Vibe-check/releases/latest"
+RELEASES_PAGE = "https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"  # shown, never fetched
 FALLBACK_URL = "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md"
 TIMEOUT = 3
 UPDATE_HOW = "Update: npx skills update (Claude app: download the new zip from the GitHub release), then start a new session."
@@ -89,7 +90,7 @@ def main() -> int:
         try:
             newest = latest()
         except Exception:
-            print(f"SKIPPED: couldn't reach GitHub (offline or blocked). Installed: vibe-check v{mine}")
+            print(f"SKIPPED: couldn't reach GitHub (offline or blocked). Installed: vibe-check v{mine}. Latest release: {RELEASES_PAGE}")
             return 0
     if not parse(newest):
         print(f"SKIPPED: latest version unknown. Installed: vibe-check v{mine}")

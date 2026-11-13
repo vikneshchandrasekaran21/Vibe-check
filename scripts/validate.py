@@ -149,6 +149,7 @@ for s in ["inventory.py", "sweep.py", "coverage.py"]:
         if cmd != "git": err(f"scripts/{s} runs '{cmd}': helper scripts may only run read-only git commands")
 vc = (SCRIPTS / "version_check.py").read_text() if (SCRIPTS / "version_check.py").exists() else ""
 allowed = {"https://api.github.com/repos/vikneshchandrasekaran21/Vibe-check/releases/latest",
+           "https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest",  # shown to the user, never fetched
            "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md"}
 for url in set(re.findall(r"https?://[^\s\"')]+", vc)):
     if url not in allowed: err(f"version_check.py contains a URL outside the two allowed GitHub URLs: {url}")
@@ -156,12 +157,15 @@ for bad, why in [(r"\bdata\s*=", "sends a request body"), (r"method\s*=", "uses 
                  (r"\bsubprocess\b|\bsocket\b", "uses subprocess or raw sockets"), (r"os\.walk|glob\(|rglob\(", "reads project files"),
                  (r"os\.environ\b(?!\.get\(var)", "reads environment variables other than the opt-out")]:
     if re.search(bad, vc): err(f"version_check.py {why}: it may only GET the latest version and send nothing")
+if re.search(r"get\(\s*RELEASES_PAGE", vc): err("version_check.py fetches the releases page: it may only be shown, never fetched")
 for must in ["VIBE_CHECK_NO_UPDATE_CHECK", "update_check", "timeout=TIMEOUT", "TIMEOUT = 3"]:
     if must not in vc: err(f"version_check.py is missing '{must}'")
 for must in ["## Step 0: Version check", "scripts/version_check.py", "VIBE_CHECK_NO_UPDATE_CHECK", "carry on",
-             "Never send the user's code or data anywhere", "never retry"]:
+             "Never send the user's code or data anywhere", "Never retry", "curl -s --max-time 3",
+             "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md",
+             "couldn't connect", "npx skills update", "Lovable", "Claude app", "adapters/", "dist/vibe-check.md"]:
     if must not in skill: err(f"SKILL.md is missing '{must}' (version check / privacy rule)")
-for must in ["npx skills update", "v<installed>", "A newer vibe-check is out"]:
+for must in ["v<installed>", "A newer vibe-check is out", "Update check:** couldn't connect here", "releases/latest", "update step for this tool"]:
     if must not in tpl: err(f"report-template.md is missing '{must}' (version line / update notice)")
 rel = (ROOT / "scripts" / "release.sh").read_text() if (ROOT / "scripts" / "release.sh").exists() else ""
 for must in ["skills/vibe-check/SKILL.md", 'gh release create "v$V"', "CHANGELOG.md", "scripts/validate.py"]:
@@ -177,7 +181,8 @@ if tb.returncode: err("test bench failed:\n" + tb.stdout[-1500:] + tb.stderr[-50
 
 # 8. README
 readme = (ROOT / "README.md").read_text()
-for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating"]:
+for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit",
+             "https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check"]:
     if must not in readme: err(f"README.md is missing '{must}' (updating / version check)")
 if re.search(r"phone home|nothing (?:is )?sent anywhere", readme, re.I) and "version check" not in readme.lower():
     err("README.md promises it never contacts anything, but doesn't mention the version check")

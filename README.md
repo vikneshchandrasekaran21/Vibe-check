@@ -99,11 +99,15 @@ Pick your tool, paste the line into your **Mac/PC Terminal**, and press Enter. T
 | **Gemini CLI** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a gemini-cli -y` |
 | **Several of these** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -a cursor -a codex -y` |
 | **Claude app** (desktop or claude.ai) | No terminal: [download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip) → **Settings → Customize → Skills → Add → Upload skill**. Keep it zipped |
-| **Lovable, Bolt, v0, Replit, ChatGPT** | No install: copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
+| **Replit** | In the Replit **Shell**: `npx skills add vikneshchandrasekaran21/Vibe-check -a replit -y` |
+| **Lovable** | **Settings → Skills → Add → import from GitHub**, and paste `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
+| **Bolt, v0, ChatGPT** | No install: copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
 
 Then **open a new chat or session** in your app's folder and say: **"vibe check this app"**. That's it.
 
-> **Updating:** run the same command again. Already-open sessions keep the old version, so start a new one.
+> **Updating:** `npx skills update` (or see [Updating](#-updating) for your tool). Already-open sessions keep the old version, so start a new one.
+>
+> **Tip:** use `npx skills add` instead of copying files by hand wherever your tool supports it. You get the helper scripts (deeper, counted checks) and one-command updates.
 
 ### 1. One command, with a menu to pick agents
 
@@ -147,7 +151,21 @@ Ready-made versions are in [`adapters/`](adapters). Copy the folder for your too
 3. Click **Add → Upload skill** and pick the zip. Keep it zipped.
 4. Make sure the skill is switched on. Then in any chat or project, say *"vibe check this app"*, and attach your code or connect a folder so Claude can read it.
 
-### 5. Lovable, Bolt, v0, Replit, ChatGPT
+### 5. Replit and Lovable (as a skill)
+
+**Replit:** open the **Shell** in your Repl and run:
+```bash
+npx skills add vikneshchandrasekaran21/Vibe-check -a replit -y
+```
+It installs into the project's `.agents/skills` folder, scripts included. A workspace admin can also upload the skill folder under **Workspace settings → Customization → Skills**. Then ask Replit Agent: *"vibe check this app"*.
+
+**Lovable:** a workspace owner or admin opens **Settings → Skills → Add**, chooses the GitHub import, and pastes:
+```text
+https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check
+```
+Then in any project chat: *"vibe check this app"* (or type `/vibe-check`). Lovable's agent may not be able to run the helper scripts; when it can't, vibe-check does the inventory, sweep and counting by hand and says so in the report.
+
+### 6. Bolt, v0, ChatGPT (paste-in)
 
 No install needed. Open [`dist/vibe-check.md`](dist/vibe-check.md), copy everything, paste it into the chat and add:
 
@@ -159,14 +177,16 @@ When the agent can't run commands, it reviews the code and config and tells you 
 
 ## 🔄 Updating
 
-Installed skills don't update by themselves. **vibe-check tells you when a new version is out:** each run starts with a quick version check, and the report shows *"A newer vibe-check is out"* with the update command. Every report also shows the version it ran on.
+Installed skills don't update by themselves. **vibe-check tells you when a new version is out:** each run starts with a quick version check, and the report shows *"A newer vibe-check is out"* with the update command for your tool. Where the check can't connect (offline, or a sandbox without internet such as Codex's default), the report says so and links to the latest release. Every report shows the version it ran on.
 
 | You installed with | To update |
 |---|---|
-| `npx skills add` (Claude Code, Codex, Cursor and others) | `npx skills update` |
+| `npx skills add` (Claude Code, Codex, Cursor, Replit and others) | `npx skills update` (in Replit, run it in the Shell) |
+| Lovable (imported from GitHub) | **Settings → Skills**: import again from `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
+| Replit (folder uploaded in Workspace settings) | Upload the new folder again |
 | The Claude app (zip) | Download `vibe-check.zip` from the [latest release](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest) and upload it again |
 | A copied rules or command file (Cursor, Copilot, Windsurf, Cline, Gemini CLI) | Copy the new file from [`adapters/`](adapters/) over the old one |
-| Paste-in (Lovable, Bolt, v0, Replit, ChatGPT) | Paste the new [`dist/vibe-check.md`](dist/vibe-check.md) |
+| Paste-in (Bolt, v0, ChatGPT) | Paste the new [`dist/vibe-check.md`](dist/vibe-check.md) |
 
 Then **start a new session**: an open session keeps the old version loaded.
 

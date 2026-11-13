@@ -204,7 +204,8 @@ def main() -> int:
         check(r.stdout.startswith("SKIPPED: turned off (.vibe-check/config)"), f"version_check: config opt-out ignored: {r.stdout!r}")
     t0 = time.time()
     r = run("version_check.py", env=dead)
-    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: couldn't reach") and time.time() - t0 < 15,
+    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: couldn't reach") and "releases/latest" in r.stdout
+          and time.time() - t0 < 15,
           f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
 
     print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 13 ledger cases, 6 version-check cases")

@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.7.1"
+  version: "2.7.2"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -27,17 +27,32 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
 11. **Check everything that applies, item by item, and prove it by counting.** Every check has a permanent ID (`SEC-001`, `BS-03`). Record every result in the ledger (Step 4) and let `coverage.py` count it; never estimate coverage. Don't sample, skim or stop early because the app "looks fine". **Never write a row you didn't actually check:** a `CAN'T TELL` that says "not reached" is honest, a PASS you didn't check is a lie. If you run out of time or context, the unfinished items are listed as gaps in the report; never present a partial check as complete.
 12. **No facts from memory.** Legal, regulatory, platform-policy and pricing statements in the report must come from this skill's reference files, or from a source you opened during this run (give the URL). Never state a law, fine, deadline, threshold, store rule or provider limit from general memory. If you're unsure, phrase it as a question for the user or the lawyer list.
-13. **Never send the user's code or data anywhere.** Everything stays in the project and this conversation. The skill's own scripts make exactly one network request, the version check in Step 0, and it carries nothing about the user. Live checks go only to the user's own URLs, read-only (rule 6). Standard tools you run (like `npm audit`) talk to their own registries as they always do; the vibe-check Pro connector is used only if the user connected it themselves.
+13. **Never send the user's code or data anywhere.** Everything stays in the project and this conversation. The only network request vibe-check itself makes is the version check in Step 0, and it carries nothing about the user. Live checks go only to the user's own URLs, read-only (rule 6). Standard tools you run (like `npm audit`) talk to their own registries as they always do; the vibe-check Pro connector is used only if the user connected it themselves.
 
 ## Step 0: Version check (a few seconds)
 
-Run `python3 <skill-folder>/scripts/version_check.py`. It reads the latest release number from GitHub, sends nothing about the user, gives up after 3 seconds and always succeeds. It prints one line:
+Your version is the `version:` line at the top of this file. Find out whether a newer one is released, using the **first** method that works:
 
-- `UPDATE AVAILABLE: …`: tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards with `npx skills update`, then start a new session."*), then **carry on**. Don't wait for an answer, and put the same notice at the top of the report.
-- `UP TO DATE` or `SKIPPED: …`: say nothing; the version goes in the report header.
-- If the script isn't available (single-file versions) or Python can't run, skip this step. Never use another tool to look up the version, and never retry.
+1. **The script:** `python3 <skill-folder>/scripts/version_check.py`. It reads the latest release number from GitHub, sends nothing about the user, gives up after 3 seconds and always succeeds.
+2. **No script or no Python** (single-file versions, some builders): read this one URL, once, with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md`, and compare its `version:` line with yours. **Only this URL, only a plain read**, nothing sent.
+3. **Neither is possible:** skip the check.
 
-The user can turn the check off with `VIBE_CHECK_NO_UPDATE_CHECK=1` or `update_check: false` in `.vibe-check/config`.
+Then:
+
+- **Newer version out:** tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool (table below), then **carry on**. Don't wait for an answer. Put the same notice at the top of the report.
+- **Up to date:** say nothing; the version goes in the report header.
+- **Couldn't connect, or skipped because nothing could fetch** (offline, or a sandbox without internet such as Codex's default): don't stop. Put one line in the report header: *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"*, plus the update step for their tool.
+- **Turned off by the user** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing and don't fetch anything.
+
+Never retry, never look the version up any other way, and never let this step delay the audit.
+
+| Where vibe-check runs | Update step |
+|---|---|
+| Installed with `npx skills add` (Claude Code, Codex, Cursor, Gemini CLI, Replit…) | `npx skills update` (in Replit, in the Shell) |
+| Claude app | Download `vibe-check.zip` from https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest and upload it again |
+| Lovable | Settings → Skills: import again from `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
+| A copied rules or command file (Cursor, Copilot, Windsurf, Cline, Gemini CLI) | Copy the new file from the repo's `adapters/` folder, or switch to `npx skills add` |
+| Pasted into a chat (Bolt, v0, ChatGPT) | Paste the new `dist/vibe-check.md` from the repo |
 
 ## Step 1: Profile the app
 
@@ -236,7 +251,7 @@ Go through this list and fix anything missing **before** sending the report:
 - [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
 - [ ] No secrets are printed in full. The score card contains no private details.
 - [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
-- [ ] The report header shows the vibe-check version, and the update notice from Step 0 is at the top if it said UPDATE AVAILABLE.
+- [ ] The report header shows the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
 - [ ] The reply ends with the score card and the "fix the safe items" offer.
 
 ## Step 6: Fix (only after the user approves)
