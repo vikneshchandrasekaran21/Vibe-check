@@ -33,9 +33,10 @@ gh release create "v$V" dist/vibe-check.zip --title "vibe-check v$V" --notes "$N
 Claude app: download \`vibe-check.zip\` below and upload it again where you added the skill.
 Other tools: copy the new file from \`adapters/\` (or \`dist/vibe-check.md\` for paste-in builders)."
 
-# keep only the newest release, so "latest" is always this one
+# keep only the newest release page, so "latest" is always this one. Tags stay: older installs read
+# their checklists from their own version tag (SKILL.md Step 0a), so a tag must never be deleted.
 gh release list --json tagName -q '.[].tagName' | { grep -vx "v$V" || true; } | while read -r tag; do
-  gh release delete "$tag" --cleanup-tag --yes
+  gh release delete "$tag" --yes
 done
 
 npx -y skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y >/dev/null

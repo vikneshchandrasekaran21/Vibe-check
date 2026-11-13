@@ -192,6 +192,45 @@ for must in ["Never from memory", "CISA", "endoflife.date", "Never paste the use
 for must in ["Known vulnerabilities", "versions.py", "actively exploited"]:
     if must not in tpl: err(f"report-template.md is missing '{must}' (known vulnerabilities table)")
 
+# 13. the skill can't be mistaken for a design review, and works when only SKILL.md is available
+desc = re.search(r"^description:\s*(.+)$", skill, re.M)
+fm = skill.split("---", 2)[1] if skill.startswith("---") else ""
+for line in fm.splitlines():
+    m = re.match(r"^\s*[\w-]+:\s+(.+)$", line)
+    if m and not m.group(1).startswith(("'", '"', "|", ">")) and (": " in m.group(1) or " #" in m.group(1)):
+        err(f"SKILL.md frontmatter: unquoted value contains ': ' or ' #', which breaks YAML parsers: {line.strip()[:60]}")
+try:
+    import yaml  # optional: a real parse when PyYAML is installed
+    yaml.safe_load(fm)
+except ImportError:
+    pass
+except Exception as e:
+    err(f"SKILL.md frontmatter isn't valid YAML: {e}")
+if not desc or "Not a design review" not in desc.group(1): err("SKILL.md description must say 'Not a design review'")
+for must in ["Running vibe-check v<version>", "## Step 0a: Make sure you have the whole skill", "Never download and run scripts",
+             "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/v<version>/skills/vibe-check/references/",
+             "never a look at the preview", "Never replace the audit with a design or screenshot review"]:
+    if must not in skill: err(f"SKILL.md is missing '{must}' (start line / whole-skill check)")
+import os as _os
+for _d, _, _fs in _os.walk(ROOT / "adapters"):
+    for _fn in _fs:
+        _t = (Path(_d) / _fn).read_text()
+        if not _t.startswith("---"):
+            continue
+        for line in _t.split("---", 2)[1].splitlines():
+            m = re.match(r"^\s*[\w-]+:\s+(.+)$", line)
+            if m and not m.group(1).startswith(("'", '"', "|", ">")) and (": " in m.group(1) or " #" in m.group(1)):
+                err(f"{Path(_d, _fn).relative_to(ROOT)}: unquoted header value with ': ' or ' #' breaks YAML: {line.strip()[:50]}")
+        try:
+            import yaml
+            yaml.safe_load(_t.split("---", 2)[1])
+        except ImportError:
+            pass
+        except Exception as e:
+            err(f"{Path(_d, _fn).relative_to(ROOT)}: header isn't valid YAML: {e}")
+if "Skill files:" not in tpl: err("report-template.md header is missing 'Skill files:'")
+if "--cleanup-tag" in rel: err("release.sh must not delete tags: older installs read their checklists from their version tag")
+
 core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
 core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)
 cov_src = (SCRIPTS / "coverage.py").read_text() if (SCRIPTS / "coverage.py").exists() else ""
@@ -206,7 +245,7 @@ n_modules = len(ref_files - support) + 1  # + blind spots
 for claim, real in [(r"(\d+) AI blind[- ]spot", len(nums)), (r"for (\d+) risky patterns", n_patterns), (r"in (\d+) modules", n_modules)]:
     for m in re.finditer(claim, readme):
         if int(m.group(1)) != real: err(f"README.md says '{m.group(0)}' but the real number is {real}")
-for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit",
+for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit", "/vibe-check run the full audit", "Running vibe-check v",
              "https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check"]:
     if must not in readme: err(f"README.md is missing '{must}' (updating / version check)")
 if re.search(r"phone home|nothing (?:is )?sent anywhere", readme, re.I) and "version check" not in readme.lower():

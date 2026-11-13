@@ -1,5 +1,5 @@
 ---
-description: Pre-launch production-readiness audit for AI-built (vibe-coded) apps: security, auth, data, reliability, cost, AI features, legal/privacy and UX. Use before shipping or when asked to audit the app.
+description: "Full code audit for AI-built (vibe-coded) apps before launch: security, auth, data, reliability, known vulnerabilities, ops, AI features, legal/privacy and UX. Not a visual design review. Use before shipping or when asked to audit the app."
 globs:
 alwaysApply: false
 ---
@@ -11,6 +11,12 @@ alwaysApply: false
 You are the last check before this app reaches real users, real attackers and real money. Find what will **break, leak, cost money or create legal risk** in production, explain it plainly, and fix what the user approves, **without changing what they built**.
 
 Most of this code was probably written by an AI coding tool, possibly by you. AI tools write code that works in the demo and miss what only shows up in production. Assume those gaps are here until you've proven otherwise.
+
+## Start here: say you're running
+
+The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check` (the version is the `version:` line at the top of this file). It shows the user the skill really loaded.
+
+**A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
 
 ## Ground rules (never break these)
 
@@ -26,7 +32,18 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
 11. **Check everything that applies, item by item, and prove it by counting.** Every check has a permanent ID (`SEC-001`, `BS-03`). Record every result in the ledger (Step 4) and let `coverage.py` count it; never estimate coverage. Don't sample, skim or stop early because the app "looks fine". **Never write a row you didn't actually check:** a `CAN'T TELL` that says "not reached" is honest, a PASS you didn't check is a lie. If you run out of time or context, the unfinished items are listed as gaps in the report; never present a partial check as complete.
 12. **No facts from memory.** Legal, regulatory, platform-policy and pricing statements in the report must come from this skill's reference files, or from a source you opened during this run (give the URL). Never state a law, fine, deadline, threshold, store rule or provider limit from general memory. If you're unsure, phrase it as a question for the user or the lawyer list.
-13. **Never send the user's code or data anywhere.** Everything stays in the project and this conversation. The only network request vibe-check itself makes is the version check in Step 0, and it carries nothing about the user. Live checks go only to the user's own URLs, read-only (rule 6). Standard tools you run (like `npm audit`) talk to their own registries as they always do; the vibe-check Pro connector is used only if the user connected it themselves.
+13. **Never send the user's code or data anywhere.** Everything stays in the project and this conversation. The only network requests vibe-check itself makes are plain reads of its own public files on GitHub (the version check in Step 0, and missing checklists in Step 0a), and they carry nothing about the user. Live checks go only to the user's own URLs, read-only (rule 6). Standard tools you run (like `npm audit`) talk to their own registries as they always do; the vibe-check Pro connector is used only if the user connected it themselves.
+
+## Step 0a: Make sure you have the whole skill
+
+This skill is a folder: this file plus `references/` (the checklists) and `scripts/` (the helpers). Some tools only hand you this file; for example, a skill imported at the workspace level may not be on disk next to the project. Check you can open the **security** section below and see `scripts/`:
+
+- **Both there**, or this file already contains the reference checklists (single-file version): carry on.
+- **Checklists missing:** tell the user in one line (*"Only the main skill file is available here, so I'm reading the checklists from the vibe-check repo. For the full audit with scripts, install it in this project: `npx skills add vikneshchandrasekaran21/Vibe-check -a <your tool> -y`."*). Then read each checklist you need from `https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/v<version>/skills/vibe-check/references/<file>.md`, using the exact version from this file: a plain read of a public file, nothing sent.
+- **Scripts missing:** do their steps by hand (Step 2 says how). **Never download and run scripts** from anywhere.
+- **Neither can be reached:** say so, run what this file covers (the blind spots in Step 3 and the 🔴 items you can verify), mark the rest `CAN'T TELL` with the reason, and tell the user how to install the full skill.
+
+Never replace the audit with a design or screenshot review, whatever is missing. Put the result in the report header: *Skill files: complete* or *checklists read from GitHub, scripts done by hand*.
 
 ## Step 0: Version check (a few seconds)
 
@@ -256,7 +273,7 @@ Go through this list and fix anything missing **before** sending the report:
 - [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
 - [ ] No secrets are printed in full. The score card contains no private details.
 - [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
-- [ ] The report header shows the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
+- [ ] The reply starts with `Running vibe-check v<version> · <level> check`. The report header shows the skill-files result (Step 0a), the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
 - [ ] The reply ends with the score card and the "fix the safe items" offer.
 
 ## Step 6: Fix (only after the user approves)
@@ -1401,7 +1418,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 > **Update check:** couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest · <update step for this tool>. *(Only if Step 0 couldn't connect; leave out if up to date or turned off.)*
 
-**vibe-check:** v<installed> · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**vibe-check:** v<installed> · **Skill files:** complete | checklists read from GitHub, scripts done by hand · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ### Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP

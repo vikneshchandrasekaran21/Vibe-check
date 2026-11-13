@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.8.1 (2026-11-14)
+
+**Can't be mistaken for a design review.**
+- **A first line on every run:** `Running vibe-check v<version> · <level> check`, so you can see the skill loaded. A run that only reviews the preview isn't vibe-check.
+- **Step 0a, "Make sure you have the whole skill":** if a tool hands the agent only SKILL.md (for example a Replit workspace import), the agent says so, reads the checklists from this repo **at the exact installed version tag** (a plain read, nothing sent), does the script steps by hand (it never downloads and runs scripts), and gives the one-line project install for the full audit. It never falls back to a screenshot review. The report header records which way it ran.
+- **A clearer description** for agents choosing a skill: *"Full code audit… Not a design review."*
+- **README:** call it with `/vibe-check` in Replit and Lovable, prefer the project install for full audits, and how to tell it's really running.
+- Ground rule 13 now names both public GitHub reads (the version check and missing checklists).
+- **Fixed:** the Cursor rule file's header had an unquoted `:` that strict YAML parsers reject (an older bug). All generated headers are now quoted, and the validator parses every header with a real YAML parser.
+- **`release.sh` keeps old tags** (it still removes old release pages), so older installs can always read their own checklists from their version tag.
+
 ## v2.8.0 (2026-11-14)
 
 **Known vulnerabilities, and the checks developers and testers miss.**

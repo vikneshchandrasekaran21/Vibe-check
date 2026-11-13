@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "vibe-check": {
+      "source": "vikneshchandrasekaran21/Vibe-check",
+      "sourceType": "github",
+      "skillPath": "skills/vibe-check/SKILL.md",
+      "computedHash": "406e0775c9dc6336a5b40096e618fb17778e9d74ece86ff646a20d0163821444"
+    }
+  }
+}

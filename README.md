@@ -104,7 +104,9 @@ Pick your tool, paste the line into your **Mac/PC Terminal**, and press Enter. T
 | **Lovable** | **Settings → Skills → Add → import from GitHub**, and paste `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
 | **Bolt, v0, ChatGPT** | No install: copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
 
-Then **open a new chat or session** in your app's folder and say: **"vibe check this app"**. That's it.
+Then **open a new chat or session** in your app's folder and say: **"vibe check this app"** (in Replit and Lovable, type **`/vibe-check`**). That's it.
+
+**How to tell it's really running:** the first line of the reply is *"Running vibe-check v… · Full check"*, and it starts by reading your code, not your preview. If you get a design review of your screen instead, the skill didn't load: call it with `/vibe-check`.
 
 > **Updating:** `npx skills update` (or see [Updating](#-updating) for your tool). Already-open sessions keep the old version, so start a new one.
 >
@@ -158,13 +160,15 @@ Ready-made versions are in [`adapters/`](adapters). Copy the folder for your too
 ```bash
 npx skills add vikneshchandrasekaran21/Vibe-check -a replit -y
 ```
-It installs into the project's `.agents/skills` folder, scripts included. A workspace admin can also upload the skill folder under **Workspace settings → Customization → Skills**. Then ask Replit Agent: *"vibe check this app"*.
+It installs into the project's `.agents/skills` folder, scripts included. A workspace admin can also upload the skill folder under **Workspace settings → Customization → Skills**. Then in the Agent chat, call it by name so the agent can't improvise its own "vibe check": type `/vibe-check run the full audit on the whole codebase`, or use **+ → Use a skill → vibe-check**.
+
+> **Tip:** a skill imported at the workspace level (**Customization → Skills → GitHub**) may give the agent only the main instructions, not the checklists and scripts. vibe-check notices, reads its checklists from GitHub and tells you, but the full audit with scripts needs the project install above. Use a full agent mode that can run Shell commands.
 
 **Lovable:** a workspace owner or admin opens **Settings → Skills → Add**, chooses the GitHub import, and pastes:
 ```text
 https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check
 ```
-Then in any project chat: *"vibe check this app"* (or type `/vibe-check`). Lovable's agent may not be able to run the helper scripts; when it can't, vibe-check does the inventory, sweep and counting by hand and says so in the report.
+Then in any project chat, type `/vibe-check run the full audit on the whole codebase`. Lovable's agent may not be able to run the helper scripts; when it can't, vibe-check does the inventory, sweep and counting by hand and says so in the report.
 
 ### 6. Bolt, v0, ChatGPT (paste-in)
 
@@ -193,7 +197,7 @@ Then **start a new session**: an open session keeps the old version loaded.
 
 **Get an email for new releases:** on GitHub, click **Watch → Custom → Releases** at the top of this repo.
 
-**About the version check:** it's the only network request vibe-check itself makes. It reads the latest version number from this repo on GitHub and sends nothing about you: no code, no report, no project name. It gives up after 3 seconds and never blocks the audit. To turn it off, set `VIBE_CHECK_NO_UPDATE_CHECK=1`, or add `update_check: false` to `.vibe-check/config` in your project.
+**About the version check:** vibe-check itself only ever *reads* its own public files on GitHub: this version check, and its checklists if your tool didn't install them. It reads the latest version number from this repo on GitHub and sends nothing about you: no code, no report, no project name. It gives up after 3 seconds and never blocks the audit. To turn it off, set `VIBE_CHECK_NO_UPDATE_CHECK=1`, or add `update_check: false` to `.vibe-check/config` in your project.
 
 ## Use
 
@@ -309,7 +313,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 **What it doesn't do (scope):**
 - ❌ It isn't a legal opinion or a certified security audit. It flags issues and tells you what to ask a lawyer or auditor.
 - ❌ No hosted scanning, dashboard or monitoring. Everything runs inside your own AI tool, on your machine.
-- ❌ It never sends your code, reports or data anywhere. Its only network request is an optional version check to GitHub that carries nothing about you (see [Updating](#-updating)).
+- ❌ It never sends your code, reports or data anywhere. It only ever reads its own public files on GitHub (an optional version check, and its checklists if your tool didn't install them), sending nothing about you (see [Updating](#-updating)).
 - ❌ It never changes your app's design, features or flows (see the guarantee above).
 
 ### ⭐ vibe-check Pro (coming soon)
@@ -376,7 +380,7 @@ scripts/release.sh          ← publishes a release (the tag always matches the 
 ## FAQ
 
 **Does it send my code anywhere?**
-No. vibe-check is instructions plus a few read-only helper scripts, running inside the AI agent you already use, under that tool's own privacy terms. The only network request vibe-check itself makes is the version check: it reads the latest version number from GitHub and sends nothing about you. You can turn it off (see [Updating](#-updating)).
+No. vibe-check is instructions plus a few read-only helper scripts, running inside the AI agent you already use, under that tool's own privacy terms. vibe-check itself only reads its own public files on GitHub (the version check, and its checklists if your tool didn't install them) and sends nothing about you. You can turn it off (see [Updating](#-updating)).
 
 **Will it break my app?**
 It doesn't change anything during the audit. When fixing, it changes only what you approve, adds a test for each fix, and lists every file it touched so you can review or revert. Use git, and try fixes on a branch or staging first.

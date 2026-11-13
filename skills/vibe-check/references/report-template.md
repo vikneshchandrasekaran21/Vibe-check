@@ -9,7 +9,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 > **Update check:** couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest · <update step for this tool>. *(Only if Step 0 couldn't connect; leave out if up to date or turned off.)*
 
-**vibe-check:** v<installed> · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**vibe-check:** v<installed> · **Skill files:** complete | checklists read from GitHub, scripts done by hand · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ## Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
