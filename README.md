@@ -46,7 +46,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 |---|---|
 | 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 26 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
-| 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
+| 🛠️ **Fixes** | A built-in **fix playbook** of 68 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
 
@@ -374,7 +374,7 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
     ├── live-tests.md         profile: tests against the running app on local or staging (two accounts, roles, logged out, ZAP, nuclei)
     ├── i18n.md               profile: languages, regions, formats
-    ├── fixes.md              fix playbook
+    ├── fixes.md              fix playbook: 68 recipes, each listing the checks it covers (every 🔴 check has one)
     ├── report-template.md    report format
     ├── standards.md          OWASP Top 10:2025, API, LLM, Mobile, ASVS 5.0 chapters and CWE Top 25, mapped to vibe-check checks
     └── sweep-patterns.md     the sweep patterns, for doing it by hand  [generated]

@@ -36,7 +36,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
   ```
   <or: `$ curl -sI http://example.com` → `HTTP/1.1 200 OK` (no redirect to HTTPS)>
 - **Ruled out:** <what the second look checked, e.g. "No ownership check in middleware.ts or the RLS policy for invoices">
-- **Fix:** <the specific technical change> · **Safe to auto-fix:** yes / no (needs your decision)
+- **Fix:** <the specific technical change> · **Recipe:** <the `references/fixes.md` recipe whose **Covers:** line lists this check ID> · **Safe to auto-fix:** yes / no (needs your decision)
 - **Prompt to fix it:**
   > <A ready-to-paste instruction for an AI coding tool, specific to this codebase. Example: "In app/api/invoices/[id]/route.ts, only return the invoice if invoice.user_id equals the current session user's id; return 404 otherwise. Add a test proving user A cannot fetch user B's invoice.">
 

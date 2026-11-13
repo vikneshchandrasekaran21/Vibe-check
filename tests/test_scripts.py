@@ -317,6 +317,7 @@ def main() -> int:
         r = run("coverage.py", str(out / "ledger.md"), "--fix-plan")
         plan = (out / "fix-plan.md").read_text()
         check("| BS-01 |" in plan and "TODO" in plan, f"fix plan: missing the failed check: {plan[:300]}")
+        check("Missing authorization / IDOR" in plan, "fix plan: BS-01 should point to the 'Missing authorization / IDOR' recipe")
         (out / "fix-plan.md").write_text(plan.replace("| BS-01 | 🔴 |", "| BS-01 | 🔴 |", 1).replace("| TODO |", "| DONE |", 1))
         run("coverage.py", str(out / "ledger.md"), "--fix-plan")
         check("| DONE |" in (out / "fix-plan.md").read_text(), "fix plan: regenerating lost the DONE status")

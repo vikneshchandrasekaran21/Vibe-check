@@ -3,7 +3,7 @@ name: vibe-check
 description: Full code audit of AI-built apps before launch (security, data, legal, ops, vulnerabilities). Not a design review. Use for "vibe check", "ready to ship?", "security audit", "fix vibe-check issues".
 license: MIT
 metadata:
-  version: "3.1.0"
+  version: "3.2.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -260,7 +260,7 @@ AI reviewers produce false alarms and invented details. Before writing the repor
 Use the format in `references/report-template.md`. It must contain, in this order:
 
 1. **Verdict and score line** (the score line comes from `coverage.py`).
-2. **🔴 Blockers:** each with plain-language impact, evidence, the fix, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
+2. **🔴 Blockers:** each with plain-language impact, evidence, the fix, the **recipe** from `references/fixes.md` that covers its check ID, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
 3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
 4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
 5. **What passed**, with evidence.
@@ -311,7 +311,7 @@ After the report, offer: **"Fix the N safe items now? Other fixes need your deci
 5. **Some things code can't finish:** legal pages become drafts marked *"DRAFT: needs legal review"*; dashboard settings, key rotation and DNS get exact steps plus a question to confirm they're done. None is marked `DONE` on your word alone.
 6. **Finish with a re-check:** update the ledger rows for everything fixed, run `coverage.py` and `--verify-report` again, and show the before-and-after score card (*"was 🔴 171/392, now 🟢 380/392"*).
 
-Follow `references/fixes.md`: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
+Follow `references/fixes.md`: **every 🔴 check ID is listed on the `Covers:` line of a recipe**. Use that recipe's safe fix, avoid its trap, and do its verify step. Then: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
 
 ### Scope guard: fix the issue, keep the product
 

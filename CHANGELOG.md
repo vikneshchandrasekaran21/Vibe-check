@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.2.0 (2026-11-14)
+
+**Every blocker points to its fix.**
+- **The fix playbook goes from 37 to 68 recipes**, and **all 290 🔴 checks are covered**: each recipe starts with a `Covers:` line listing the check IDs it fixes.
+- **31 new recipes, each with a Safe fix, the usual Trap (how AI fixes go wrong) and how to Verify:** sign-in and sessions, API and MCP keys, HTTPS, encryption, command/template/XML injection, secrets in URLs, GraphQL and realtime, admin and debug tools, subdomain takeover, supply chain, environments and rollback, accounts and spending, logs, card data and payment rules, broken journeys, accessibility, email and consent, legal pages, licensed fonts and assets, embeds and session replay, children's data, health data, community safety, AI data and agents, mobile store rules, desktop and extensions, languages, enterprise, logic bugs found by hunting, safe live-test targets, and handover.
+- **The report names the recipe** for every blocker, and `coverage.py --fix-plan` adds a *Recipe* column.
+- **The validator** fails if any 🔴 check has no recipe, if a recipe covers an ID that doesn't exist, or if a new recipe lacks its Safe fix, Trap or Verify. The README's recipe count is checked too.
+
 ## v3.1.0 (2026-11-14)
 
 **Nothing skipped, nothing faked, nothing denied.**

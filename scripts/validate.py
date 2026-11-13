@@ -313,6 +313,31 @@ for mod in ["kids-education", "fintech", "health", "ai-features", "ai-agents", "
     elif mod not in {f.replace(".md", "") for f in ref_files}: err(f"profile.py names {mod}, which isn't a module file")
 if "LEG-036" not in all_ids: err("legal-privacy.md lost LEG-036 (real audience assessed from evidence)")
 
+# 18. v3.2: every 🔴 check points to a fix recipe
+fixes_text = (REFS / "fixes.md").read_text() if (REFS / "fixes.md").exists() else ""
+recipes = re.findall(r"^### (.+)$", fixes_text, re.M)
+covered = {}
+for title in recipes:
+    m = re.search(r"^### " + re.escape(title) + r"\n\*\*Covers:\*\* (.+)$", fixes_text, re.M)
+    if not m:
+        err(f"fixes.md recipe '{title}' has no '**Covers:**' line right under its heading"); continue
+    ids = re.findall(r"\b(?:BS-\d{2}|[A-Z]+-\d{3})\b", m.group(1))
+    if not ids: err(f"fixes.md recipe '{title}' covers no check IDs")
+    for cid in ids:
+        if cid not in all_ids and cid not in bs_ids: err(f"fixes.md recipe '{title}' covers {cid}, which isn't a check ID")
+        covered.setdefault(cid, title)
+red_ids = [c for c, f in all_ids.items() if re.search(r"^- \[ \] 🔴 " + re.escape(c) + r" ", (REFS / f).read_text(), re.M)]
+red_ids += [f"BS-{n}" for n in re.findall(r"^\| BS-(\d{2}) \| 🔴", skill, re.M)]
+no_recipe = [c for c in red_ids if c not in covered]
+if no_recipe: err(f"{len(no_recipe)} 🔴 checks have no fix recipe (add them to a recipe's Covers: line): {', '.join(no_recipe[:12])}")
+if "is listed on the `Covers:` line of a recipe" not in skill: err("SKILL.md must tell the agent to use the recipe whose Covers: line lists the check ID")
+if "**Recipe:**" not in tpl: err("report-template.md blockers must name their **Recipe:**")
+more = fixes_text.split("## More recipes", 1)[1] if "## More recipes" in fixes_text else ""
+for block in re.split(r"^### ", more, flags=re.M)[1:]:
+    name = block.splitlines()[0]
+    for field in ("**Safe fix:**", "**Trap:**", "**Verify:**"):
+        if field not in block: err(f"fixes.md recipe '{name}' is missing {field}")
+
 core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
 core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)
 cov_src = (SCRIPTS / "coverage.py").read_text() if (SCRIPTS / "coverage.py").exists() else ""
@@ -324,7 +349,8 @@ if tb.returncode: err("test bench failed:\n" + tb.stdout[-1500:] + tb.stderr[-50
 # 8. README
 readme = (ROOT / "README.md").read_text()
 n_modules = len(ref_files - support) + 1  # + blind spots
-for claim, real in [(r"(\d+) AI blind[- ]spot", len(nums)), (r"for (\d+) risky patterns", n_patterns), (r"in (\d+) modules", n_modules)]:
+for claim, real in [(r"(\d+) AI blind[- ]spot", len(nums)), (r"for (\d+) risky patterns", n_patterns), (r"in (\d+) modules", n_modules),
+                    (r"(\d+) fix recipes", len(recipes))]:
     for m in re.finditer(claim, readme):
         if int(m.group(1)) != real: err(f"README.md says '{m.group(0)}' but the real number is {real}")
 for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit", "/vibe-check run the full audit", "Running vibe-check v",
