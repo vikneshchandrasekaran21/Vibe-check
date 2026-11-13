@@ -116,7 +116,7 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 
 1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in the **report-template** section below.
 2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **End with the score card**, plus, only for 🟢, the badge snippet, the Hall of 🟢 link and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
+3. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
 4. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
 
 ## Step 6: Fix (only after the user approves)
@@ -832,7 +832,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
 ```
 
-<only if 🟢: the badge snippet and the Hall of 🟢 link, see below>
+<only if 🟢: the badge snippet and the ⭐ line, see below>
 
 ---
 <sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/vibe-check</sub>
@@ -866,7 +866,7 @@ Offer this snippet for the user's README. **Don't add it yourself** unless the u
 [![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20<passed>%2F<applicable>-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
 ```
 
-Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash). Then add: *"Want to be listed in the Hall of 🟢? [Submit your project](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Hall%20of%20Green%3A%20%3Cproject%3E&labels=hall-of-green&body=Project%20URL%3A%0AScore%20card%3A%0ALevel%3A%0ADate%3A)."*
+Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash).
 
 #### Star request (only for 🟢, once)
 One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.

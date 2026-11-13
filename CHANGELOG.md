@@ -4,7 +4,6 @@
 
 - **🏁 Score card:** every report ends with a one-line, screenshot-friendly score (`vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · date`), including the change since the last report.
 - **"vibe-checked" badge** offered for README files when an app reaches 🟢 at Launch level or above (never added without asking).
-- **🏆 Hall of 🟢** in the README, for projects that pass and want to be listed.
 - A small, removable "Checked with vibe-check" footer on saved reports (never added to the app).
 - A one-time ⭐ request, shown only on 🟢 reports.
 

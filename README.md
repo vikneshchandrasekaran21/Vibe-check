@@ -300,16 +300,6 @@ Seen AI tools keep making a mistake that isn't covered? PRs are very welcome. Se
 
 Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerate `dist/` and `adapters/`. CI checks that they're in sync.
 
-## 🏆 Hall of 🟢
-
-Projects that passed vibe-check at **Launch level or above** and asked to be listed.
-
-| Project | Level | Score | Checked |
-|---|---|---|---|
-| *Yours could be first* | | | |
-
-**Get listed:** reach 🟢 SHIP at Launch or Enterprise level, then **[submit your project](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Hall%20of%20Green%3A%20%3Cproject%3E&labels=hall-of-green&body=Project%20URL%3A%0AScore%20card%3A%0ALevel%3A%0ADate%3A)** with your score card. Scores are self-reported, and listings are removed if a project is reported as no longer passing.
-
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md). The latest release is always on the [Releases](https://github.com/vikneshchandrasekaran21/vibe-check/releases/latest) page.

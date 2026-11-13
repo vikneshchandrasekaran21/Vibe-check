@@ -62,7 +62,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
 ```
 
-<only if 🟢: the badge snippet and the Hall of 🟢 link, see below>
+<only if 🟢: the badge snippet and the ⭐ line, see below>
 
 ---
 <sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/vibe-check</sub>
@@ -96,7 +96,7 @@ Offer this snippet for the user's README. **Don't add it yourself** unless the u
 [![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20<passed>%2F<applicable>-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
 ```
 
-Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash). Then add: *"Want to be listed in the Hall of 🟢? [Submit your project](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Hall%20of%20Green%3A%20%3Cproject%3E&labels=hall-of-green&body=Project%20URL%3A%0AScore%20card%3A%0ALevel%3A%0ADate%3A)."*
+Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash).
 
 ### Star request (only for 🟢, once)
 One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.
