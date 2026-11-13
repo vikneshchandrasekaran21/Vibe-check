@@ -64,7 +64,10 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Legal, privacy & licensing | ✅ checked | | | | | |
 | UX & launch | ✅ checked | | | | | |
 | Platform traps (<platforms>) | ✅ checked | | | | | |
-| <profile modules that apply: AI features / Kids & education / Health / Fintech / Policy pack / Enterprise> | | | | | | |
+| Lawsuit magnets & jurisdictions (<regions>) | ✅ checked | | | | | |
+| Supply chain & CI | ✅ checked | | | | | |
+| Maintainability & handover | ✅ checked | | | | | |
+| <profile modules that apply: AI features / AI agents & MCP / Kids & education / Health / Fintech / Policy pack / Enterprise / Mobile / Community / Cloud infra / Desktop & extensions / Internationalisation> | | | | | | |
 | <profile modules that don't apply> | ➖ not applicable | | | | | <reason, e.g. "no health data"> |
 
 ## Not checked

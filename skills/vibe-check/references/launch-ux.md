@@ -1,4 +1,4 @@
-# UX, launch basics, email, abuse and mobile apps
+# UX, launch basics, email and abuse
 
 Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch · 🟡 before scale · 🟢 recommended.
 
@@ -46,14 +46,6 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟡 **User-generated content:** report, block and moderation tools. Uploaded files can't be used to host malware or phishing on your domain.
 - [ ] 🟡 **Invites and sharing links** expire and can be revoked. Share links aren't guessable.
 
-## Mobile apps (iOS / Android / Expo / React Native / Flutter)
+## Mobile apps
 
-- [ ] 🔴 **No secrets in the app bundle.** Assume anything in the app can be extracted. Keys live on your server.
-- [ ] 🔴 **In-app account deletion** (required by Apple and Google).
-- [ ] 🔴 **Privacy disclosures:** App Store privacy labels and the Google Play Data safety form match actual data collection, including third-party SDKs.
-- [ ] 🔴 **Payments follow store rules:** digital goods use in-app purchase where required. Purchases are validated on the server.
-- [ ] 🟡 **Tokens in secure storage** (Keychain, Keystore, `expo-secure-store`), not AsyncStorage.
-- [ ] 🟡 **Deep links and universal links** verified so they can't be hijacked, with parameters validated.
-- [ ] 🟡 **Permissions** asked only when needed, with clear purpose strings.
-- [ ] 🟡 **Forced update path** for breaking API changes. The API stays backward compatible with older app versions.
-- [ ] 🟡 **Crash reporting** (Sentry, Crashlytics) and offline or poor-network handling.
+Mobile apps have their own module: see `mobile.md` (store requirements, permission strings, privacy manifests, secure token storage, deep links, crash reporting).

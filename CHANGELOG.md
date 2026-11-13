@@ -1,5 +1,37 @@
 # Changelog
 
+## v2.5.0 (2026-11-13)
+
+**Nine new modules.** The profile now also asks what kind of product it is (web, mobile, desktop, extension, API), whether users interact or trade, which languages it supports, whether AI agents take actions, and which cloud it runs on.
+
+**New core modules (run for every Full check):**
+- **⚖️ Lawsuit magnets & jurisdictions:**
+  - The checks are traps that can be detected in the code and that people actually get sued or sent demand letters over.
+  - Fonts and trackers: self-host fonts instead of loading them from Google, keep pixels, session replay, chat widgets and embeds off until consent, and mask chat and replay inputs.
+  - Accessibility: ADA on revenue paths, and no overlay widgets used instead of real fixes.
+  - Money and marketing: auto-renewal and click-to-cancel, marketing opt-in, no fake urgency or hidden fees, fair cookie banners with GPC.
+  - Regional basics: Impressum, Quebec French, biometrics, video data sent to pixels.
+  - A country table: EU, DACH, UK, US, Canada, India, Brazil, Australia, Asia and the app stores.
+- **🔗 Supply chain & CI:**
+  - Dependencies: lockfiles, typosquats, install scripts, dependency confusion.
+  - CI: GitHub Actions pinned to SHAs, safe triggers, token permissions, no secrets in logs.
+  - Browser: third-party scripts, SRI and tag managers.
+  - Repository: secret scanning, CODEOWNERS and SBOM.
+- **🧹 Maintainability & handover:**
+  - Code health: types, linting, dead and duplicated code.
+  - Docs: README and `.env.example`, architecture notes, AI rules files.
+  - Ownership: who owns every account, credentials in a vault, a due-diligence pack.
+
+**New profile modules (run when they apply):**
+- **📱 Mobile:** account deletion, permission strings, privacy labels and manifest, server-side purchase checks, App Tracking Transparency, SDK targets, secure storage, cleartext traffic, deep links, WebViews, crash reporting, forced updates, device testing.
+- **👥 Community & marketplace:** reporting, blocking, moderation and filtering, minors, appeals, realtime authorization, message limits, takedown and CSAM duties, DSA / Online Safety Act / IT Rules, seller verification, disputes, fake reviews.
+- **☁️ Cloud infrastructure:** public buckets, IAM wildcards and keys, root account, open ports, TLS, SSH, container security, secrets in images, IaC scanning, state files, cost controls.
+- **🖥️ Desktop & browser extensions:** Electron isolation and preload bridges, code signing and notarization, signed auto-update, Tauri allow-lists, extension permissions, Manifest V3, content script trust, store disclosures.
+- **🌍 Internationalisation:** missing translations, legal text per language, plurals, non-Latin scripts, RTL, text length, currency and number formats, phone and address formats, local payment methods.
+- **🤖 AI agents & MCP:** least-privilege tools, acting as the user, confirmation for risky actions, indirect prompt injection, exfiltration, sandboxing, loop and cost limits, audit log, kill switch, MCP authentication, honest tool descriptions.
+
+**Also changed:** the mobile checks moved out of the UX module into the new mobile module.
+
 ## v2.4.0 (2026-11-13)
 
 - **🔐 Encryption:** at rest, in transit and per field are now 🔴 for apps with children's, health, financial or ID data.

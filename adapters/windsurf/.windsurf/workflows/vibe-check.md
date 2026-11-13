@@ -32,7 +32,8 @@ Work out as much as you can from the code, then ask the user **only** what you c
 2. **Can children or students use it?** Anyone under 18, or school or college users.
 3. **Does it take money?** Payments, subscriptions, wallets, payouts.
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
-5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
+5. **Where are users?** India, EU/UK, US (which states), Canada (Quebec?), Germany/Austria/Switzerland, other. Is there a government or enterprise buyer?
+6. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
 
 Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
@@ -88,7 +89,10 @@ Write down:
 | DevOps and operations: CI/CD, environments, deploys and rollback, monitoring and alerts, cron monitoring, backups and restore, secrets and access, costs, domains and SSL, incidents | the **devops** section below |
 | Functional QA: buttons, links, forms, states, error and success messages, edge cases, sessions, journeys per role | the **functional-qa** section below |
 | Legal, privacy, licensing (fonts, images, code) | the **legal-privacy** section below |
-| UX, accessibility, launch basics, email, abuse, mobile | the **launch-ux** section below |
+| UX, accessibility, launch basics, email, abuse | the **launch-ux** section below |
+| Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | the **lawsuits** section below |
+| Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | the **supply-chain** section below |
+| Maintainability and handover: code health, docs, account ownership | the **maintainability** section below |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | the **platforms** section below |
 
 **Profile modules** (load only the ones that match Step 1):
@@ -101,6 +105,12 @@ Write down:
 | Payments, wallets, lending, investing, payouts | the **fintech** section below |
 | Full and Enterprise: policies the app must publish | the **policies** section below |
 | Enterprise level, B2B or government buyers | the **enterprise** section below |
+| A mobile app (iOS, Android, Expo, Capacitor, Flutter, React Native) | the **mobile** section below |
+| Users post, chat, follow, review, or buy and sell from each other | the **community** section below |
+| Runs on AWS, Google Cloud, Azure or similar, or uses Kubernetes, Terraform or Docker in production | the **cloud-infra** section below |
+| A desktop app (Electron, Tauri) or a browser extension | the **desktop-extensions** section below |
+| Several languages or countries, or non-English users | `references/i18n.md` |
+| An AI agent takes actions, or the project is an MCP server, plugin or tool provider | the **ai-agents** section below |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
@@ -543,7 +553,7 @@ Record each broken item with the page, the element (its text or selector), what 
 
 <a id="launch-ux"></a>
 
-## UX, launch basics, email, abuse and mobile apps
+## UX, launch basics, email and abuse
 
 Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch · 🟡 before scale · 🟢 recommended.
 
@@ -591,17 +601,9 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟡 **User-generated content:** report, block and moderation tools. Uploaded files can't be used to host malware or phishing on your domain.
 - [ ] 🟡 **Invites and sharing links** expire and can be revoked. Share links aren't guessable.
 
-### Mobile apps (iOS / Android / Expo / React Native / Flutter)
+### Mobile apps
 
-- [ ] 🔴 **No secrets in the app bundle.** Assume anything in the app can be extracted. Keys live on your server.
-- [ ] 🔴 **In-app account deletion** (required by Apple and Google).
-- [ ] 🔴 **Privacy disclosures:** App Store privacy labels and the Google Play Data safety form match actual data collection, including third-party SDKs.
-- [ ] 🔴 **Payments follow store rules:** digital goods use in-app purchase where required. Purchases are validated on the server.
-- [ ] 🟡 **Tokens in secure storage** (Keychain, Keystore, `expo-secure-store`), not AsyncStorage.
-- [ ] 🟡 **Deep links and universal links** verified so they can't be hijacked, with parameters validated.
-- [ ] 🟡 **Permissions** asked only when needed, with clear purpose strings.
-- [ ] 🟡 **Forced update path** for breaking API changes. The API stays backward compatible with older app versions.
-- [ ] 🟡 **Crash reporting** (Sentry, Crashlytics) and offline or poor-network handling.
+Mobile apps have their own module: see the **mobile** section (store requirements, permission strings, privacy manifests, secure token storage, deep links, crash reporting).
 
 <a id="platforms"></a>
 
@@ -682,7 +684,7 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 
 ### Expo / React Native / Flutter
 
-- See the mobile section of the **launch-ux** section. Plus: `EXPO_PUBLIC_*` variables are visible to anyone, so never put secrets there.
+- See the **mobile** section. Plus: `EXPO_PUBLIC_*` variables are visible to anyone, so never put secrets there.
 
 ### Docker / VPS / self-hosted
 
@@ -690,6 +692,117 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 - [ ] 🔴 Containers don't run as root where avoidable, and no secrets are baked into images (`docker history`).
 - [ ] 🟡 OS and images are updated regularly. Unattended security upgrades are on.
 - [ ] 🟡 Backups are stored off the server.
+
+<a id="lawsuits"></a>
+
+## Lawsuit magnets and jurisdictions
+
+Load this file for every Full and Enterprise check of an app with real users. It covers the **specific, easy-to-detect website and app basics that people actually get sued, fined or sent demand letters over**. Many are hunted by automated crawlers, so small apps are targets too.
+
+**Rules:** you are not a lawyer. Detect the trap in the code or on the live site, cite the evidence, and put the legal judgement on the "Needs a lawyer" list. What applies depends on **where the users are**, not where the business is. Use the regions from Step 1, and ask if they're unknown. Never tell the user they're "compliant".
+
+### Detect in the code (every app)
+
+- [ ] 🔴 **Third-party fonts loaded from outside servers:** Google Fonts or other font CDNs loaded from `fonts.googleapis.com`, `fonts.gstatic.com`, `use.typekit.net` or similar send every visitor's IP address to that company. In Germany and Austria this triggered a wave of automated demand letters (€100–€500 each) after a 2022 Munich court ruling. **Fix:** self-host the font files (`next/font` self-hosts Google Fonts by default; otherwise download them into `public/`). Grep CSS, HTML, `<link>` tags and `@import`.
+- [ ] 🔴 **Trackers fire before consent:** analytics, ad pixels (Meta, TikTok, Google Ads, LinkedIn), session replay (Hotjar, Clarity, FullStory, LogRocket), heatmaps and live chat or chatbot widgets must not load until the user agrees (where consent is required). In California, thousands of wiretap (CIPA) lawsuits target exactly these tools, with statutory damages claimed per visitor. Check script tags, tag managers and SDK init calls for consent gating.
+- [ ] 🔴 **Third-party embeds load before consent:** YouTube, Vimeo, Google Maps, social media embeds, reCAPTCHA and similar also send visitor data. Use click-to-load placeholders or privacy-enhanced modes (e.g. `youtube-nocookie.com`), and disclose them.
+- [ ] 🔴 **Chat and session replay capture sensitive input:** chat widgets, session replay and form analytics must not record passwords, payment, health or children's data. Inputs are masked, and the tool is disclosed in the privacy policy.
+- [ ] 🔴 **Accessibility basics on revenue paths:** sign-up, login, product pages, cart, checkout and booking work with keyboard only and a screen reader (labels, alt text, focus, contrast). Thousands of US ADA website lawsuits are filed every year, most against small online businesses. **Accessibility overlay widgets don't prevent lawsuits** (many suits target sites using them). Flag any overlay used *instead of* real fixes.
+- [ ] 🔴 **Subscriptions and auto-renewal:** before charging, clearly show price, billing frequency, renewal terms and how to cancel, next to the "subscribe" button. Get **separate, affirmative consent** (no pre-ticked box), keep proof of consent, send renewal reminders, and offer **online cancellation that's as easy as sign-up** (a visible "cancel" link, with no forced phone calls or endless retention screens). This is required in California for its residents, and similar rules exist elsewhere.
+- [ ] 🔴 **Marketing email and SMS have proof of opt-in:** consent is separate from the terms, unticked by default, recorded (who, when, how, what wording), and every message has a working one-click unsubscribe. Canada (CASL) requires express opt-in for most commercial messages, with large fines. US texts are covered by TCPA rules.
+- [ ] 🔴 **No fake urgency, fake reviews or hidden fees:** countdown timers that reset, "only 2 left" that isn't true, made-up testimonials, drip pricing (fees added at checkout) and pre-ticked add-ons attract regulator action in the US, EU, UK, India and elsewhere.
+- [ ] 🟡 **Cookie banner is fair:** "Reject all" is as easy as "Accept all" (same layer, same prominence) for EU and UK users, choices are remembered, and consent can be withdrawn later. Global Privacy Control (GPC) signals are honoured for California users.
+- [ ] 🟡 **Legal notice / Impressum** if the app targets users in Germany, Austria or Switzerland, or makes money there (even through ads or affiliate links): the legal name, address, contact email and phone, company register and VAT ID where applicable, reachable from every page in **two clicks or fewer** (usually the footer). Missing or hidden notices lead to warning letters and fines.
+- [ ] 🟡 **French for Quebec users:** if the app sells to or serves people in Quebec, the website, consent banner, privacy notice and commercial content must be available in French (Bill 96, Law 25).
+- [ ] 🟡 **Biometric data** (face scans, face filters, voice prints, fingerprints): explicit written consent, a published retention and destruction policy, and no selling. Illinois (BIPA) allows private lawsuits per person, and other states and the EU treat it as sensitive data.
+- [ ] 🟡 **Video viewing data shared with ad pixels:** if the app shows videos and sends what a user watched to Meta or other ad platforms, US Video Privacy Protection Act lawsuits are a known risk. Don't send video titles or URLs to pixels without consent.
+- [ ] 🟡 **Children:** apps directed at children, or that know they have child users, follow COPPA (US, under 13), GDPR-K, the UK Children's Code and India DPDP (under 18). See the **kids-education** section.
+
+### Country and region table
+
+Use the regions from Step 1. Each row lists the traps to check for users in that place. Mark each row that applies in the report, and send judgement calls to the lawyer list.
+
+| Users in | Main laws to name | Traps to check |
+|---|---|---|
+| **European Union** | GDPR, ePrivacy (cookies), Digital Services Act (platforms), European Accessibility Act (many consumer services since June 2025), consumer rights rules | Self-hosted fonts and consent before trackers; fair cookie banner; privacy policy with legal basis and transfers outside the EU; 14-day withdrawal right and clear pricing for online sales; accessibility for e-commerce and banking-type services; notice-and-action and transparency duties for platforms with user content |
+| **Germany, Austria, Switzerland** | GDPR, DDG §5 (Impressum), UWG (competition warning letters), Swiss FADP | Impressum within two clicks; Google Fonts and other IP leaks; correct cookie consent; complete and accurate privacy policy (competitors can send warning letters) |
+| **United Kingdom** | UK GDPR, PECR (cookies, marketing), Online Safety Act (user-to-user and search services), Children's Code | Cookie consent with fair reject; marketing opt-in; risk assessments and reporting tools if users can share content or talk to each other; age-appropriate design for child users |
+| **United States: California** | CCPA/CPRA, CIPA (wiretap), Automatic Renewal Law, CalOPPA | "Do Not Sell or Share" link and GPC support where data is shared for ads; no pixels, replay or chat before consent; auto-renewal consent, reminders and click-to-cancel; privacy policy with a California section |
+| **United States: all** | ADA (accessibility), COPPA, TCPA (texts and calls), CAN-SPAM, ROSCA (online subscriptions), FTC Act (deceptive practices), state privacy laws (Virginia, Colorado, Texas and others), Illinois BIPA, VPPA | Accessibility on revenue paths; children under 13; SMS consent; email unsubscribe and address; subscription disclosures; honest marketing and reviews; biometric consent; video data in pixels |
+| **Canada** | PIPEDA, Quebec Law 25, Quebec Bill 96 (French), CASL, Ontario AODA (accessibility) | Opt-in before tracking for Quebec users; French versions for Quebec; express consent for marketing messages; privacy officer contact; accessibility for larger Ontario organisations |
+| **India** | DPDP Act and Rules, IT Act and IT Rules (intermediaries), Consumer Protection (E-Commerce) Rules, CERT-In directions, RBI rules for payments | Notice and consent in clear language; verifiable parental consent for under-18s; grievance officer for platforms; seller and price disclosures for e-commerce; incident reporting within 6 hours to CERT-In; card and recurring-payment rules |
+| **Brazil** | LGPD, Consumer Defense Code | Legal basis and data protection officer contact; consumer rights for online sales, including a 7-day withdrawal |
+| **Australia** | Privacy Act, Spam Act, Australian Consumer Law | Privacy policy, consented marketing with unsubscribe, honest pricing and no misleading claims |
+| **Japan, South Korea, Singapore and others** | APPI (Japan), PIPA (Korea), PDPA (Singapore) | Purpose notice, consent for sharing, cross-border transfer notices |
+| **Global (app stores)** | Apple App Store and Google Play policies | Account deletion in the app, privacy labels that match the app, in-app purchase rules (see the **mobile** section) |
+
+### Report it this way
+- Put the code-detectable traps (fonts, trackers before consent, embeds, overlays, missing cancel link, missing Impressum) under 🔴 or 🟡 like any other finding, each with a fix prompt. Most are **safe to auto-fix** (self-hosting fonts, gating scripts behind consent), except changes users will see.
+- Put the region rows that apply under **Needs a lawyer**, phrased as questions: *"We have users in Quebec: do our privacy notice and checkout need French versions?"*
+
+<a id="supply-chain"></a>
+
+## Supply chain and CI security
+
+Load this file for every Full and Enterprise check. Attackers increasingly get in through **dependencies, build pipelines and third-party scripts** rather than the app's own code. Check `package.json` and lockfiles, `.github/workflows/`, other CI configs, and every `<script src>` loaded from another domain.
+
+### Dependencies
+- [ ] 🔴 **Lockfile committed and used:** `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `poetry.lock` or `requirements.txt` with pinned versions. CI installs with `npm ci` / `pnpm install --frozen-lockfile` (not a plain `npm install` that can drift).
+- [ ] 🔴 **No suspicious or unknown packages:** every dependency is real, widely used and maintained. Check for typosquats (e.g. `reqeusts`, `lodahs`), very new packages with few downloads, and packages added by AI tools that don't match their purpose.
+- [ ] 🟡 **Install scripts reviewed:** dependencies with `preinstall`/`postinstall` scripts are known and needed. Consider `npm config set ignore-scripts true` for CI where possible, or an allow-list.
+- [ ] 🟡 **No dependencies from Git URLs, tarballs or personal forks** unless intentional and pinned to a commit.
+- [ ] 🟡 **Unused dependencies removed** (`npx depcheck` or similar): fewer packages, fewer risks.
+- [ ] 🟡 **Private package scopes protected:** internal package names are scoped (`@company/…`) and registries configured, so a public package with the same name can't be installed instead (dependency confusion).
+
+### CI/CD pipelines (GitHub Actions and similar)
+- [ ] 🔴 **Third-party actions pinned to a full commit SHA** (not `@main` or `@v1`), at least for actions that touch secrets or deploy.
+- [ ] 🔴 **No dangerous triggers:** `pull_request_target` or `workflow_run` workflows never check out and run code from a fork with access to secrets.
+- [ ] 🔴 **Least-privilege tokens:** `permissions:` set per workflow (default `contents: read`). Deploy tokens are scoped to one project, and short-lived OIDC credentials are used for cloud deploys where possible.
+- [ ] 🔴 **Secrets never printed or exposed:** no `echo $SECRET`, no secrets in build logs, artifacts, caches or client bundles. Secrets aren't available to pull requests from forks.
+- [ ] 🟡 **No untrusted input in shell steps:** PR titles, branch names and issue text aren't interpolated directly into `run:` commands (`${{ github.event.pull_request.title }}`). Pass them through environment variables instead.
+- [ ] 🟡 **Production deploys need the main branch and passing checks.** Environment protection rules or required reviewers for production.
+- [ ] 🟢 **Build provenance / signed artifacts** for packages or containers you publish.
+
+### Third-party scripts in the browser
+- [ ] 🔴 **Every external script is known and needed:** list each `<script src>` from another domain (analytics, chat, A/B testing, tag managers, widgets). Each one can read the page, including forms and tokens.
+- [ ] 🟡 **Subresource Integrity (SRI)** (`integrity="sha384-…"` plus `crossorigin`) on scripts and styles loaded from public CDNs with fixed versions, or self-host them.
+- [ ] 🟡 **Tag managers are locked down:** few people can publish tags, and changes are reviewed. A tag manager can inject any script into production.
+- [ ] 🟡 **Script sources restricted by CSP:** the Content Security Policy limits which domains scripts can load from (see the **security** section).
+- [ ] 🟡 **Third-party scripts don't load on sensitive pages** (login, payment, password reset, admin), or are reviewed for those pages.
+
+### Repository and accounts
+- [ ] 🔴 **Secret scanning and push protection are on** for the repository.
+- [ ] 🟡 **Branch protection and required reviews** on the default branch, and `CODEOWNERS` for sensitive paths (auth, payments, infra, workflows).
+- [ ] 🟡 **Signed commits or verified committers** for maintainers, and 2FA required for the organisation.
+- [ ] 🟢 **An SBOM can be generated** (e.g. `npx @cyclonedx/cyclonedx-npm`) for customers or audits.
+
+<a id="maintainability"></a>
+
+## Maintainability and handover
+
+Load this file for every Full and Enterprise check. AI-built apps often work but can't be maintained, handed to a developer, sold or shown to investors without a rewrite. These checks make sure someone other than the original builder (or their AI) can safely run and change the app. Most items are 🟡 or 🟢: they rarely block a launch, but they decide how expensive every future change is.
+
+### Code health
+- [ ] 🟡 **Type safety:** TypeScript `strict` mode (or the language's equivalent), with few `any`, `@ts-ignore` or `eslint-disable` escapes. Each escape has a reason.
+- [ ] 🟡 **Linting and formatting run automatically** (ESLint/Biome/Ruff and Prettier, or similar), in CI and on commit.
+- [ ] 🟡 **No dead or duplicated code:** unused files, components, routes and exports removed. No copy-pasted versions of the same logic from different AI sessions (see blind spot 16).
+- [ ] 🟡 **No giant files or functions:** files over ~500 lines or functions over ~80 lines doing many things are listed for future splitting (list them; don't refactor during the audit).
+- [ ] 🟡 **Configuration isn't hard-coded:** URLs, prices, limits, feature switches and email addresses live in config or env vars, not scattered through the code.
+- [ ] 🟢 **Consistent structure and naming** that a new developer can guess (where routes, components, server code and tests live).
+
+### Documentation
+- [ ] 🔴 **README explains how to run it:** install, required env vars (with an `.env.example` listing every variable and what it's for, no real values), how to run locally, run tests, and deploy.
+- [ ] 🟡 **Architecture notes:** a short page or diagram showing the main parts (frontend, API, database, storage, third-party services) and how data flows.
+- [ ] 🟡 **Project rules for AI tools** (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`): stack, conventions, "never do" rules, and how to test, so future AI sessions don't drift.
+- [ ] 🟡 **Database schema is documented** through migrations and a short description of the main tables and relationships.
+- [ ] 🟢 **Changelog or release notes** for user-visible changes.
+
+### Ownership and handover
+- [ ] 🔴 **The business owns every account:** domain, hosting, database, code repository, app store accounts, payment provider, email provider and AI providers are owned by the company (or the client, for agency work), not a freelancer's or employee's personal login. → ask the user.
+- [ ] 🔴 **Credentials are in a password manager or vault** that more than one trusted person can access. No credentials only in someone's head or chat history.
+- [ ] 🟡 **Licences and third-party terms are listed** for code, assets, fonts, APIs and AI models (see the **legal-privacy** section), so a buyer or investor can check them.
+- [ ] 🟡 **Known issues and tech debt are written down,** including shortcuts taken during the build and the latest vibe-check report.
+- [ ] 🟢 **Due-diligence pack ready:** architecture notes, security summary, the latest vibe-check report, dependency and licence list, data map, and the policies in the **policies** section.
 
 <a id="ai-features"></a>
 
@@ -728,6 +841,40 @@ Use this file only if the app calls an LLM or AI API (chatbots, generation, agen
 - [ ] 🟡 **Logs of prompts and outputs** are access-controlled, have a retention limit, and are covered by deletion requests.
 - [ ] 🟢 **Evals.** A small set of test prompts (including jailbreak and injection attempts) run before changing models or prompts.
 - [ ] 🟢 **Fallback** when the provider is down or rate-limits you, so users see a clear message instead of a hang.
+
+<a id="ai-agents"></a>
+
+## AI agents, tools and MCP servers
+
+Load this file when the app **lets an AI take actions**: an agent that calls tools or APIs, browses, writes to a database, sends messages or spends money, or when the project **is or includes an MCP server, plugin or tool provider** for AI assistants. This is on top of the **ai-features** section, which covers basic LLM use (keys, cost, prompt injection, output handling).
+
+### Tools and permissions
+- [ ] 🔴 **Least-privilege tools:** each tool does one specific thing with tightly scoped inputs. No generic "run SQL", "run shell command", "fetch any URL" or "call any API" tools exposed to the model unless sandboxed.
+- [ ] 🔴 **Tools act as the end user, not as admin:** every tool call is authorized with the current user's permissions and tenant. The service key or admin token is never what the model uses.
+- [ ] 🔴 **Human confirmation for risky actions:** sending email or messages, payments or refunds, deleting data, changing permissions, publishing content and anything irreversible needs explicit user approval in the UI, showing exactly what will happen.
+- [ ] 🔴 **Indirect prompt injection is assumed:** content the agent reads (web pages, emails, documents, tickets, database rows, tool results) can contain instructions. The agent's permissions must be safe even if it follows them. Untrusted content is never allowed to choose recipients, URLs or amounts for risky actions without confirmation.
+- [ ] 🔴 **No data exfiltration paths:** the agent can't send private data to arbitrary URLs (through fetch tools, rendered images or links, webhooks or email). Outbound destinations are allow-listed.
+- [ ] 🟡 **Tool inputs are validated with a schema** on the server, and tool outputs are size-limited and treated as untrusted.
+- [ ] 🟡 **Sandboxing for code execution or browsing:** isolated containers or VMs with no access to production secrets or internal networks, plus time, memory and network limits.
+
+### Limits and cost
+- [ ] 🔴 **Loop and cost limits:** maximum steps, tool calls, tokens, time and spend per task and per user, with the agent stopping cleanly when a limit is hit.
+- [ ] 🟡 **Rate limits per user** on agent runs and expensive tools.
+- [ ] 🟡 **Idempotent actions:** retries or repeated agent steps can't double-send, double-charge or create duplicates (idempotency keys on actions).
+
+### Visibility and control
+- [ ] 🔴 **Audit log of agent actions:** which user, which tool, inputs (secrets masked), result and time, viewable by the user and admins.
+- [ ] 🟡 **Kill switch:** agents or specific tools can be disabled instantly without a deploy.
+- [ ] 🟡 **Users can see and undo** what the agent did where possible (drafts before sending, version history).
+- [ ] 🟡 **Evaluation set** of normal tasks plus injection and jailbreak attempts, run before changing models, prompts or tools.
+
+### MCP servers, plugins and tool providers
+- [ ] 🔴 **Authentication on remote MCP endpoints:** OAuth (with PKCE) or scoped API keys. No unauthenticated remote MCP servers that touch user data. Tokens are scoped per user and revocable.
+- [ ] 🔴 **Local MCP servers run with minimal access:** only the folders, commands and network access they need. No shell or filesystem access beyond the stated purpose.
+- [ ] 🔴 **Tool descriptions are honest and minimal:** descriptions don't contain instructions aimed at the AI ("always call this tool first", "ignore other tools"), and don't change unexpectedly after users approve them.
+- [ ] 🟡 **Destructive tools are clearly marked** (read-only vs write) so clients can ask for confirmation, and they support a dry-run where possible.
+- [ ] 🟡 **Data returned to the AI is minimal:** no secrets, internal IDs or other users' data in tool results. Large results are paginated.
+- [ ] 🟡 **Published packages are signed and pinned:** users install a known version, and updates are reviewed (a malicious update to a tool server reaches every user).
 
 <a id="kids-education"></a>
 
@@ -890,6 +1037,173 @@ Load this file at the Enterprise level: when selling to companies or government,
 - [ ] 🟡 **Accessibility conformance report** (VPAT or WCAG report). Government sites may need GIGW (India), Section 508 (US) or EN 301 549 (EU).
 - [ ] 🟡 **Insurance** (cyber, professional liability) if contracts require it. → ask the user.
 
+<a id="mobile"></a>
+
+## Mobile apps (iOS and Android)
+
+Load this file when the project contains a mobile app: native iOS or Android, React Native, Expo, Capacitor, Ionic, Flutter or a store-published PWA wrapper. App store rejections and mobile-only security problems are among the most common launch blockers. Check `Info.plist`, `PrivacyInfo.xcprivacy`, `AndroidManifest.xml`, `app.json`/`app.config.*`, `capacitor.config.*`, `build.gradle`, and the native project folders.
+
+### App store requirements
+- [ ] 🔴 **Account deletion inside the app** if the app lets people create accounts (Apple and Google both require it). The flow deletes server data too, not just the local session.
+- [ ] 🔴 **Permission purpose strings for every permission the app can trigger:** `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSMicrophoneUsageDescription`, `NSLocationWhenInUseUsageDescription` and so on, in clear words. A missing string makes iOS **crash** the app when that feature is used (for example "Take Photo" in a file picker on iPad).
+- [ ] 🔴 **Privacy labels match reality:** App Store privacy "nutrition labels" and the Google Play Data safety form list every data type collected, including by SDKs (analytics, crash reporting, ads, AI, auth).
+- [ ] 🔴 **Apple privacy manifest** (`PrivacyInfo.xcprivacy`) for the app, declaring required-reason APIs and tracking domains, and third-party SDKs that ship their own manifests are up to date.
+- [ ] 🔴 **Digital goods use in-app purchase** where the store rules require it, and receipts or purchase tokens are **verified on the server**, never trusted from the device.
+- [ ] 🔴 **Tracking permission:** if the app tracks users across other companies' apps or websites (ad SDKs, cross-app attribution), it asks with App Tracking Transparency on iOS before tracking.
+- [ ] 🟡 **Sign in with Apple** is offered on iOS where Apple's rules require it (when other third-party social logins are offered).
+- [ ] 🟡 **Target and minimum SDK versions** meet Google Play's current target API requirement and Apple's current SDK requirement.
+- [ ] 🟡 **Store listing is honest:** screenshots, description, age rating and content questionnaire match the app (e.g. user chat or AI features change the rating). A support URL and privacy policy URL work.
+- [ ] 🟡 **Review notes and a demo account** are prepared for app review if features need sign-in.
+
+### Mobile security
+- [ ] 🔴 **No secrets in the app bundle:** API secret keys, service-role keys and private tokens aren't in the JS bundle, `.env` files compiled into the app, `Info.plist`, `strings.xml` or `google-services.json` beyond the public config. Anything shipped in an app can be extracted.
+- [ ] 🔴 **Tokens stored securely:** session and refresh tokens live in Keychain/Keystore (e.g. `expo-secure-store`, `@capacitor/preferences` with secure storage, `flutter_secure_storage`), not AsyncStorage, `localStorage` or plain files.
+- [ ] 🔴 **HTTPS only:** no `NSAllowsArbitraryLoads` / `usesCleartextTraffic="true"` in production builds, except narrowly for documented local development.
+- [ ] 🟡 **Deep links and universal/app links are verified** (`apple-app-site-association`, `assetlinks.json`), and parameters from links are validated before use (no account actions straight from a link).
+- [ ] 🟡 **WebViews are locked down:** no JavaScript bridges exposed to remote content, only trusted domains loaded, and file access disabled unless needed.
+- [ ] 🟡 **Debug features are off in release builds:** no dev menus, debug logs with personal data, test endpoints or `debuggable=true`.
+- [ ] 🟢 **Screenshots and app switcher** hide sensitive screens (payment, health, private messages) where appropriate.
+
+### Reliability and quality
+- [ ] 🔴 **Crash and error reporting** (Sentry, Crashlytics or similar) in release builds, with personal data scrubbed.
+- [ ] 🟡 **Forced update path:** the app can tell users to update when an old version is no longer supported, and the API stays backwards-compatible with versions still in use.
+- [ ] 🟡 **Offline and poor network:** the app shows clear states, doesn't lose drafts, and retries safely (no double payments).
+- [ ] 🟡 **Permissions are requested in context** (when the feature is first used), with a friendly explanation and a way forward if refused.
+- [ ] 🟡 **Tested on real devices:** small and large phones, tablets (iPad split view and rotation), the oldest supported OS version, and dark mode.
+- [ ] 🟢 **App size and startup time** are reasonable, and large assets load on demand.
+- [ ] 🟢 **Push notifications** ask permission in context, can be turned off in settings, and don't show sensitive content on the lock screen.
+
+<a id="community"></a>
+
+## Community, chat and marketplaces
+
+Load this file when users can post content others see, message each other, join groups, follow each other, review things, or buy and sell from each other. These apps carry abuse, safety and legal duties that ordinary apps don't. Flag legal judgement calls for a lawyer.
+
+### Safety tools
+- [ ] 🔴 **Report button** on every piece of user content, profile and message, with a reason and an acknowledgement to the reporter.
+- [ ] 🔴 **Block and mute:** users can block others, and blocking stops messages, mentions, follows and seeing each other's content.
+- [ ] 🔴 **Moderation queue:** staff can review reports, remove content, warn, suspend and ban, with an audit log of every action and the reason.
+- [ ] 🔴 **Automatic filtering** of obvious abuse: slurs, spam links, scams, and sexual or violent content in text and images (e.g. a moderation API or model), with stricter defaults where minors are present.
+- [ ] 🔴 **Minors and adults:** if under-18s can use the app, check who can message them, whether adults can find or contact minors, and whether there's age-appropriate default privacy (see the **kids-education** section).
+- [ ] 🟡 **Appeals:** users told why content was removed or an account suspended, with a way to appeal.
+- [ ] 🟡 **New-account limits:** rate limits on posts, messages, invites and links for new or unverified accounts, to slow spam and raids.
+- [ ] 🟡 **Images and files:** uploads are scanned or moderated before others see them, and EXIF/GPS metadata is stripped (see the **security** section).
+
+### Chat and real-time
+- [ ] 🔴 **WebSocket and real-time channels check authorization** on connect **and** on every subscribe or message: users can only join rooms, channels and conversations they belong to (Supabase Realtime, Firebase, Pusher, Socket.IO, Ably).
+- [ ] 🔴 **Message rate limits and size limits** per user and per room.
+- [ ] 🟡 **Message deletion and retention:** users can delete their messages, deleted messages are really removed, and the retention period is stated in the privacy policy.
+- [ ] 🟡 **Links in messages** are shown safely (no auto-loading of untrusted previews from the server without SSRF protection).
+
+### Legal duties (flag for a lawyer)
+- [ ] 🔴 **Notice and takedown:** a way for anyone (not just users) to report illegal content or copyright infringement, with a contact address and response timeline. → lawyer.
+- [ ] 🔴 **Child sexual abuse material:** a process to remove and report it to the authorities as the law requires (e.g. NCMEC in the US). Never just delete silently. → lawyer.
+- [ ] 🟡 **Platform rules by region:** EU Digital Services Act (notice-and-action, statements of reasons, transparency), UK Online Safety Act (risk assessments, reporting, child safety), India IT Rules (grievance officer, takedown timelines). → lawyer.
+- [ ] 🟡 **Community guidelines and terms** state what's not allowed and what happens, and they're linked at sign-up and in the report flow.
+
+### Marketplaces and paid creators
+- [ ] 🔴 **Seller or creator verification** before payouts (identity and bank details), with payout holds for new accounts and manual review of unusual amounts (see the **fintech** section).
+- [ ] 🔴 **Money flows checked by a lawyer:** if users pay other users, or credits can be turned into money, check whether the business needs a payments licence or a regulated partner. → lawyer.
+- [ ] 🟡 **Disputes and refunds** between buyers and sellers have a clear process and timeline.
+- [ ] 🟡 **Fake reviews and ratings:** only real buyers or users can review, and incentivised reviews are labelled.
+- [ ] 🟡 **Prohibited items and services** are listed and enforced (weapons, drugs, counterfeit goods, adult services where not allowed).
+- [ ] 🟢 **Seller information** shown to buyers where e-commerce rules require it (e.g. EU, India).
+
+<a id="cloud-infra"></a>
+
+## Cloud infrastructure (AWS, Google Cloud, Azure, Kubernetes)
+
+Load this file when the app runs on AWS, Google Cloud, Azure, DigitalOcean, Hetzner or similar, or uses Kubernetes, Terraform, Pulumi, CloudFormation or Docker Compose in production. Platform apps (Vercel, Netlify, Supabase, Firebase, Cloudflare) are covered in the **platforms** section. Read the IaC files and deployment configs. If the user has the cloud CLI logged in, run **read-only** commands only (`aws s3api get-bucket-policy-status`, `gcloud … describe`, `az … show`), never anything that changes resources.
+
+### Storage
+- [ ] 🔴 **No public buckets with private data:** S3 Block Public Access on (account and bucket), GCS uniform access without `allUsers`/`allAuthenticatedUsers`, Azure containers not set to public access. Public assets live in a separate, clearly public bucket.
+- [ ] 🔴 **Cloud storage and disks encrypted** (buckets, databases, disks and snapshots) (default encryption on, customer-managed keys for sensitive data if required).
+- [ ] 🟡 **Versioning and lifecycle rules** on important buckets, so deleted or overwritten files can be recovered and old data expires on schedule.
+- [ ] 🟡 **Signed URLs** with short expiry for private files, never long-lived public links.
+
+### Identity and access (IAM)
+- [ ] 🔴 **No wildcard permissions** for app roles (`"Action": "*"`, `"Resource": "*"`, Owner/Editor roles for service accounts).
+- [ ] 🔴 **No long-lived access keys in code or CI:** use instance roles, workload identity or OIDC for CI. Old keys are rotated or deleted.
+- [ ] 🔴 **Root/owner account locked down:** MFA on, no access keys, used only for break-glass. Billing alerts set.
+- [ ] 🟡 **Separate accounts or projects** for production and non-production.
+- [ ] 🟡 **Cloud audit logs on** (CloudTrail, Cloud Audit Logs, Azure Activity Log) and kept for at least 90 days.
+
+### Network
+- [ ] 🔴 **Databases, caches and admin ports aren't open to the internet:** no `0.0.0.0/0` on 5432, 3306, 27017, 6379, 9200, 22 or RDP. Databases are in private subnets.
+- [ ] 🔴 **TLS on every public endpoint** (load balancers, API gateways, CDNs), with HTTP redirected and old TLS versions disabled.
+- [ ] 🟡 **SSH access** by key only (or through a bastion or session manager), no password login, no root login.
+- [ ] 🟡 **WAF or rate limiting** at the edge for public APIs and login.
+
+### Kubernetes and containers
+- [ ] 🔴 **Secrets aren't in images or plain manifests:** use Kubernetes Secrets with encryption at rest, or an external secret manager. `docker history` shows no secrets.
+- [ ] 🔴 **Containers don't run as root or privileged** unless required (`runAsNonRoot`, no `privileged: true`, read-only root filesystem where possible).
+- [ ] 🟡 **Resource requests and limits** set, so one service can't starve others.
+- [ ] 🟡 **Images from trusted registries,** pinned by digest or version (not `latest`), and scanned for vulnerabilities.
+- [ ] 🟡 **The Kubernetes API and dashboards aren't public,** and RBAC follows least privilege.
+
+### Infrastructure as Code
+- [ ] 🟡 **IaC scanned** for misconfigurations (e.g. `tfsec`, `checkov`, `trivy config`), and state files (Terraform state) stored privately and encrypted, since they contain secrets.
+- [ ] 🟡 **Changes go through review and CI,** not manual console edits (drift is detected).
+- [ ] 🟡 **Backups and snapshots are automatic** for databases and volumes, and a restore has been tested (see the **devops** section).
+- [ ] 🟢 **Cost controls:** budgets and alerts, auto-scaling limits, and no forgotten resources (unused instances, load balancers, IPs, snapshots).
+
+<a id="desktop-extensions"></a>
+
+## Desktop apps and browser extensions
+
+Load this file when the project is an Electron, Tauri or other desktop app, or a browser extension (Chrome, Edge, Firefox, Safari). These run with more power on the user's computer than a website does, so mistakes are more dangerous.
+
+### Electron and Tauri
+- [ ] 🔴 **Electron isolation on:** `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` for every window. Renderer code can't call Node APIs directly.
+- [ ] 🔴 **Safe preload bridge:** `contextBridge` exposes only specific, validated functions, never `ipcRenderer` itself or generic "run this command" or "read this file" functions.
+- [ ] 🔴 **No remote content with privileges:** the app doesn't load remote websites in privileged windows. External links open in the system browser (`shell.openExternal` with an allow-list of protocols), and navigation and new windows are restricted.
+- [ ] 🔴 **Code signing and notarization:** builds are signed (Apple Developer ID + notarization on macOS, Authenticode on Windows), so users aren't trained to bypass security warnings.
+- [ ] 🔴 **Secure auto-update:** updates come over HTTPS from a trusted source and are signature-checked (electron-updater with signing, Tauri updater with public key).
+- [ ] 🟡 **Tauri allow-lists:** only the APIs, file paths and shell commands the app needs are enabled in the Tauri config or capabilities.
+- [ ] 🟡 **Content Security Policy** set for app windows, and no `eval` or remote scripts.
+- [ ] 🟡 **Local data protection:** tokens in the OS keychain (`keytar`, `safeStorage`, Tauri stronghold or keyring), not plain files. Local databases with sensitive data are encrypted.
+- [ ] 🟡 **Electron is kept up to date** (old Chromium versions carry known vulnerabilities).
+- [ ] 🟢 **Crash reporting and a way to collect logs** with the user's consent.
+
+### Browser extensions
+- [ ] 🔴 **Minimal permissions:** only the `permissions` and `host_permissions` the extension really needs. No `<all_urls>` unless essential (prefer `activeTab` and optional permissions requested in context).
+- [ ] 🔴 **Manifest V3** for Chrome and Edge, with no remotely hosted code (all scripts packaged), as store policies require.
+- [ ] 🔴 **Content scripts don't trust the page:** messages from web pages (`window.postMessage`) are validated, and page data is never passed to `eval`, `innerHTML` or privileged APIs without checking the sender and content.
+- [ ] 🔴 **Data handling matches the store disclosure:** the Chrome Web Store privacy practices form, Firefox data collection disclosure and the privacy policy describe exactly what's collected (browsing history, page content), and limited-use rules are followed.
+- [ ] 🟡 **Secrets aren't in the extension package:** API keys used by the extension are public-safe or go through your server.
+- [ ] 🟡 **External messaging restricted:** `externally_connectable` lists only your own domains, if used.
+- [ ] 🟡 **Store listing is accurate:** single, clear purpose, honest screenshots and description, a support contact.
+- [ ] 🟢 **Update and rollback plan:** store review can delay fixes, so risky features are behind server-side flags.
+
+<a id="i18n"></a>
+
+## Internationalisation and localisation
+
+Load this file when the app supports more than one language or region, sells to several countries, or targets users whose language isn't English. Translation gaps and wrong formats look broken to users, and in some places (e.g. Quebec) missing language versions are a legal problem (see the **lawsuits** section).
+
+### Language
+- [ ] 🔴 **No missing translations:** every visible string in each supported language, including errors, emails, notifications, buttons, empty states, legal pages and app store listings. No raw keys like `checkout.button.pay` or mixed languages on one screen.
+- [ ] 🔴 **Legal and consent text in each language users get,** and the translations say the same thing as the original (privacy policy, terms, consent banner, parental consent).
+- [ ] 🟡 **Strings aren't hard-coded** in components. They come from translation files, so new languages can be added.
+- [ ] 🟡 **Plurals and grammar handled properly** (ICU message format or the library's plural rules), not `count + " items"`.
+- [ ] 🟡 **Language selection:** detected sensibly (browser or device language), changeable by the user, remembered, and the `lang` attribute is set on pages for screen readers and SEO.
+- [ ] 🟡 **Machine-translated text reviewed** by a fluent speaker for key flows (sign-up, payment, legal).
+- [ ] 🟢 **SEO for languages:** separate URLs per language and `hreflang` tags (see the **launch-ux** section).
+
+### Layout and text
+- [ ] 🔴 **Scripts render correctly:** non-Latin scripts (Hindi, Tamil, Arabic, Chinese and others) display with suitable fonts, with no boxes (tofu) or broken characters in UI, PDFs, emails and exports.
+- [ ] 🟡 **Right-to-left languages** (Arabic, Hebrew, Urdu) mirror the layout correctly if supported (`dir="rtl"`, logical CSS properties).
+- [ ] 🟡 **Longer text fits:** layouts handle translations that are 30–50% longer than English (German, Tamil) without overflow or cut-off buttons.
+- [ ] 🟡 **Search, sorting and validation** work for non-English text (accents, case, local sorting order, names that don't fit "first name / last name").
+
+### Formats and regional rules
+- [ ] 🔴 **Prices and currencies are right:** the correct currency and symbol, local number format (e.g. 1,00,000 in India and 100.000,00 in Germany), and taxes shown the way each region expects (prices with or without VAT/GST).
+- [ ] 🟡 **Dates, times and time zones** are shown in the user's format and time zone (see the **functional-qa** section).
+- [ ] 🟡 **Phone numbers and addresses** accept international formats (E.164 for phones), with no US-only fields like "State" or "ZIP" made mandatory for everyone.
+- [ ] 🟡 **Units** (metric or imperial, sizes) suit the region if the app shows them.
+- [ ] 🟡 **Payment methods** fit each region (UPI in India, iDEAL in the Netherlands, local cards), if the app sells there.
+- [ ] 🟢 **Regional content and features** that are restricted or different per country (age limits, banned products, data residency) are handled.
+
 <a id="report-template"></a>
 
 ## Report template
@@ -958,7 +1272,10 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Legal, privacy & licensing | ✅ checked | | | | | |
 | UX & launch | ✅ checked | | | | | |
 | Platform traps (<platforms>) | ✅ checked | | | | | |
-| <profile modules that apply: AI features / Kids & education / Health / Fintech / Policy pack / Enterprise> | | | | | | |
+| Lawsuit magnets & jurisdictions (<regions>) | ✅ checked | | | | | |
+| Supply chain & CI | ✅ checked | | | | | |
+| Maintainability & handover | ✅ checked | | | | | |
+| <profile modules that apply: AI features / AI agents & MCP / Kids & education / Health / Fintech / Policy pack / Enterprise / Mobile / Community / Cloud infra / Desktop & extensions / Internationalisation> | | | | | | |
 | <profile modules that don't apply> | ➖ not applicable | | | | | <reason, e.g. "no health data"> |
 
 ### Not checked

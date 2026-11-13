@@ -44,7 +44,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 
 | | |
 |---|---|
-| 🔍 **Audit** | **18 AI blind-spot checks** plus **420+ checks** in 14 modules. It asks a few questions about your app and runs only the modules that apply |
+| 🔍 **Audit** | **18 AI blind-spot checks** plus **600+ checks** in 23 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
 | 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
@@ -212,7 +212,10 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | ⚙️ **DevOps & operations** | CI on every push, protected main, Dependabot, separate environments, automated deploys and **rollback**, platform default domains, **error alerts that reach a human**, uptime and **cron monitoring**, third-party outage handling, logs without personal data, **backups with a tested restore**, disaster recovery, MFA everywhere, secret rotation, bus factor, billing alerts, domain/SSL expiry, email that actually sends, incident runbook |
 | 🖱️ **Functional QA** | Dead buttons and links, forms that don't save, loading, empty and error states, **clear error and success messages**, delete confirmations, payment result screens, typos, **edge cases** (money rounding, long or non-Latin text, time zones, list edges, limits), **session expiry, multiple tabs, smoke test of every journey for every role**, console errors, broken assets, phone and Safari |
 | ⚖️ **Legal & privacy** | Privacy policy vs actual data, terms, cookie consent, deletion and export, OSS licenses (GPL/AGPL), **web-font licenses**, an asset register, refunds, PCI, tax, honest marketing, dark patterns |
-| 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), mobile, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse, app store rules |
+| 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), responsive design, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse |
+| ⚖️ **Lawsuit magnets & jurisdictions** | What people actually get sued over: **Google Fonts and other IP leaks**, **pixels, session replay and chat widgets before consent** (California wiretap suits), embeds, **ADA accessibility on revenue paths** (and overlays that don't help), **auto-renewal and click-to-cancel**, marketing opt-in (CASL, TCPA), fake urgency, fair cookie banners, **Impressum**, **Quebec French**, biometrics, plus a **country table** (EU, DACH, UK, US, Canada, India, Brazil, Australia, Asia, app stores) |
+| 🔗 **Supply chain & CI** | Lockfiles, typosquats, install scripts, dependency confusion, **GitHub Actions pinned to SHAs**, `pull_request_target`, token permissions, secrets in logs, third-party scripts, SRI, tag managers, secret scanning |
+| 🧹 **Maintainability & handover** | Strict types, linting, dead and duplicated code, README and `.env.example`, architecture notes, AI rules files, **who owns every account**, credentials in a vault, due-diligence pack |
 | 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, **Cloudflare** (TLS minimum, `workers.dev`, R2), Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
 
 **Profile modules** (run only when they apply to your app):
@@ -224,6 +227,12 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | 🏥 **Health** | Health, medical or fitness data | Explicit consent, no health data in analytics, encryption, audit logs, disclaimers, BAAs/DPAs, medical-device questions |
 | 💳 **Fintech** | Payments, wallets, payouts | PCI scope, ledgers, atomic transfers, reconciliation, payout fraud, local invoice and mandate rules, licensing questions |
 | 📜 **Policy pack** | Full and Enterprise | 16 documents: when each is needed, what it must contain, where to link it, and whether it matches your real data |
+| 📱 **Mobile apps** | iOS, Android, Expo, Capacitor, Flutter | In-app account deletion, **permission strings (missing ones crash the app)**, privacy labels and manifest, in-app purchase verified on the server, App Tracking Transparency, SDK targets, secrets in the bundle, secure token storage, cleartext traffic, deep links, WebViews, crash reporting, forced updates |
+| 👥 **Community & marketplace** | Users post, chat or trade | Report, block, moderation queue, filtering, minors and adults, appeals, **realtime/WebSocket authorization**, message limits, takedown and CSAM duties, DSA / Online Safety Act / IT Rules, seller verification, payouts, disputes, fake reviews |
+| ☁️ **Cloud infrastructure** | AWS, GCP, Azure, Kubernetes, Terraform | Public buckets, encryption, wildcard IAM, long-lived keys, root account, open database ports, TLS, SSH, containers as root, secrets in images, IaC scanning, state files, backups, cost controls |
+| 🖥️ **Desktop & extensions** | Electron, Tauri, browser extensions | `contextIsolation`, safe preload bridges, remote content, **code signing and notarization**, signed auto-update, extension permissions, Manifest V3, content script trust, store disclosures |
+| 🌍 **Internationalisation** | Several languages or countries | Missing translations, legal text per language, plurals, scripts and fonts (Hindi, Tamil, Arabic), RTL, longer text, currency and number formats, phone and address formats, local payment methods |
+| 🤖 **AI agents & MCP** | Agents take actions, or MCP servers | Least-privilege tools, acting as the user, **confirmation for risky actions**, indirect prompt injection, exfiltration paths, sandboxing, loop and cost limits, audit log, kill switch, MCP auth, honest tool descriptions |
 | 🏢 **Enterprise & government** | Enterprise level | SSO/SCIM, audit logs, data residency, RPO/RTO, pentest, SBOM, SOC 2/ISO readiness, security questionnaires, bus factor, GIGW/508 |
 
 Plus the 🛠️ **fix playbook**: patterns and tests for IDOR, RLS, Firebase rules, leaked secrets, validation, webhooks and idempotency, race conditions, timeouts, rate limits, LLM caps, XSS, uploads, headers, cookie consent and account deletion.
@@ -235,7 +244,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 ## Free & open source: what's included
 
 **Everything in this repo is free, forever (MIT):**
-- ✅ All 18 blind spots, 420+ checks and 14 modules, at all three levels
+- ✅ All 18 blind spots, 600+ checks and 23 modules, at all three levels
 - ✅ The fix playbook, "fix safe items", the scope guard and report history
 - ✅ Works in every tool listed above, with your own AI subscription
 - ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
@@ -273,12 +282,21 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── legal-privacy.md      core: legal, privacy, licensing (incl. fonts)
     ├── launch-ux.md          core: accessibility, mobile, SEO, email, abuse
     ├── platforms.md          core: Supabase, Firebase, Cloudflare, Vercel, builders, ...
+    ├── lawsuits.md           core: lawsuit magnets & jurisdictions
+    ├── supply-chain.md       core: dependencies, CI/CD, third-party scripts
+    ├── maintainability.md    core: code health, docs, ownership, handover
     ├── ai-features.md        profile: LLM and AI features
+    ├── ai-agents.md          profile: AI agents, tools and MCP servers
     ├── kids-education.md     profile: minors, students, schools
     ├── health.md             profile: health & medical data
     ├── fintech.md            profile: payments, wallets, payouts
     ├── policies.md           profile: the policy pack
     ├── enterprise.md         profile: enterprise & government readiness
+    ├── mobile.md             profile: iOS and Android apps
+    ├── community.md          profile: community, chat and marketplaces
+    ├── cloud-infra.md        profile: AWS, GCP, Azure, Kubernetes, Terraform
+    ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
+    ├── i18n.md               profile: languages, regions, formats
     ├── fixes.md              fix playbook
     └── report-template.md    report format
 dist/vibe-check.md          ← everything in one file (for paste-in tools)   [generated]

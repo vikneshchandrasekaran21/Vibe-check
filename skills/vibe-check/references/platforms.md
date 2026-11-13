@@ -75,7 +75,7 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 
 ## Expo / React Native / Flutter
 
-- See the mobile section of `launch-ux.md`. Plus: `EXPO_PUBLIC_*` variables are visible to anyone, so never put secrets there.
+- See `mobile.md`. Plus: `EXPO_PUBLIC_*` variables are visible to anyone, so never put secrets there.
 
 ## Docker / VPS / self-hosted
 

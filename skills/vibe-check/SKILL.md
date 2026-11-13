@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.4.0"
+  version: "2.5.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -35,7 +35,8 @@ Work out as much as you can from the code, then ask the user **only** what you c
 2. **Can children or students use it?** Anyone under 18, or school or college users.
 3. **Does it take money?** Payments, subscriptions, wallets, payouts.
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
-5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
+5. **Where are users?** India, EU/UK, US (which states), Canada (Quebec?), Germany/Austria/Switzerland, other. Is there a government or enterprise buyer?
+6. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
 
 Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
@@ -91,7 +92,10 @@ Write down:
 | DevOps and operations: CI/CD, environments, deploys and rollback, monitoring and alerts, cron monitoring, backups and restore, secrets and access, costs, domains and SSL, incidents | `references/devops.md` |
 | Functional QA: buttons, links, forms, states, error and success messages, edge cases, sessions, journeys per role | `references/functional-qa.md` |
 | Legal, privacy, licensing (fonts, images, code) | `references/legal-privacy.md` |
-| UX, accessibility, launch basics, email, abuse, mobile | `references/launch-ux.md` |
+| UX, accessibility, launch basics, email, abuse | `references/launch-ux.md` |
+| Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | `references/lawsuits.md` |
+| Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | `references/supply-chain.md` |
+| Maintainability and handover: code health, docs, account ownership | `references/maintainability.md` |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
 
 **Profile modules** (load only the ones that match Step 1):
@@ -104,6 +108,12 @@ Write down:
 | Payments, wallets, lending, investing, payouts | `references/fintech.md` |
 | Full and Enterprise: policies the app must publish | `references/policies.md` |
 | Enterprise level, B2B or government buyers | `references/enterprise.md` |
+| A mobile app (iOS, Android, Expo, Capacitor, Flutter, React Native) | `references/mobile.md` |
+| Users post, chat, follow, review, or buy and sell from each other | `references/community.md` |
+| Runs on AWS, Google Cloud, Azure or similar, or uses Kubernetes, Terraform or Docker in production | `references/cloud-infra.md` |
+| A desktop app (Electron, Tauri) or a browser extension | `references/desktop-extensions.md` |
+| Several languages or countries, or non-English users | `references/i18n.md` |
+| An AI agent takes actions, or the project is an MCP server, plugin or tool provider | `references/ai-agents.md` |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 

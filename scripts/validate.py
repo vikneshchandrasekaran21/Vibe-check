@@ -105,7 +105,7 @@ for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "
     if must.lower() not in skill.lower(): err(f"SKILL.md: self-check/report rules don't mention '{must}'")
 # every module in coverage template rows
 cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
-for label in ["blind spots", "Security", "reliability", "DevOps", "Functional QA", "Legal", "UX", "Platform"]:
+for label in ["blind spots", "Security", "reliability", "DevOps", "Functional QA", "Legal", "UX", "Platform", "Lawsuit", "Supply chain", "Maintainability"]:
     if label.lower() not in cov.lower(): err(f"report-template.md coverage table is missing '{label}'")
 
 # 8. README
