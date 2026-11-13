@@ -11,8 +11,10 @@ Before you ship, have your AI coding agent find and fix what it usually misses, 
 [![check](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml/badge.svg)](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml)
 
 ```bash
-npx skills add vikneshchandrasekaran21/Vibe-check
+npx skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y
 ```
+
+<sub>That's for Claude Code. [Commands for other tools ↓](#quick-start-copy-one-command)</sub>
 
 Works with **Claude Code · Codex · Cursor · GitHub Copilot · Gemini CLI · Windsurf · Cline · Roo · Goose · OpenCode · Amp · Junie · Kiro**, plus **Lovable · Bolt · v0 · Replit · ChatGPT** by copy-paste.
 
@@ -36,7 +38,7 @@ AI coding tools are great at writing code that **works in the demo**. They often
 
 `vibe-check` is an open **[Agent Skill](https://agentskills.io)**. It turns your coding agent into a strict pre-launch reviewer that **finds** these problems, **explains** them in plain words and **fixes** the ones you approve, while leaving your design, features and use case alone.
 
-It works like a senior team in one command, covering what security, QA, legal and DevOps would each check. It asks a few questions about your app (who uses it, whether there are minors, payments or sensitive data) and runs only the checks that apply, at three depths: 🟢 **Quick**, 🟡 **Launch** and 🔵 **Enterprise**.
+It works like a senior team in one command, covering what security, QA, legal and DevOps would each check. It asks a few questions about your app (who uses it, whether there are minors, payments or sensitive data) and runs only the checks that apply, and by default runs the **full check**. There's also a 🟢 **Quick** mode for small deploys and a 🔵 **Enterprise** mode for company and government apps.
 
 ## What you get
 
@@ -66,24 +68,33 @@ It also **never changes code during the audit**, **never marks something as pass
 
 ## Install
 
-### Quick start: pick your tool
+### Quick start: copy one command
 
-| You use… | Do this |
+Pick your tool, paste the line into your **Mac/PC Terminal**, and press Enter. There are no menus to answer.
+
+| You use… | Run this |
 |---|---|
-| **Claude app** (desktop or claude.ai) | [Download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip), then **Settings → Customize → Skills → Add → Upload skill** and pick the zip. Don't unzip it |
-| **Claude Code, Codex, Cursor, Copilot, Gemini CLI** and other agents | In your Mac/PC terminal: `npx skills add vikneshchandrasekaran21/Vibe-check`. Or just ask your agent to run that command for you |
-| **Lovable, Bolt, v0, Replit, ChatGPT** | Copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
+| **Claude Code** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y` |
+| **Cursor** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a cursor -y` |
+| **Codex** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a codex -y` |
+| **GitHub Copilot** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a github-copilot -y` |
+| **Gemini CLI** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a gemini-cli -y` |
+| **Several of these** | `npx skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -a cursor -a codex -y` |
+| **Claude app** (desktop or claude.ai) | No terminal: [download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip) → **Settings → Customize → Skills → Add → Upload skill**. Keep it zipped |
+| **Lovable, Bolt, v0, Replit, ChatGPT** | No install: copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
 
-Then say **"vibe check this app"**. That's it. More options below.
+Then **open a new chat or session** in your app's folder and say: **"vibe check this app"**. That's it.
 
-### 1. One command (recommended for coding agents)
+> **Updating:** run the same command again. Already-open sessions keep the old version, so start a new one.
+
+### 1. One command, with a menu to pick agents
 
 ```bash
 npx skills add vikneshchandrasekaran21/Vibe-check        # this project
 npx skills add vikneshchandrasekaran21/Vibe-check -g     # all your projects
 ```
 
-The [skills CLI](https://github.com/vercel-labs/skills) detects which agents you have installed and sets the skill up for each one.
+The [skills CLI](https://github.com/vercel-labs/skills) shows a menu of agents. Use **Space** to select the ones you use (for example **Claude Code**) and **Enter** to confirm.
 
 ### 2. Copy the folder
 
@@ -134,9 +145,9 @@ Just ask your agent:
 
 | Say | What happens |
 |---|---|
-| *"quick vibe check"* | 🟢 **Quick:** the 18 AI blind spots plus every 🔴 blocker. Good before any deploy |
-| *"vibe check this app"* · *"is this ready to ship?"* | 🟡 **Launch** (default): every module that applies to your app |
-| *"enterprise vibe check"* | 🔵 **Enterprise:** Launch plus enterprise and government readiness and the full policy pack |
+| *"vibe check this app"* · *"is this ready to ship?"* · *"audit my app"* | 🟡 **Full check** (default): every module that applies to your app |
+| *"enterprise vibe check"* | 🔵 **Enterprise:** the full check plus enterprise and government readiness and the full policy pack |
+| *"quick vibe check"* | 🟢 **Quick:** only the 18 AI blind spots and 🔴 blockers. For small, everyday deploys |
 | *"fix the safe items"* | Applies only the fixes that are invisible to users and easy to undo |
 | *"fix the vibe-check blockers"* · *"fix #1 and #3"* | Fixes only those issues, using the fix playbook and the scope guard |
 
@@ -172,12 +183,12 @@ Score: 96 / 121 checks passed · 🔴 2 blockers · 🟡 9 to fix before scale �
 Every report ends with a one-line **score card**, made to screenshot and share:
 
 ```text
-vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
+vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
 
 Start at 🔴? Most people do. Fix, re-run, and post your 🔴 → 🟢 with **#vibecheck**.
 
-If you reach 🟢 at Launch level or above, add the badge to your README:
+If you reach 🟢 on a full check, add the badge to your README:
 
 ```markdown
 [![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
@@ -191,7 +202,7 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 
 ## What it checks
 
-**Core modules** (always run at Launch level and above):
+**Core modules** (always run in the full check):
 
 | Area | Highlights |
 |---|---|
@@ -211,7 +222,7 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | 🧒 **Kids & education** | Minors, students, schools | Verifiable parental consent (DPDP, COPPA, FERPA), data minimization, **retention limits for minors' data**, photo GPS stripping, no trackers, staff access, institutional requirements |
 | 🏥 **Health** | Health, medical or fitness data | Explicit consent, no health data in analytics, encryption, audit logs, disclaimers, BAAs/DPAs, medical-device questions |
 | 💳 **Fintech** | Payments, wallets, payouts | PCI scope, ledgers, atomic transfers, reconciliation, payout fraud, local invoice and mandate rules, licensing questions |
-| 📜 **Policy pack** | Launch and above | 16 documents: when each is needed, what it must contain, where to link it, and whether it matches your real data |
+| 📜 **Policy pack** | Full and Enterprise | 16 documents: when each is needed, what it must contain, where to link it, and whether it matches your real data |
 | 🏢 **Enterprise & government** | Enterprise level | SSO/SCIM, audit logs, data residency, RPO/RTO, pentest, SBOM, SOC 2/ISO readiness, security questionnaires, bus factor, GIGW/508 |
 
 Plus the 🛠️ **fix playbook**: patterns and tests for IDOR, RLS, Firebase rules, leaked secrets, validation, webhooks and idempotency, race conditions, timeouts, rate limits, LLM caps, XSS, uploads, headers, cookie consent and account deletion.
@@ -288,8 +299,8 @@ Any. The checks are stack-agnostic, with extra guidance for Supabase, Firebase, 
 **Is this a replacement for a lawyer or a security audit?**
 No. It catches the common, costly mistakes and tells you exactly what to take to a lawyer. For health, finance or children's data, payments at scale, or enterprise customers, also get a professional review. Treat 🟢 as "no known blockers", not a guarantee.
 
-**Quick, Launch or Enterprise?**
-Quick before everyday deploys. Launch before going public, taking payments or handling personal data. Enterprise before selling to companies or government, or handling regulated data.
+**Which mode should I use?**
+Just say *"vibe check this app"*. That runs the full check, which is what most people need. Use *"quick vibe check"* only for small everyday deploys, and *"enterprise vibe check"* before selling to companies or government.
 
 **Why didn't it fix things automatically?**
 On purpose. It audits first so you see what's wrong. Then say *"fix the safe items"* for the invisible, easy-to-undo fixes, or name the issues you want fixed. Anything visible, or that needs a decision (like consent rules), waits for you.

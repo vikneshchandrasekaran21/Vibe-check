@@ -34,13 +34,13 @@ Work out as much as you can from the code, then ask the user **only** what you c
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
 5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
 
-Then pick a **level** (the user can override it):
+Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
 | Level | When | Covers |
 |---|---|---|
-| 🟢 **Quick** | Before any deploy, or "quick vibe check" | Step 3 blind spots + every 🔴 item in the core modules |
-| 🟡 **Launch** (default) | Before going public or taking payments | Everything in the core modules + every profile module that applies |
-| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Launch + the **enterprise** section below + the full policy pack |
+| 🟢 **Quick** | Only when the user says "quick" (e.g. before a small deploy) | Step 3 blind spots + every 🔴 item in the core modules |
+| 🟡 **Full** (default) | Any "vibe check", "audit my app" or "is this ready to ship?" | Everything in the core modules + every profile module that applies |
+| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Full + the **enterprise** section below + the full policy pack |
 
 ## Step 2: Map the project
 
@@ -79,7 +79,7 @@ Write down:
 
 ## Step 4: Run the modules
 
-**Core modules** (Launch and above):
+**Core modules** (Full and Enterprise):
 
 | Module | File |
 |---|---|
@@ -98,7 +98,7 @@ Write down:
 | Minors, students, schools or colleges | the **kids-education** section below |
 | Health, medical, wellness or fitness data | the **health** section below |
 | Payments, wallets, lending, investing, payouts | the **fintech** section below |
-| Launch and above: policies the app must publish | the **policies** section below |
+| Full and Enterprise: policies the app must publish | the **policies** section below |
 | Enterprise level, B2B or government buyers | the **enterprise** section below |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
@@ -121,8 +121,9 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 
 1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in the **report-template** section below.
 2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
-4. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+3. **If this was a Quick run,** end with: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
+4. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
+5. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
 
 ## Step 6: Fix (only after the user approves)
 
@@ -780,7 +781,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 ````markdown
 ## vibe-check report: <app name>
 
-**Date:** <date> · **Level:** Quick | Launch | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ### Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
@@ -834,7 +835,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 ### 🏁 Score card
 
 ```text
-vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
+vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
 
 <only if 🟢: the badge snippet and the ⭐ line, see below>
@@ -858,13 +859,13 @@ These go at the very end of the saved report **and** the chat summary.
 #### Score card (always)
 One line, in a `text` code block, so it screenshots cleanly:
 
-`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick|Launch|Enterprise> level · <D Mon YYYY>`
+`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick check|Full check|Enterprise check> · <D Mon YYYY>`
 
 - `passed / applicable` counts only items marked PASS out of items that weren't N/A. CAN'T TELL counts as not passed.
 - **Never include** findings, secrets, private URLs, file paths, or the app name, unless the user asks for the app name. The card is meant to be shared publicly.
 - If the score improved since the last report in `.vibe-check/reports/`, add the change: `· was 🔴 71/118`. Before-and-after posts are the most shared.
 
-#### Badge (only for 🟢 SHIP at Launch or Enterprise level)
+#### Badge (only for 🟢 SHIP on a Full or Enterprise check)
 Offer this snippet for the user's README. **Don't add it yourself** unless the user says yes (scope guard):
 
 ```markdown

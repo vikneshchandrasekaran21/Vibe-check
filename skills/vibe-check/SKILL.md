@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -35,13 +35,13 @@ Work out as much as you can from the code, then ask the user **only** what you c
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
 5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
 
-Then pick a **level** (the user can override it):
+Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
 | Level | When | Covers |
 |---|---|---|
-| 🟢 **Quick** | Before any deploy, or "quick vibe check" | Step 3 blind spots + every 🔴 item in the core modules |
-| 🟡 **Launch** (default) | Before going public or taking payments | Everything in the core modules + every profile module that applies |
-| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Launch + `enterprise.md` + the full policy pack |
+| 🟢 **Quick** | Only when the user says "quick" (e.g. before a small deploy) | Step 3 blind spots + every 🔴 item in the core modules |
+| 🟡 **Full** (default) | Any "vibe check", "audit my app" or "is this ready to ship?" | Everything in the core modules + every profile module that applies |
+| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Full + `enterprise.md` + the full policy pack |
 
 ## Step 2: Map the project
 
@@ -80,7 +80,7 @@ Write down:
 
 ## Step 4: Run the modules
 
-**Core modules** (Launch and above):
+**Core modules** (Full and Enterprise):
 
 | Module | File |
 |---|---|
@@ -99,7 +99,7 @@ Write down:
 | Minors, students, schools or colleges | `references/kids-education.md` |
 | Health, medical, wellness or fitness data | `references/health.md` |
 | Payments, wallets, lending, investing, payouts | `references/fintech.md` |
-| Launch and above: policies the app must publish | `references/policies.md` |
+| Full and Enterprise: policies the app must publish | `references/policies.md` |
 | Enterprise level, B2B or government buyers | `references/enterprise.md` |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
@@ -122,8 +122,9 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 
 1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in `references/report-template.md`.
 2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
-4. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+3. **If this was a Quick run,** end with: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
+4. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
+5. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
 
 ## Step 6: Fix (only after the user approves)
 

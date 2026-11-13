@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.2.0 (2026-11-13)
+
+- **The full check is now always the default.** "vibe check this app" runs everything that applies. Quick runs only when you say "quick", and it ends by suggesting the full check.
+- Levels renamed for clarity: 🟢 Quick, 🟡 **Full** (was "Launch"), 🔵 Enterprise. "Launch" still works.
+- **Simpler install:** one copy-paste command per tool, with no menus (`-a <agent> -y`), plus clear update steps.
+
 ## v2.1.0 (2026-11-13)
 
 - **🏁 Score card:** every report ends with a one-line, screenshot-friendly score (`vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · date`), including the change since the last report.

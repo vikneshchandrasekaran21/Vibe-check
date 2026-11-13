@@ -5,7 +5,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 ````markdown
 # vibe-check report: <app name>
 
-**Date:** <date> · **Level:** Quick | Launch | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ## Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
@@ -59,7 +59,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 ## 🏁 Score card
 
 ```text
-vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
+vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
 
 <only if 🟢: the badge snippet and the ⭐ line, see below>
@@ -83,13 +83,13 @@ These go at the very end of the saved report **and** the chat summary.
 ### Score card (always)
 One line, in a `text` code block, so it screenshots cleanly:
 
-`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick|Launch|Enterprise> level · <D Mon YYYY>`
+`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick check|Full check|Enterprise check> · <D Mon YYYY>`
 
 - `passed / applicable` counts only items marked PASS out of items that weren't N/A. CAN'T TELL counts as not passed.
 - **Never include** findings, secrets, private URLs, file paths, or the app name, unless the user asks for the app name. The card is meant to be shared publicly.
 - If the score improved since the last report in `.vibe-check/reports/`, add the change: `· was 🔴 71/118`. Before-and-after posts are the most shared.
 
-### Badge (only for 🟢 SHIP at Launch or Enterprise level)
+### Badge (only for 🟢 SHIP on a Full or Enterprise check)
 Offer this snippet for the user's README. **Don't add it yourself** unless the user says yes (scope guard):
 
 ```markdown
