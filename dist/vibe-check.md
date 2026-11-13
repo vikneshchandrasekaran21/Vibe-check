@@ -10,7 +10,6 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 
 1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
 2. **Evidence or it didn't happen: quote the proof.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value. Every FAIL **quotes the exact evidence**: the relevant code lines (re-read from the file just before writing the report, so line numbers and content are current), or the exact command and the part of its output that shows the problem. A finding you can't quote is not a finding. Drop it, or turn it into a question.
-12. **No facts from memory.** Legal, regulatory, platform-policy and pricing statements in the report must come from this skill's reference files, or from a source you opened during this run (give the URL). Never state a law, fine, deadline, threshold, store rule or provider limit from general memory. If you're unsure, phrase it as a question for the user or the lawyer list.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
 5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
@@ -20,6 +19,18 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
 10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
 11. **Check everything that applies, item by item, and prove it by counting.** Every check has a permanent ID (`SEC-001`, `BS-03`). Record every result in the ledger (Step 4) and let `coverage.py` count it; never estimate coverage. Don't sample, skim or stop early because the app "looks fine". **Never write a row you didn't actually check:** a `CAN'T TELL` that says "not reached" is honest, a PASS you didn't check is a lie. If you run out of time or context, the unfinished items are listed as gaps in the report; never present a partial check as complete.
+12. **No facts from memory.** Legal, regulatory, platform-policy and pricing statements in the report must come from this skill's reference files, or from a source you opened during this run (give the URL). Never state a law, fine, deadline, threshold, store rule or provider limit from general memory. If you're unsure, phrase it as a question for the user or the lawyer list.
+13. **Never send the user's code or data anywhere.** Everything stays in the project and this conversation. The skill's own scripts make exactly one network request, the version check in Step 0, and it carries nothing about the user. Live checks go only to the user's own URLs, read-only (rule 6). Standard tools you run (like `npm audit`) talk to their own registries as they always do; the vibe-check Pro connector is used only if the user connected it themselves.
+
+## Step 0: Version check (a few seconds)
+
+Run `python3 <skill-folder>/scripts/version_check.py`. It reads the latest release number from GitHub, sends nothing about the user, gives up after 3 seconds and always succeeds. It prints one line:
+
+- `UPDATE AVAILABLE: …`: tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards with `npx skills update`, then start a new session."*), then **carry on**. Don't wait for an answer, and put the same notice at the top of the report.
+- `UP TO DATE` or `SKIPPED: …`: say nothing; the version goes in the report header.
+- If the script isn't available (single-file versions) or Python can't run, skip this step. Never use another tool to look up the version, and never retry.
+
+The user can turn the check off with `VIBE_CHECK_NO_UPDATE_CHECK=1` or `update_check: false` in `.vibe-check/config`.
 
 ## Step 1: Profile the app
 
@@ -218,6 +229,7 @@ Go through this list and fix anything missing **before** sending the report:
 - [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
 - [ ] No secrets are printed in full. The score card contains no private details.
 - [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
+- [ ] The report header shows the vibe-check version, and the update notice from Step 0 is at the top if it said UPDATE AVAILABLE.
 - [ ] The reply ends with the score card and the "fix the safe items" offer.
 
 ## Step 6: Fix (only after the user approves)
@@ -1272,7 +1284,9 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 ````markdown
 ## vibe-check report: <app name>
 
-**Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+> ⬆️ **A newer vibe-check is out** (v<latest>; this check ran on v<installed>). Update with `npx skills update`, then start a new session. *(Only if Step 0 said UPDATE AVAILABLE.)*
+
+**vibe-check:** v<installed> · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ### Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
@@ -1430,7 +1444,7 @@ Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash).
 One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/Vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.
 
 #### Footer (always, removable)
-The last line of the saved report: `<sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/Vibe-check</sub>`. Leave it out if the user has asked for no footer (or `.vibe-check/config` contains `footer: false`). Never add it to the user's app, pages or code, only to the report.
+The last line of the saved report: `<sub>Checked with vibe-check v<installed> · github.com/vikneshchandrasekaran21/Vibe-check · update: npx skills update</sub>`. Leave it out if the user has asked for no footer (or `.vibe-check/config` contains `footer: false`). Never add it to the user's app, pages or code, only to the report.
 
 <a id="fixes"></a>
 

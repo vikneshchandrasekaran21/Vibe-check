@@ -157,6 +157,23 @@ When the agent can't run commands, it reviews the code and config and tells you 
 
 ---
 
+## 🔄 Updating
+
+Installed skills don't update by themselves. **vibe-check tells you when a new version is out:** each run starts with a quick version check, and the report shows *"A newer vibe-check is out"* with the update command. Every report also shows the version it ran on.
+
+| You installed with | To update |
+|---|---|
+| `npx skills add` (Claude Code, Codex, Cursor and others) | `npx skills update` |
+| The Claude app (zip) | Download `vibe-check.zip` from the [latest release](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest) and upload it again |
+| A copied rules or command file (Cursor, Copilot, Windsurf, Cline, Gemini CLI) | Copy the new file from [`adapters/`](adapters/) over the old one |
+| Paste-in (Lovable, Bolt, v0, Replit, ChatGPT) | Paste the new [`dist/vibe-check.md`](dist/vibe-check.md) |
+
+Then **start a new session**: an open session keeps the old version loaded.
+
+**Get an email for new releases:** on GitHub, click **Watch → Custom → Releases** at the top of this repo.
+
+**About the version check:** it's the only network request vibe-check itself makes. It reads the latest version number from this repo on GitHub and sends nothing about you: no code, no report, no project name. It gives up after 3 seconds and never blocks the audit. To turn it off, set `VIBE_CHECK_NO_UPDATE_CHECK=1`, or add `update_check: false` to `.vibe-check/config` in your project.
+
 ## Use
 
 Just ask your agent:
@@ -270,7 +287,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 **What it doesn't do (scope):**
 - ❌ It isn't a legal opinion or a certified security audit. It flags issues and tells you what to ask a lawyer or auditor.
 - ❌ No hosted scanning, dashboard or monitoring. Everything runs inside your own AI tool, on your machine.
-- ❌ It doesn't send your code anywhere and doesn't phone home.
+- ❌ It never sends your code, reports or data anywhere. Its only network request is an optional version check to GitHub that carries nothing about you (see [Updating](#-updating)).
 - ❌ It never changes your app's design, features or flows (see the guarantee above).
 
 ### ⭐ vibe-check Pro (coming soon)
@@ -295,7 +312,8 @@ skills/vibe-check/          ← the skill (source of truth)
 ├── scripts/                  read-only helpers the agent runs in the user's project (Python 3, no installs)
 │   ├── inventory.py          lists everything in the app: pages, routes, forms, env vars, tables…
 │   ├── sweep.py              searches every file and git history for risky patterns (secrets masked)
-│   └── coverage.py           counts the ledger against the checklist; fails on any gap
+│   ├── coverage.py           counts the ledger against the checklist; fails on any gap
+│   └── version_check.py      tells you when a newer vibe-check is out (sends nothing about you)
 └── references/
     ├── security.md           core: security, auth, encryption, data leakage
     ├── reliability.md        core: data, reliability, load and stress, testing
@@ -328,12 +346,13 @@ adapters/                   ← Cursor, Copilot, Windsurf, Cline, Gemini, AGENTS
 scripts/build.py            ← regenerates dist/ and adapters/
 scripts/validate.py         ← checks the skill is complete and consistent (runs in CI)
 tests/test_scripts.py       ← test bench: a small app with planted bugs the scripts must catch
+scripts/release.sh          ← publishes a release (the tag always matches the version in SKILL.md)
 ```
 
 ## FAQ
 
 **Does it send my code anywhere?**
-No. vibe-check is just instructions. It runs inside the AI agent you already use, under that tool's own privacy terms.
+No. vibe-check is instructions plus a few read-only helper scripts, running inside the AI agent you already use, under that tool's own privacy terms. The only network request vibe-check itself makes is the version check: it reads the latest version number from GitHub and sends nothing about you. You can turn it off (see [Updating](#-updating)).
 
 **Will it break my app?**
 It doesn't change anything during the audit. When fixing, it changes only what you approve, adds a test for each fix, and lists every file it touched so you can review or revert. Use git, and try fixes on a branch or staging first.

@@ -25,8 +25,9 @@ def check(cond: bool, msg: str) -> None:
         failures.append(msg)
 
 
-def run(script: str, *args: str, cwd: Path | None = None):
-    return subprocess.run([sys.executable, "-I", str(SCRIPTS / script), *args], capture_output=True, text=True, cwd=cwd)
+def run(script: str, *args: str, cwd: Path | None = None, env: dict | None = None):
+    return subprocess.run([sys.executable, "-I", str(SCRIPTS / script), *args], capture_output=True, text=True,
+                          cwd=cwd, env=env, timeout=60)
 
 
 # fake credentials, assembled so this file never contains them literally
@@ -181,7 +182,32 @@ def main() -> int:
         r = run("coverage.py", str(ledger(out, quick, "Quick")), "--remaining")
         check("security" in r.stdout and "blind-spots" not in r.stdout, "coverage --remaining: wrong list")
 
-    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 13 ledger cases")
+    # version check: never blocks, never fails, says the right thing
+    import os, time
+    mine = re.search(r'version:\s*"([\d.]+)"', (ROOT / "skills/vibe-check/SKILL.md").read_text()).group(1)
+    major = int(mine.split(".")[0])
+    r = run("version_check.py", "--latest", f"{major + 1}.0.0")
+    check(r.returncode == 0 and r.stdout.startswith("UPDATE AVAILABLE") and "npx skills update" in r.stdout,
+          f"version_check: newer release not reported: {r.stdout!r}")
+    r = run("version_check.py", "--latest", mine)
+    check(r.stdout.startswith("UP TO DATE"), f"version_check: same version should be up to date: {r.stdout!r}")
+    r = run("version_check.py", "--latest", "0.0.1")
+    check(r.stdout.startswith("UP TO DATE"), f"version_check: older release should be up to date: {r.stdout!r}")
+    base = {k: v for k, v in os.environ.items() if "proxy" not in k.lower()}
+    dead = dict(base, HTTPS_PROXY="http://127.0.0.1:9", https_proxy="http://127.0.0.1:9", NO_PROXY="", no_proxy="")
+    r = run("version_check.py", env=dict(dead, VIBE_CHECK_NO_UPDATE_CHECK="1"))
+    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: turned off"), f"version_check: opt-out ignored: {r.stdout!r}")
+    with tempfile.TemporaryDirectory() as tmp2:
+        (Path(tmp2) / ".vibe-check").mkdir()
+        (Path(tmp2) / ".vibe-check" / "config").write_text("footer: true\nupdate_check: false\n")
+        r = run("version_check.py", cwd=Path(tmp2), env=dead)
+        check(r.stdout.startswith("SKIPPED: turned off (.vibe-check/config)"), f"version_check: config opt-out ignored: {r.stdout!r}")
+    t0 = time.time()
+    r = run("version_check.py", env=dead)
+    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: couldn't reach") and time.time() - t0 < 15,
+          f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
+
+    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 13 ledger cases, 6 version-check cases")
     for f in failures:
         print("FAIL:", f)
     print("OK: scripts catch every planted problem." if not failures else f"{len(failures)} failure(s).")

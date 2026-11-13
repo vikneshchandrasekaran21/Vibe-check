@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.7.1 (2026-11-14)
+
+**Know when to update.**
+- **Version check (Step 0):** `scripts/version_check.py` reads the latest release number from GitHub, then the report says *"A newer vibe-check is out"* with the update command. It sends nothing about the user, gives up after 3 seconds, never blocks the audit, and can be turned off (`VIBE_CHECK_NO_UPDATE_CHECK=1` or `update_check: false` in `.vibe-check/config`).
+- **The version is shown in every report:** in the header and the footer, with the update command.
+- **New ground rule 13:** never send the user's code or data anywhere. The validator enforces it: only `version_check.py` may use the network, only to read two fixed GitHub URLs, and only with plain GET requests that carry no data.
+- **README "🔄 Updating" section:** how to update for each install method, plus *Watch → Releases* for email notices.
+- **`scripts/release.sh`:** one command to publish. The release tag always comes from SKILL.md, so the version check and GitHub can't disagree.
+- **Fixed:** the build check compares the files inside the zip, not its bytes, so it passes on both Mac and Linux.
+- The test bench adds 6 version-check cases: update available, up to date, older, opted out by env, opted out by config, and offline.
+
 ## v2.7.0 (2026-11-13)
 
 **Depth: built not to skip anything.**
