@@ -58,8 +58,9 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🔴 **HTTPS everywhere**, with HTTP redirected to HTTPS and HSTS on.
 - [ ] 🔴 **Passwords hashed** with argon2id or bcrypt (salted automatically). Never encrypted, plain text, MD5 or SHA-*.
 - [ ] 🟡 **Hashing vs encryption.** Hashing for things you only verify (passwords, tokens); encryption for things you need back (keys for third-party accounts and similar).
-- [ ] 🟡 **Encryption at rest** for the DB, file storage and backups. Field-level encryption for very sensitive data (government IDs, health data, OAuth tokens).
-- [ ] 🟡 **Encryption in transit**, including TLS to the DB and between services.
+- [ ] 🔴 **Encryption at rest** for the DB, file storage and backups (check the provider's setting; most managed DBs and storage encrypt by default, so confirm it). 🔴 for apps with children's, health, financial or ID data; 🟡 otherwise.
+- [ ] 🔴 **Field-level encryption for very sensitive data** (government IDs, health records, bank details, stored OAuth or API tokens of users), with keys kept outside the DB. N/A if the app stores none.
+- [ ] 🔴 **Encryption in transit** everywhere: HTTPS for the app and API, TLS to the DB, storage and between services, and no `http://` calls to third parties.
 - [ ] 🟡 **Security headers:** `Content-Security-Policy` (start report-only), `frame-ancestors` or `X-Frame-Options` (clickjacking), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`. Check with securityheaders.com.
 - [ ] 🟡 **Cryptographic randomness** for tokens and IDs (`crypto.randomUUID` or `crypto.getRandomValues`, never `Math.random`).
 
@@ -75,3 +76,18 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 
 - [ ] 🔴 **Rate limits** on auth, password reset, OTP and SMS (to prevent SMS-pumping fraud), email sending, LLM calls, file uploads, search, exports and any expensive endpoint.
 - [ ] 🟡 **Bot protection** on signup and public forms (Turnstile, hCaptcha, honeypot).
+
+## Data leakage
+
+Check how data could reach someone who shouldn't see it, even when access control looks right.
+
+- [ ] 🔴 **API responses return only what the screen needs:** no password hashes, tokens, internal flags, other users' emails or phone numbers, or whole database rows (`select *` sent to the client). Check list endpoints, search, public profiles, exports and server-rendered page data.
+- [ ] 🔴 **No account enumeration:** signup, login, password reset and invite flows don't reveal whether an email or phone number is registered (same message and similar timing), or, where the product must say so, they're rate-limited.
+- [ ] 🔴 **Private data isn't cached for others:** responses with personal data send `Cache-Control: private, no-store`. CDN, edge and framework caches never serve one user's page or API response to another.
+- [ ] 🔴 **No secrets or personal data in URLs:** tokens, emails and IDs aren't in query strings (they end up in logs, browser history, analytics and `Referer` headers). Reset and magic links are single-use, and `Referrer-Policy` is set.
+- [ ] 🔴 **Share and file links aren't guessable:** long random IDs or signed, expiring URLs for shared reports, invoices, uploads and exports. No sequential IDs.
+- [ ] 🟡 **Third parties get only what they need:** analytics, error tracking, session replay, chat widgets and AI providers don't receive passwords, form contents, health data or children's data. Session replay masks inputs. Error tracking scrubs personal data.
+- [ ] 🟡 **Client bundles and source don't expose internals:** no admin routes, internal API keys, feature flags for unreleased paid features, or other customers' data in JavaScript bundles, HTML comments or `__NEXT_DATA__` and similar.
+- [ ] 🟡 **Exports and downloads** (CSV, PDF, backups) are access-checked and logged, include only the requester's data, and are protected against CSV formula injection (`=`, `+`, `-`, `@` at the start of cells).
+- [ ] 🟡 **No sensitive data in emails and notifications:** they don't include sensitive data in subject lines or lock-screen previews, and go only to verified addresses.
+- [ ] 🟡 **Deleted data is really gone:** deleted accounts, files and messages are removed from search indexes, caches, CDN, storage buckets and third parties within the stated time.

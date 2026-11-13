@@ -3,7 +3,7 @@
 Load this file when the app takes payments, holds balances, pays out to users, lends, invests, or handles financial data. Also check the payments items in `legal-privacy.md` and the Stripe/Razorpay section of `platforms.md`.
 
 ## Payments
-- [ ] 🔴 **Card data never touches your servers:** hosted checkout or elements only (keeps you out of PCI DSS scope). No card numbers in logs, DB or analytics.
+- [ ] 🔴 **No card numbers anywhere in your systems:** logs, DB, analytics, support tools and error tracking. (Hosted checkout is checked in `legal-privacy.md`.)
 - [ ] 🔴 **Amounts, currency and tax** are calculated on the server.
 - [ ] 🔴 **Webhooks are verified and idempotent.** Entitlements are granted and revoked only from verified events (paid, refunded, disputed, cancelled, failed).
 - [ ] 🔴 **Test and live modes are separate.** Failure, refund, dispute and cancel flows were rehearsed in test mode.

@@ -71,6 +71,21 @@ Do these in order. **Rotating the key is the fix.** Deleting the line is not.
 4. Add `.env*` (except `.env.example`) to `.gitignore`. Turn on GitHub secret scanning and push protection, or gitleaks in CI.
 5. Rewriting git history (git filter-repo) is optional once the key is rotated. Tell the user it's a destructive, team-wide operation.
 
+## Data leakage
+
+### API returns too much data
+Send a response shape that lists exactly the fields the screen needs (a DTO or `select`), never the raw row:
+```ts
+const user = await db.user.findUnique({ where: { id }, select: { id: true, name: true, avatarUrl: true } });
+```
+For server-rendered frameworks, pass only those fields to client components. **Test:** the response for another user's public profile contains no email, phone, password hash or internal flags.
+
+### Account enumeration
+Return the same message, with similar timing, whether or not the account exists: *"If an account exists for that email, we've sent a link."* For signup, send a "you already have an account" **email** instead of showing it on screen. Rate-limit these endpoints.
+
+### Private data in shared caches
+Add `Cache-Control: private, no-store` to authenticated responses, and make sure CDN or framework caching (e.g. `revalidate`, edge cache rules) is off for personalised routes. **Test:** two users fetch the same URL and each sees only their own data.
+
 ## Input and injection
 
 ### Server-side validation

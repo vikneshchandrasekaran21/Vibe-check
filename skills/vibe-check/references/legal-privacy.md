@@ -45,7 +45,7 @@
 
 - [ ] 🟡 **Age restrictions.** COPPA (US, under 13), GDPR (under 13–16 depending on country), India DPDP (under 18 needs verifiable parental consent; no tracking or targeted ads to children). Age gate if needed.
 - [ ] 🟡 **Disclaimers** for health, fitness, finance, investment, legal or AI-generated advice.
-- [ ] 🟡 **User-generated content:** a report and takedown process, a DMCA or copyright contact, and moderation. In India, intermediary rules can require a grievance officer. → lawyer.
+- [ ] 🟡 **Takedown process for user content:** a report and takedown process, a DMCA or copyright contact, and moderation. In India, intermediary rules can require a grievance officer. → lawyer.
 - [ ] 🟡 **Regulated data or industries:** health (HIPAA), finance, education (FERPA), kids, crypto or gambling. → lawyer before launch.
 - [ ] 🟡 **Accessibility law.** ADA (US), the European Accessibility Act (EU, in force from June 2025) and similar may apply. See `launch-ux.md`.
 

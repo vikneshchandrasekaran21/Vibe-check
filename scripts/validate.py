@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Validate the vibe-check skill so nothing is missing, broken or duplicated.
+
+Checks:
+  1. SKILL.md frontmatter (name matches folder, lowercase, description length, version).
+  2. Every reference file is listed in SKILL.md's module tables, and every file SKILL.md mentions exists.
+  3. Every reference file is in scripts/build.py REF_ORDER (so it reaches dist/ and the Claude app zip).
+  4. Every module file has a title and at least one check; every check has a severity (🔴/🟡/🟢) and a bold name.
+  5. No duplicate check names inside a module; reports near-duplicates across modules.
+  6. AI blind spots are numbered 1..N with no gaps.
+  7. Report template contains every required section; SKILL.md self-check covers them.
+  8. README mentions every module and links only to files that exist.
+  9. Generated files are up to date; dist/vibe-check.md contains every module; the zip has every file;
+     the Gemini TOML parses.
+Usage: python3 scripts/validate.py   (exit code 1 on any error)
+"""
+from __future__ import annotations
+import re, sys, zipfile, subprocess
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # older Python: use tomli if installed, else skip the TOML check
+    try:
+        import tomli as tomllib  # type: ignore
+    except ModuleNotFoundError:
+        tomllib = None
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SK = ROOT / "skills" / "vibe-check"
+REFS = SK / "references"
+errors: list[str] = []
+warnings: list[str] = []
+def err(m): errors.append(m)
+def warn(m): warnings.append(m)
+
+skill = (SK / "SKILL.md").read_text()
+
+# 1. frontmatter
+m = re.match(r"---\n(.*?)\n---\n", skill, re.S)
+if not m: err("SKILL.md: missing frontmatter")
+else:
+    fm = m.group(1)
+    name = re.search(r"^name:\s*(\S+)", fm, re.M)
+    desc = re.search(r"^description:\s*(.+)$", fm, re.M)
+    ver = re.search(r'version:\s*"(\d+\.\d+\.\d+)"', fm)
+    if not name or name.group(1) != SK.name: err("SKILL.md: name must match folder name")
+    elif not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name.group(1)): err("SKILL.md: name must be lowercase-hyphen")
+    if not desc or not (20 <= len(desc.group(1)) <= 200): err(f"SKILL.md: description must be 20-200 chars (is {len(desc.group(1)) if desc else 0})")
+    if not ver: err("SKILL.md: metadata.version missing")
+    else:
+        cl = (ROOT / "CHANGELOG.md").read_text()
+        if f"## v{ver.group(1)}" not in cl: err(f"CHANGELOG.md: no entry for v{ver.group(1)}")
+
+# 2. module tables <-> files
+ref_files = {p.name for p in REFS.glob("*.md")}
+mentioned = set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill))
+for f in sorted(mentioned - ref_files): err(f"SKILL.md mentions missing file references/{f}")
+support = {"fixes.md", "report-template.md"}
+for f in sorted(ref_files - mentioned - support): err(f"references/{f} is not listed in SKILL.md's module tables")
+# bare `x.md` mentions anywhere in the skill must exist
+all_text = skill + "".join((REFS / f).read_text() for f in ref_files)
+for f in sorted(set(re.findall(r"`([a-z0-9-]+\.md)`", all_text)) - ref_files):
+    err(f"`{f}` is referenced but doesn't exist")
+
+# 3. build order
+build = (ROOT / "scripts" / "build.py").read_text()
+order = re.findall(r'"([a-z0-9-]+\.md)"', build.split("REF_ORDER", 1)[1].split("]", 1)[0])
+for f in sorted(ref_files - set(order)): err(f"scripts/build.py REF_ORDER is missing {f}")
+for f in sorted(set(order) - ref_files): err(f"scripts/build.py REF_ORDER lists missing file {f}")
+
+# 4/5. module structure, severities, duplicates
+names_by_module: dict[str, list[str]] = {}
+total = blockers = 0
+for f in sorted(ref_files - support):
+    text = (REFS / f).read_text()
+    if not text.startswith("# "): err(f"{f}: must start with a '# ' title")
+    items = re.findall(r"^- \[ \] (.*)$", text, re.M)
+    if not items: err(f"{f}: has no checklist items")
+    names = []
+    for it in items:
+        sev = re.match(r"(🔴|🟡|🟢) ", it)
+        if not sev: err(f"{f}: item without severity: {it[:60]}"); continue
+        total += 1; blockers += sev.group(1) == "🔴"
+        nm = re.match(r"(?:🔴|🟡|🟢) \*\*(.+?)\*\*", it)
+        if not nm and f != "platforms.md": warn(f"{f}: item without a bold name: {it[:60]}")
+        names.append(re.sub(r"[^a-z0-9 ]", "", (nm.group(1) if nm else it[3:60]).lower()).strip())
+    dup = {n for n in names if names.count(n) > 1}
+    for d in dup: err(f"{f}: duplicate check '{d}'")
+    names_by_module[f] = names
+seen: dict[str, str] = {}
+for f, names in names_by_module.items():
+    for n in names:
+        if len(n) > 12 and n in seen and seen[n] != f: warn(f"same check name in {seen[n]} and {f}: '{n}'")
+        seen.setdefault(n, f)
+
+# 6. blind spots numbering
+nums = [int(n) for n in re.findall(r"^\| (\d+) \| (?:🔴|🟡|🟢)", skill, re.M)]
+if nums != list(range(1, len(nums) + 1)): err(f"SKILL.md: blind spots not numbered 1..N: {nums}")
+
+# 7. report template + self-check
+tpl = (REFS / "report-template.md").read_text()
+for sec in ["Verdict", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it"]:
+    if sec not in tpl: err(f"report-template.md: missing '{sec}'")
+for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "re-check", ".vibe-check/"]:
+    if must.lower() not in skill.lower(): err(f"SKILL.md: self-check/report rules don't mention '{must}'")
+# every module in coverage template rows
+cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
+for label in ["blind spots", "Security", "reliability", "DevOps", "Functional QA", "Legal", "UX", "Platform"]:
+    if label.lower() not in cov.lower(): err(f"report-template.md coverage table is missing '{label}'")
+
+# 8. README
+readme = (ROOT / "README.md").read_text()
+for f in sorted(ref_files):
+    if f not in readme: err(f"README.md repo layout doesn't list {f}")
+for link in re.findall(r"\]\((?!https?://|#|mailto:)([^)]+)\)", readme):
+    if not (ROOT / link.split("#")[0]).exists(): err(f"README.md links to missing file: {link}")
+
+# 9. generated outputs
+r = subprocess.run([sys.executable, str(ROOT / "scripts" / "build.py"), "--check"], capture_output=True, text=True)
+if r.returncode: err("generated files are out of date:\n" + r.stdout)
+dist = (ROOT / "dist" / "vibe-check.md").read_text()
+for f in ref_files:
+    title = (REFS / f).read_text().splitlines()[0].lstrip("# ").strip()
+    if title not in dist: err(f"dist/vibe-check.md is missing module '{title}'")
+with zipfile.ZipFile(ROOT / "dist" / "vibe-check.zip") as z:
+    zn = set(z.namelist())
+    for f in ref_files | {"SKILL.md"}:
+        p = f"vibe-check/{f}" if f == "SKILL.md" else f"vibe-check/references/{f}"
+        if p not in zn: err(f"dist/vibe-check.zip is missing {p}")
+if tomllib is None:
+    warn("Python < 3.11 without tomli: skipped the Gemini TOML parse check (CI runs it)")
+else:
+    try:
+        tomllib.loads((ROOT / "adapters/gemini/.gemini/commands/vibe-check.toml").read_text())
+    except Exception as e:
+        err(f"Gemini TOML doesn't parse: {e}")
+
+print(f"Modules: {len(ref_files - support)} · checks: {total} (🔴 {blockers}) · blind spots: {len(nums)}")
+for w in warnings: print("warning:", w)
+for e in errors: print("ERROR:", e)
+print("OK: skill is complete and consistent." if not errors else f"{len(errors)} error(s).")
+sys.exit(1 if errors else 0)

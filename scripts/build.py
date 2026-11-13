@@ -20,6 +20,7 @@ SKILL_DIR = ROOT / "skills" / "vibe-check"
 REF_ORDER = [
     "security.md",
     "reliability.md",
+    "devops.md",
     "functional-qa.md",
     "legal-privacy.md",
     "launch-ux.md",

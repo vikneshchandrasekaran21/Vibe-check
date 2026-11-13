@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.2.0"
+  version: "2.4.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -20,10 +20,12 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
 5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
-6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts.
+6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts. **Never load-test or stress-test production** or any system the user doesn't own; load tests run only on staging or locally, with the user's approval and paid APIs mocked.
 7. **Mask secrets.** Show only the first 4 characters and where the secret is (`sk_l…` in `src/lib/stripe.ts:3`).
 8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
 9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
+10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
+11. **Check everything that applies, item by item.** Read each module file that applies in full, and give every item a result. Don't sample, skim or stop early because the app "looks fine". If you run out of time or context, say exactly which modules or items are unfinished in the coverage table; never present a partial check as complete.
 
 ## Step 1: Profile the app
 
@@ -84,9 +86,10 @@ Write down:
 
 | Module | File |
 |---|---|
-| Security and authentication | `references/security.md` |
-| Data, reliability, infrastructure, observability, CI | `references/reliability.md` |
-| Functional QA: broken buttons, links, forms, flows | `references/functional-qa.md` |
+| Security and authentication, encryption, data leakage | `references/security.md` |
+| Data, reliability and testing: APIs, DB, background work, performance, load and stress, tests | `references/reliability.md` |
+| DevOps and operations: CI/CD, environments, deploys and rollback, monitoring and alerts, cron monitoring, backups and restore, secrets and access, costs, domains and SSL, incidents | `references/devops.md` |
+| Functional QA: buttons, links, forms, states, error and success messages, edge cases, sessions, journeys per role | `references/functional-qa.md` |
 | Legal, privacy, licensing (fonts, images, code) | `references/legal-privacy.md` |
 | UX, accessibility, launch basics, email, abuse, mobile | `references/launch-ux.md` |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
@@ -104,6 +107,8 @@ Write down:
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
+Keep a running tally per module (passed / failed / N/A / can't tell). You need it for the coverage table in Step 5.
+
 ### Tools and fallbacks
 
 Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say in the report which method you used.
@@ -114,17 +119,40 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 | Secret scan | The grep patterns in blind spot #3, over files and `git log -p` |
 | Click-through QA | Static review: every `onClick`, `<a href>`, form `action` and route traced to a handler that exists (see `functional-qa.md`) |
 | Lighthouse / axe | Manual review of the main pages against `launch-ux.md` |
+| Dashboard-only settings (backups, MFA, billing alerts, branch protection, uptime monitors) | Check config files and `gh` / platform CLIs if logged in; otherwise mark CAN'T TELL and ask the user |
 | Build | List it under "Not checked", with the exact command for the user to run |
 
 **vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
 
 ## Step 5: Report
 
-1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in `references/report-template.md`.
-2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **If this was a Quick run,** end with: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
-4. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
-5. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+Use the format in `references/report-template.md`. It must contain, in this order:
+
+1. **Verdict and score line.**
+2. **🔴 Blockers:** each with plain-language impact, evidence, the fix, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
+3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
+4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
+5. **What passed**, with evidence.
+6. **Coverage table:** one row per module (blind spots, every core module, every profile module), each marked ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with passed, failed, N/A and can't-tell counts, and the method (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
+7. **Not checked:** anything skipped, with the exact command or step for the user.
+8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
+
+**Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
+
+**In the chat**, reply with the verdict, the score card, every 🔴 blocker with its fix prompt, the top 🟡 items, the coverage table, the most important questions, the report path, and then: *"Fix the N safe items now? Other fixes need your decision first."* If this was a Quick run, add: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
+
+### Before you reply: self-check
+
+Go through this list and fix anything missing **before** sending the report:
+
+- [ ] Every module that applies appears in the coverage table, and no module is silently missing (DevOps, functional QA and the policy pack included).
+- [ ] Every item in those modules has a result. ◐ or ❌ modules say what's missing and why.
+- [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
+- [ ] Every finding is marked safe to auto-fix yes/no.
+- [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
+- [ ] No secrets are printed in full. The score card contains no private details.
+- [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
+- [ ] The reply ends with the score card and the "fix the safe items" offer.
 
 ## Step 6: Fix (only after the user approves)
 

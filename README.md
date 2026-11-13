@@ -44,8 +44,8 @@ It works like a senior team in one command, covering what security, QA, legal an
 
 | | |
 |---|---|
-| 🔍 **Audit** | **18 AI blind-spot checks** plus **360+ checks** in 13 modules. It asks a few questions about your app and runs only the modules that apply |
-| 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, and a "needs a lawyer" list |
+| 🔍 **Audit** | **18 AI blind-spot checks** plus **420+ checks** in 14 modules. It asks a few questions about your app and runs only the modules that apply |
+| 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
 | 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
@@ -157,7 +157,7 @@ Just ask your agent:
 2. **Map:** stack, data map (including things like photo GPS), entry points, database rules, env vars, live and platform default domains, known issues.
 3. **Blind spots:** the 18 mistakes AI coding tools make most often.
 4. **Modules:** the core modules plus only the profile modules that apply. It uses real tools where available (audit, secret and licence scanners, Playwright, Lighthouse), and falls back to reading the code when they're missing.
-5. **Report:** saved to `.vibe-check/reports/` with a summary in chat. You get the verdict and score, blockers with a fix prompt, which items are safe to auto-fix, questions for you, a "needs a lawyer" list, what passed, and what wasn't checked.
+5. **Report:** saved to `.vibe-check/reports/` with a summary in chat. You get the verdict and score, blockers with a fix prompt, which items are safe to auto-fix, questions for you, a "needs a lawyer" list, what passed, a **coverage table** for every module, and what wasn't checked. Before replying, the agent runs a **self-check** so nothing is silently skipped.
 6. **Fix (only what you approve):** prove the bug, apply a proven pattern, add a test, re-check, one issue per commit. For things only you can do (dashboard settings, rotating keys, legal decisions), it gives you exact steps.
 
 ### Example report
@@ -207,9 +207,10 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | Area | Highlights |
 |---|---|
 | 🧠 **AI blind spots** | Authorization and IDOR, RLS and Firebase rules, leaked secrets, mass assignment, prices from the client, unverified payments, missing timeouts, race conditions, invented or outdated packages, LLM spend caps, exposed admin and debug pages, unsafe AI features |
-| 🔐 **Security & auth** | Sessions, cookies, JWTs, password reset and magic links, brute force, OAuth, roles, multi-tenancy, SQL, NoSQL, XSS and command injection, uploads, SSRF, open redirects, CORS, CSRF, headers, hashing vs encryption, dependencies, rate limits |
-| 🗄️ **Data & reliability** | Migrations, indexes, constraints, backups and restore tests, idempotency, webhooks, queues, cron, caching, pooling, CI/CD, staging, rollback, disaster recovery, cost alerts, logging, error tracking, uptime |
-| 🖱️ **Functional QA** | Dead buttons and links, forms that don't save, missing loading, empty and error states, leftover placeholder content, console errors, broken assets, phone and Safari journeys |
+| 🔐 **Security & auth** | Sessions, cookies, JWTs, password reset and magic links, brute force, OAuth, roles, multi-tenancy, SQL, NoSQL, XSS and command injection, uploads, SSRF, open redirects, CORS, CSRF, headers, **encryption at rest, in transit and per field**, **data leakage** (over-sharing APIs, account enumeration, cached private pages, tokens in URLs, guessable links, data sent to third parties, exports), dependencies, rate limits |
+| 🗄️ **Data, reliability & testing** | Status codes, timeouts, idempotency, webhooks, migrations, indexes, constraints, queues, scheduled cleanup jobs, caching, pooling, concurrency, **load, spike, soak and data-volume tests (on staging only)**, graceful overload, payment replay tests, test coverage of money and login paths |
+| ⚙️ **DevOps & operations** | CI on every push, protected main, Dependabot, separate environments, automated deploys and **rollback**, platform default domains, **error alerts that reach a human**, uptime and **cron monitoring**, third-party outage handling, logs without personal data, **backups with a tested restore**, disaster recovery, MFA everywhere, secret rotation, bus factor, billing alerts, domain/SSL expiry, email that actually sends, incident runbook |
+| 🖱️ **Functional QA** | Dead buttons and links, forms that don't save, loading, empty and error states, **clear error and success messages**, delete confirmations, payment result screens, typos, **edge cases** (money rounding, long or non-Latin text, time zones, list edges, limits), **session expiry, multiple tabs, smoke test of every journey for every role**, console errors, broken assets, phone and Safari |
 | ⚖️ **Legal & privacy** | Privacy policy vs actual data, terms, cookie consent, deletion and export, OSS licenses (GPL/AGPL), **web-font licenses**, an asset register, refunds, PCI, tax, honest marketing, dark patterns |
 | 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), mobile, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse, app store rules |
 | 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, **Cloudflare** (TLS minimum, `workers.dev`, R2), Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
@@ -234,7 +235,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 ## Free & open source: what's included
 
 **Everything in this repo is free, forever (MIT):**
-- ✅ All 18 blind spots, 360+ checks and 13 modules, at all three levels
+- ✅ All 18 blind spots, 420+ checks and 14 modules, at all three levels
 - ✅ The fix playbook, "fix safe items", the scope guard and report history
 - ✅ Works in every tool listed above, with your own AI subscription
 - ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
@@ -265,9 +266,10 @@ Your code stays on your machine. Only URLs, lockfiles and summaries are sent. �
 skills/vibe-check/          ← the skill (source of truth)
 ├── SKILL.md                  workflow, ground rules, AI blind spots, scope guard
 └── references/
-    ├── security.md           core: security & authentication
-    ├── reliability.md        core: data, reliability, infra, observability, CI
-    ├── functional-qa.md      core: broken buttons, links, forms, states
+    ├── security.md           core: security, auth, encryption, data leakage
+    ├── reliability.md        core: data, reliability, load and stress, testing
+    ├── devops.md             core: CI/CD, deploys, monitoring, backups, access, incidents
+    ├── functional-qa.md      core: general QA: flows, messages, edge cases, sessions
     ├── legal-privacy.md      core: legal, privacy, licensing (incl. fonts)
     ├── launch-ux.md          core: accessibility, mobile, SEO, email, abuse
     ├── platforms.md          core: Supabase, Firebase, Cloudflare, Vercel, builders, ...
@@ -283,6 +285,7 @@ dist/vibe-check.md          ← everything in one file (for paste-in tools)   [g
 dist/vibe-check.zip         ← upload-ready skill for the Claude app           [generated]
 adapters/                   ← Cursor, Copilot, Windsurf, Cline, Gemini, AGENTS.md  [generated]
 scripts/build.py            ← regenerates dist/ and adapters/
+scripts/validate.py         ← checks the skill is complete and consistent (runs in CI)
 ```
 
 ## FAQ
@@ -309,7 +312,7 @@ On purpose. It audits first so you see what's wrong. Then say *"fix the safe ite
 
 Seen AI tools keep making a mistake that isn't covered? PRs are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerate `dist/` and `adapters/`. CI checks that they're in sync.
+Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerate `dist/` and `adapters/`, and `python3 scripts/validate.py` to check that every module is wired in, every check has a severity and name, nothing is duplicated, and the README, zip and adapters are complete. CI runs both.
 
 ## Changelog
 

@@ -52,6 +52,21 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 - <Improvements you noticed that aren't launch issues. Listed only; never applied without being asked.>
 
+## 🧭 Coverage
+
+| Module | Status | Passed | Failed | N/A | Can't tell | Method |
+|---|---|---|---|---|---|---|
+| AI blind spots | ✅ checked | 15 | 2 | 1 | 0 | code review, `npm audit`, grep |
+| Security & auth | ✅ checked | | | | | |
+| Data, reliability & testing | ✅ checked | | | | | |
+| DevOps & operations | ◐ partly | | | | | <why: e.g. "backups, MFA, billing alerts are dashboard settings: see questions"> |
+| Functional QA | ◐ partly | | | | | <e.g. "static review of handlers; no browser run: `npx playwright …` to complete"> |
+| Legal, privacy & licensing | ✅ checked | | | | | |
+| UX & launch | ✅ checked | | | | | |
+| Platform traps (<platforms>) | ✅ checked | | | | | |
+| <profile modules that apply: AI features / Kids & education / Health / Fintech / Policy pack / Enterprise> | | | | | | |
+| <profile modules that don't apply> | ➖ not applicable | | | | | <reason, e.g. "no health data"> |
+
 ## Not checked
 
 - <Areas or commands skipped, why, and the exact command for the user to run, e.g. "Build not run (shared folder in use): run `npm run build`".>

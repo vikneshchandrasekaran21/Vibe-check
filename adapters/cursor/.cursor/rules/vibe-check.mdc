@@ -19,10 +19,12 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
 5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
-6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts.
+6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts. **Never load-test or stress-test production** or any system the user doesn't own; load tests run only on staging or locally, with the user's approval and paid APIs mocked.
 7. **Mask secrets.** Show only the first 4 characters and where the secret is (`sk_l…` in `src/lib/stripe.ts:3`).
 8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
 9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
+10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
+11. **Check everything that applies, item by item.** Read each module file that applies in full, and give every item a result. Don't sample, skim or stop early because the app "looks fine". If you run out of time or context, say exactly which modules or items are unfinished in the coverage table; never present a partial check as complete.
 
 ## Step 1: Profile the app
 
@@ -83,9 +85,10 @@ Write down:
 
 | Module | File |
 |---|---|
-| Security and authentication | the **security** section below |
-| Data, reliability, infrastructure, observability, CI | the **reliability** section below |
-| Functional QA: broken buttons, links, forms, flows | the **functional-qa** section below |
+| Security and authentication, encryption, data leakage | the **security** section below |
+| Data, reliability and testing: APIs, DB, background work, performance, load and stress, tests | the **reliability** section below |
+| DevOps and operations: CI/CD, environments, deploys and rollback, monitoring and alerts, cron monitoring, backups and restore, secrets and access, costs, domains and SSL, incidents | the **devops** section below |
+| Functional QA: buttons, links, forms, states, error and success messages, edge cases, sessions, journeys per role | the **functional-qa** section below |
 | Legal, privacy, licensing (fonts, images, code) | the **legal-privacy** section below |
 | UX, accessibility, launch basics, email, abuse, mobile | the **launch-ux** section below |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | the **platforms** section below |
@@ -103,6 +106,8 @@ Write down:
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
+Keep a running tally per module (passed / failed / N/A / can't tell). You need it for the coverage table in Step 5.
+
 ### Tools and fallbacks
 
 Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say in the report which method you used.
@@ -113,17 +118,40 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 | Secret scan | The grep patterns in blind spot #3, over files and `git log -p` |
 | Click-through QA | Static review: every `onClick`, `<a href>`, form `action` and route traced to a handler that exists (see the **functional-qa** section below) |
 | Lighthouse / axe | Manual review of the main pages against the **launch-ux** section below |
+| Dashboard-only settings (backups, MFA, billing alerts, branch protection, uptime monitors) | Check config files and `gh` / platform CLIs if logged in; otherwise mark CAN'T TELL and ask the user |
 | Build | List it under "Not checked", with the exact command for the user to run |
 
 **vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
 
 ## Step 5: Report
 
-1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in the **report-template** section below.
-2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **If this was a Quick run,** end with: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
-4. **End with the score card**, plus, only for 🟢, the badge snippet and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
-5. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+Use the format in the **report-template** section below. It must contain, in this order:
+
+1. **Verdict and score line.**
+2. **🔴 Blockers:** each with plain-language impact, evidence, the fix, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
+3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
+4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
+5. **What passed**, with evidence.
+6. **Coverage table:** one row per module (blind spots, every core module, every profile module), each marked ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with passed, failed, N/A and can't-tell counts, and the method (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
+7. **Not checked:** anything skipped, with the exact command or step for the user.
+8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
+
+**Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
+
+**In the chat**, reply with the verdict, the score card, every 🔴 blocker with its fix prompt, the top 🟡 items, the coverage table, the most important questions, the report path, and then: *"Fix the N safe items now? Other fixes need your decision first."* If this was a Quick run, add: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
+
+### Before you reply: self-check
+
+Go through this list and fix anything missing **before** sending the report:
+
+- [ ] Every module that applies appears in the coverage table, and no module is silently missing (DevOps, functional QA and the policy pack included).
+- [ ] Every item in those modules has a result. ◐ or ❌ modules say what's missing and why.
+- [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
+- [ ] Every finding is marked safe to auto-fix yes/no.
+- [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
+- [ ] No secrets are printed in full. The score card contains no private details.
+- [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
+- [ ] The reply ends with the score card and the "fix the safe items" offer.
 
 ## Step 6: Fix (only after the user approves)
 
@@ -210,8 +238,9 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🔴 **HTTPS everywhere**, with HTTP redirected to HTTPS and HSTS on.
 - [ ] 🔴 **Passwords hashed** with argon2id or bcrypt (salted automatically). Never encrypted, plain text, MD5 or SHA-*.
 - [ ] 🟡 **Hashing vs encryption.** Hashing for things you only verify (passwords, tokens); encryption for things you need back (keys for third-party accounts and similar).
-- [ ] 🟡 **Encryption at rest** for the DB, file storage and backups. Field-level encryption for very sensitive data (government IDs, health data, OAuth tokens).
-- [ ] 🟡 **Encryption in transit**, including TLS to the DB and between services.
+- [ ] 🔴 **Encryption at rest** for the DB, file storage and backups (check the provider's setting; most managed DBs and storage encrypt by default, so confirm it). 🔴 for apps with children's, health, financial or ID data; 🟡 otherwise.
+- [ ] 🔴 **Field-level encryption for very sensitive data** (government IDs, health records, bank details, stored OAuth or API tokens of users), with keys kept outside the DB. N/A if the app stores none.
+- [ ] 🔴 **Encryption in transit** everywhere: HTTPS for the app and API, TLS to the DB, storage and between services, and no `http://` calls to third parties.
 - [ ] 🟡 **Security headers:** `Content-Security-Policy` (start report-only), `frame-ancestors` or `X-Frame-Options` (clickjacking), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`. Check with securityheaders.com.
 - [ ] 🟡 **Cryptographic randomness** for tokens and IDs (`crypto.randomUUID` or `crypto.getRandomValues`, never `Math.random`).
 
@@ -228,9 +257,26 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🔴 **Rate limits** on auth, password reset, OTP and SMS (to prevent SMS-pumping fraud), email sending, LLM calls, file uploads, search, exports and any expensive endpoint.
 - [ ] 🟡 **Bot protection** on signup and public forms (Turnstile, hCaptcha, honeypot).
 
+### Data leakage
+
+Check how data could reach someone who shouldn't see it, even when access control looks right.
+
+- [ ] 🔴 **API responses return only what the screen needs:** no password hashes, tokens, internal flags, other users' emails or phone numbers, or whole database rows (`select *` sent to the client). Check list endpoints, search, public profiles, exports and server-rendered page data.
+- [ ] 🔴 **No account enumeration:** signup, login, password reset and invite flows don't reveal whether an email or phone number is registered (same message and similar timing), or, where the product must say so, they're rate-limited.
+- [ ] 🔴 **Private data isn't cached for others:** responses with personal data send `Cache-Control: private, no-store`. CDN, edge and framework caches never serve one user's page or API response to another.
+- [ ] 🔴 **No secrets or personal data in URLs:** tokens, emails and IDs aren't in query strings (they end up in logs, browser history, analytics and `Referer` headers). Reset and magic links are single-use, and `Referrer-Policy` is set.
+- [ ] 🔴 **Share and file links aren't guessable:** long random IDs or signed, expiring URLs for shared reports, invoices, uploads and exports. No sequential IDs.
+- [ ] 🟡 **Third parties get only what they need:** analytics, error tracking, session replay, chat widgets and AI providers don't receive passwords, form contents, health data or children's data. Session replay masks inputs. Error tracking scrubs personal data.
+- [ ] 🟡 **Client bundles and source don't expose internals:** no admin routes, internal API keys, feature flags for unreleased paid features, or other customers' data in JavaScript bundles, HTML comments or `__NEXT_DATA__` and similar.
+- [ ] 🟡 **Exports and downloads** (CSV, PDF, backups) are access-checked and logged, include only the requester's data, and are protected against CSV formula injection (`=`, `+`, `-`, `@` at the start of cells).
+- [ ] 🟡 **No sensitive data in emails and notifications:** they don't include sensitive data in subject lines or lock-screen previews, and go only to verified addresses.
+- [ ] 🟡 **Deleted data is really gone:** deleted accounts, files and messages are removed from search indexes, caches, CDN, storage buckets and third parties within the stated time.
+
 <a id="reliability"></a>
 
-## Data, reliability, infrastructure and observability
+## Data, reliability and testing
+
+Code-level reliability: APIs, data, background work, performance and tests. Deployment, monitoring, backups and operations are in the **devops** section.
 
 Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch · 🟡 before scale · 🟢 recommended.
 
@@ -250,7 +296,6 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 
 - [ ] 🔴 **Migrations.** Every schema change is a versioned migration in git. No manual edits in the production dashboard.
 - [ ] 🔴 **Indexes** on the columns the code filters, joins and sorts on (foreign keys, `user_id`, `created_at`, slugs). Check them against the actual queries.
-- [ ] 🔴 **Backups** are automatic and off-site, with point-in-time recovery if available. **Ask the user whether a restore has ever been tested.**
 - [ ] 🔴 **Constraints in the DB:** `NOT NULL`, `UNIQUE`, foreign keys and check constraints, so bad data can't get in even if app code has a bug.
 - [ ] 🟡 **Normalized schema**, with no duplicated data that can drift apart. Denormalize only on purpose.
 - [ ] 🟡 **Soft deletes** (`deleted_at`) where users may want data back, and **hard deletes** for privacy erasure requests.
@@ -266,7 +311,8 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 
 - [ ] 🟡 **Slow work runs in the background:** emails, AI calls, image or video processing, reports and imports run in a queue, not in the request.
 - [ ] 🟡 **Queue with retries and a dead-letter queue** (BullMQ, SQS, Inngest, Trigger.dev, QStash, Cloud Tasks).
-- [ ] 🟡 **Cron jobs** can't overlap, are idempotent, and alert when they fail or don't run.
+- [ ] 🟡 **Cron jobs** can't overlap and are idempotent. (Monitoring them is in the **devops** section.)
+- [ ] 🟡 **Cleanup jobs run on a schedule,** not as a side effect of user actions. For example, deleting expired uploads, old logs and sessions shouldn't depend on a user coming back or an admin opening a page.
 
 ### Performance and scaling
 
@@ -279,37 +325,11 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟡 **Concurrency.** Shared counters and limits are updated atomically.
 - [ ] 🟢 **Load balancing**, reverse proxy (Nginx, Caddy, Cloudflare) and API gateway when the architecture needs them.
 - [ ] 🟢 **Horizontal vs vertical scaling.** Know which your setup supports and where it stops.
-- [ ] 🟢 **Load test** of the main flows (k6, Artillery) before launches and campaigns.
 - [ ] 🟢 **Profiling** before optimizing.
-
-### Infrastructure and deployment
-
-- [ ] 🔴 **CI** runs lint, type-check, tests and build on every PR. Main is protected.
-- [ ] 🔴 **Rollback.** Deploys can be reverted in minutes.
-- [ ] 🔴 **Staging separate from production**, with separate DBs, keys and webhooks. Preview deploys don't use production data or keys.
-- [ ] 🔴 **Disaster recovery plan:** what happens if the DB is deleted, a key leaks, the cloud or GitHub account is locked, or the only developer is unavailable. Who has access, and where are the credentials?
-- [ ] 🔴 **Cost monitoring.** Billing alerts and caps on cloud, DB, LLM, SMS and email providers.
-- [ ] 🟡 **`/health` endpoint** that checks the DB and critical dependencies.
-- [ ] 🟡 **Feature flags** for risky features, with a kill switch.
-- [ ] 🟡 **Domain and DNS.** Domain auto-renew is on, with registrar 2FA. SSL auto-renews. `www` and the apex redirect consistently.
-- [ ] 🟢 **Docker or another reproducible environment.**
-- [ ] 🟢 **Infrastructure as Code** (Terraform, Pulumi, SST).
-- [ ] 🟢 **Graceful shutdown.** In-flight requests and jobs finish before the process stops.
-
-### Observability
-
-- [ ] 🔴 **Error tracking** on frontend and backend (Sentry, PostHog, Bugsnag, Rollbar), with source maps uploaded privately.
-- [ ] 🔴 **No sensitive data in logs:** grep logging calls for passwords, tokens, auth headers, card data, full request bodies and personal data.
-- [ ] 🔴 **Uptime monitoring** from outside (BetterStack, UptimeRobot, Checkly), with alerts that reach a human.
-- [ ] 🟡 **Structured JSON logs** with request ID, user ID and route.
-- [ ] 🟡 **Dashboards** for latency, error rate, traffic and saturation.
-- [ ] 🟡 **Alerting** on things that need action, without noise.
-- [ ] 🟡 **Status page** or a way to tell users about outages.
-- [ ] 🟢 **Distributed tracing** (OpenTelemetry) once there are several services.
 
 ### Testing and process
 
-- [ ] 🔴 **Tests for the money and safety paths:** signup, login, password reset, payment, permissions ("user A can't touch user B"), and data deletion.
+- [ ] 🔴 **Tests for the money and safety paths,** including a **replay test** for each payment and webhook route: signup, login, password reset, payment, permissions ("user A can't touch user B"), and data deletion.
 - [ ] 🟡 **Test pyramid.** Unit tests for logic, integration tests for API plus DB, and E2E (Playwright, Cypress) for the main journeys.
 - [ ] 🟡 **Code review.** A human reviews changes to auth, payments, data access, migrations and infrastructure.
 - [ ] 🟡 **Branching strategy.** Short-lived branches; main is always deployable.
@@ -317,6 +337,81 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟡 **Project rules file** (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules`) recording architecture, conventions and "never do" rules, so future AI sessions stay consistent.
 - [ ] 🟢 **Semantic versioning** for APIs, packages and app releases.
 - [ ] 🟢 **Docs.** A README covering setup, environment variables and deployment, so someone else could run it.
+
+### Load and stress
+
+**Never load-test or stress-test production, or anything you don't own.** Run these on staging or a local copy, only with the user's approval, and keep paid APIs (AI, SMS, email, payments) in test or mock mode so a test can't create a bill. If there's no safe environment, review the code for the risks below and list the test as "Not checked", with the command for the user.
+
+- [ ] 🔴 **Expensive endpoints are protected before any load arrives:** rate limits, request size limits, pagination caps, timeouts and per-user quotas on AI, uploads, search, exports and sign-ups (see the **security** section and the **ai-features** section).
+- [ ] 🟡 **Load test of the main journeys** before launch or a campaign, with a tool such as k6, Artillery, autocannon or Locust: expected peak users × 2, measuring p95 response time and error rate. Record the result and the date.
+- [ ] 🟡 **Spike test:** a sudden jump (e.g. 10× normal for 1–2 minutes). The app slows down or queues work, but doesn't crash, corrupt data or double-charge.
+- [ ] 🟡 **Realistic data volume:** pages and queries tested with production-sized data (e.g. 100k rows, users with 1,000 items), not just a few test records. Watch for slow queries and memory use.
+- [ ] 🟡 **Concurrency test of money and limits:** many parallel requests to payment, credit, coupon and quota endpoints prove there are no double spends or limit bypasses.
+- [ ] 🟡 **Graceful overload:** when limits are hit, users get a clear "busy, try again" message (HTTP 429/503 with `Retry-After`), and background queues absorb bursts.
+- [ ] 🟡 **Platform limits known:** the serverless timeout, memory, DB connection limit, storage and AI provider rate limits, and what happens when each is hit.
+- [ ] 🟢 **Soak test:** a few hours at normal load shows no memory leaks or growing response times.
+
+<a id="devops"></a>
+
+## DevOps and operations
+
+Load this file for every Full and Enterprise check. It covers how the app is built, deployed, watched, backed up and recovered, and who can operate it. Many items are settings or processes rather than code: check config files (`.github/workflows`, `wrangler.*`, `vercel.json`, `netlify.toml`, `fly.toml`, `Dockerfile`, `package.json` scripts, IaC), run safe read-only commands, and ask the user for anything that lives in a dashboard. Record the evidence or the question for each item.
+
+### CI and code flow
+- [ ] 🔴 **CI runs on every push and PR:** install, lint, type-check, tests and build (e.g. a GitHub Actions workflow). A local "release check" script doesn't count unless deploys can't skip it.
+- [ ] 🔴 **The main branch is protected:** PRs and passing checks required, no force-pushes. → ask the user, or check the repo settings with `gh api` if available.
+- [ ] 🟡 **Dependency updates are automated** (Dependabot or Renovate), with security alerts on.
+- [ ] 🟡 **Secret scanning and push protection** are on for the repo.
+- [ ] 🟡 **Reproducible builds:** lockfile committed, runtime version pinned (`.nvmrc`, `engines`, `.tool-versions`, `runtime.txt`).
+
+### Environments and deploys
+- [ ] 🔴 **Dev, staging and production are separate,** with separate DBs, storage buckets, keys, webhooks and OAuth apps. Preview deploys never use production data or live keys.
+- [ ] 🔴 **Deploys are automated and traceable:** every production deploy maps to a commit, and the tests run before it.
+- [ ] 🔴 **Rollback in minutes:** a known way to go back to the previous version (platform rollback, redeploy a tag), plus how to handle DB migrations when rolling back. → ask if not documented.
+- [ ] 🟡 **Migrations run as part of the deploy,** are backwards-compatible where possible, and are tested on staging first.
+- [ ] 🟡 **Feature flags or a kill switch** for risky or costly features (AI, payments, sign-ups).
+- [ ] 🟡 **Platform default domains** (`*.workers.dev`, `*.vercel.app`, `*.netlify.app`, `*.pages.dev`, `*.fly.dev`) are disabled or redirect to the real domain.
+- [ ] 🟢 **Infrastructure as Code** (Terraform, Pulumi, SST, wrangler config in git), so the setup can be rebuilt.
+- [ ] 🟢 **Graceful shutdown:** in-flight requests and jobs finish before the process stops (for long-running servers).
+
+### Monitoring and alerting
+- [ ] 🔴 **Error tracking with alerts:** production errors (frontend and backend) go to a tool that **notifies a human** (Sentry, PostHog, Bugsnag, Rollbar, Cloudflare/Vercel alerts). An admin page that nobody watches doesn't count.
+- [ ] 🔴 **Outside uptime monitoring** of the main site and API (BetterStack, UptimeRobot, Checkly), with alerts to email, phone or Slack.
+- [ ] 🔴 **Scheduled jobs are monitored:** a cron or heartbeat monitor alerts if a job fails **or stops running** (e.g. Healthchecks.io, Cronitor, Sentry Crons).
+- [ ] 🟡 **A health check endpoint** (`/health`) that checks the DB and critical dependencies, used by the uptime monitor.
+- [ ] 🟡 **Third-party outages are handled:** calls to AI, payment, auth and email providers have timeouts, limited retries, and a friendly fallback message. Check each provider the app calls.
+- [ ] 🟡 **Structured logs** with request ID, user ID and route, kept for a defined period, searchable when something breaks.
+- [ ] 🟡 **Alerts are actionable:** few and meaningful (error spikes, downtime, failed jobs, payment webhook failures), each with a clear owner.
+- [ ] 🟢 **Dashboards** for traffic, latency, error rate and resource use.
+- [ ] 🟢 **Status page,** or another way to tell users about outages.
+
+### Logs and data in operations
+- [ ] 🔴 **No secrets or sensitive personal data in logs:** grep logging calls and error handlers for passwords, tokens, auth headers, card data, dates of birth, health data and full request bodies.
+- [ ] 🟡 **Log retention matches the privacy policy,** and is enforced by a scheduled job or platform setting, not manually.
+- [ ] 🟡 **Admin and support tools** that show user data have their own auth, 2FA and an access log.
+
+### Backups and recovery
+- [ ] 🔴 **Automatic, off-site backups** of the database (point-in-time recovery if available) and of important file storage.
+- [ ] 🔴 **A restore has been tested,** with a date recorded and how long it took. → ask the user. Never tested = FAIL.
+- [ ] 🔴 **Disaster recovery plan:** what happens if the DB is deleted, a key leaks, the cloud, GitHub or app-store account is locked, or the only developer is unavailable.
+- [ ] 🟡 **Recovery targets known:** how much data could be lost (RPO) and how long recovery would take (RTO).
+
+### Secrets and access
+- [ ] 🔴 **Production secrets live in the platform's secret store,** not in config files or the repo.
+- [ ] 🔴 **MFA on every critical account:** cloud, GitHub, domain registrar, DNS, payment provider, email provider, app stores, AI providers. → ask the user.
+- [ ] 🟡 **Secret rotation:** a documented way to rotate each key quickly, and rotation after anyone with access leaves.
+- [ ] 🟡 **Bus factor:** at least two trusted people can access and operate production. Accounts belong to the company, not one personal login.
+- [ ] 🟡 **Least privilege for people and tokens:** CI tokens, deploy keys and team members get only the access they need.
+
+### Costs, domains and certificates
+- [ ] 🔴 **Billing alerts and spending caps** on cloud, database, storage, AI, SMS and email providers. → ask the user.
+- [ ] 🟡 **Domain auto-renew is on,** with registrar lock and 2FA, and the expiry date is known.
+- [ ] 🟡 **SSL/TLS certificates renew automatically,** and an expiry alert exists (many uptime tools include this).
+- [ ] 🟡 **Email sending domain** has SPF, DKIM and DMARC, and transactional email (verification, password reset, receipts, alerts) actually arrives. Check that the app has an email provider at all.
+
+### Incidents
+- [ ] 🟡 **Incident runbook:** who gets alerted, first steps (roll back, disable feature, rotate key), how users are told, and the legal notification timelines (e.g. CERT-In 6 hours in India, GDPR 72 hours).
+- [ ] 🟢 **Post-incident notes** are written, so the same failure doesn't repeat.
 
 <a id="functional-qa"></a>
 
@@ -360,6 +455,31 @@ Record each broken item with the page, the element (its text or selector), what 
 ### Cross-device
 - [ ] 🔴 **Main journeys work on a phone** (375px wide) and in Safari (iOS) and Chrome.
 - [ ] 🟡 **Slow network** (throttle to "Fast 3G" or "Slow 4G"): no broken state, and timeouts show a message.
+
+### Messages and microcopy
+- [ ] 🔴 **Error messages are clear and helpful:** they say what went wrong and what to do next, in plain words ("Your card was declined. Try another card."). No raw codes, "undefined", "null", `[object Object]`, stack traces or "Something went wrong" with no way forward.
+- [ ] 🔴 **Every important action confirms success:** saving, sending, paying, uploading, inviting and deleting all show a visible confirmation, and the result appears without a refresh.
+- [ ] 🔴 **Destructive actions ask first:** deleting, cancelling a subscription, leaving a team or removing data shows a confirmation that names what will be lost. Undo is offered where it's cheap.
+- [ ] 🟡 **Payment results are unambiguous:** success, failure, pending and cancelled each have a clear screen. Users are never left unsure whether they were charged.
+- [ ] 🟡 **Messages are consistent:** same tone, terms and capitalisation across the app (e.g. "Delete" vs "Remove"), and in the users' language(s).
+- [ ] 🟡 **No typos or grammar mistakes** in UI text, emails, error messages and legal pages. Run a spell-check over the copy.
+- [ ] 🟡 **Empty and first-use states guide the user:** a short explanation and a clear next action, not a blank screen.
+- [ ] 🟢 **Notifications and toasts** stay long enough to read, can be dismissed, and are announced to screen readers.
+
+### Edge cases
+- [ ] 🔴 **Money and numbers are correct:** prices, taxes, discounts and totals round correctly (integers in the smallest currency unit, no floating-point errors), with the right currency symbol and format. Zero, negative and very large amounts are handled.
+- [ ] 🟡 **Unusual input works:** very long names and text, empty optional fields, emoji, non-Latin scripts (e.g. Hindi, Tamil, Arabic), apostrophes and quotes (`O'Brien`), and leading or trailing spaces.
+- [ ] 🟡 **Dates and times are right for the user:** time zones (including users in a different time zone from the server), daylight saving, midnight and month-end, and date formats for the region.
+- [ ] 🟡 **Lists behave at the edges:** zero, one and many items. The last page of pagination, sorting, filtering and search with no results all work.
+- [ ] 🟡 **Limits are explained:** hitting a plan limit, quota, file size or character limit shows a clear message and what to do, never a silent failure.
+- [ ] 🟡 **Files at the edges:** the largest allowed upload, wrong file types, an interrupted upload and duplicate file names.
+
+### Sessions and journeys
+- [ ] 🔴 **Smoke test of every main journey, for every user role** (e.g. visitor, free user, paid user, admin, parent/child): sign up, log in, the core action, pay, cancel, log out, delete account. Each step works and shows the right screens.
+- [ ] 🟡 **Session expiry mid-task:** if the session expires while someone is filling a form or paying, they're asked to sign in again without losing their work or being charged twice.
+- [ ] 🟡 **Multiple tabs and devices:** logging out, changing plan or editing data in one tab or device is reflected in others, with no stale or conflicting saves.
+- [ ] 🟡 **Role changes take effect immediately:** downgraded, removed or banned users lose access straight away, including in open sessions.
+- [ ] 🟡 **Notifications and emails** for each journey (welcome, receipt, password reset, invite, alerts) are sent once, arrive, show the right details and link to working pages.
 
 <a id="legal-privacy"></a>
 
@@ -410,7 +530,7 @@ Record each broken item with the page, the element (its text or selector), what 
 
 - [ ] 🟡 **Age restrictions.** COPPA (US, under 13), GDPR (under 13–16 depending on country), India DPDP (under 18 needs verifiable parental consent; no tracking or targeted ads to children). Age gate if needed.
 - [ ] 🟡 **Disclaimers** for health, fitness, finance, investment, legal or AI-generated advice.
-- [ ] 🟡 **User-generated content:** a report and takedown process, a DMCA or copyright contact, and moderation. In India, intermediary rules can require a grievance officer. → lawyer.
+- [ ] 🟡 **Takedown process for user content:** a report and takedown process, a DMCA or copyright contact, and moderation. In India, intermediary rules can require a grievance officer. → lawyer.
 - [ ] 🟡 **Regulated data or industries:** health (HIPAA), finance, education (FERPA), kids, crypto or gambling. → lawyer before launch.
 - [ ] 🟡 **Accessibility law.** ADA (US), the European Accessibility Act (EU, in force from June 2025) and similar may apply. See the **launch-ux** section.
 
@@ -673,7 +793,7 @@ Load this file when the app collects health, medical, mental-health, fitness, fe
 Load this file when the app takes payments, holds balances, pays out to users, lends, invests, or handles financial data. Also check the payments items in the **legal-privacy** section and the Stripe/Razorpay section of the **platforms** section.
 
 ### Payments
-- [ ] 🔴 **Card data never touches your servers:** hosted checkout or elements only (keeps you out of PCI DSS scope). No card numbers in logs, DB or analytics.
+- [ ] 🔴 **No card numbers anywhere in your systems:** logs, DB, analytics, support tools and error tracking. (Hosted checkout is checked in the **legal-privacy** section.)
 - [ ] 🔴 **Amounts, currency and tax** are calculated on the server.
 - [ ] 🔴 **Webhooks are verified and idempotent.** Entitlements are granted and revoked only from verified events (paid, refunded, disputed, cancelled, failed).
 - [ ] 🔴 **Test and live modes are separate.** Failure, refund, dispute and cancel flows were rehearsed in test mode.
@@ -719,12 +839,12 @@ Check which documents exist, whether they're linked where users need them, and w
 | 🟢 **Status page and SLA** | Paid or B2B | Uptime target, credits if any, how incidents are communicated | Footer, contracts |
 
 ### Checks
-- [ ] 🔴 Every required document exists, is reachable without logging in, and is linked where users need it.
-- [ ] 🔴 Each document matches the app as it is today, including recently added fields and features (compare against the data map).
-- [ ] 🔴 No overstated claims ("cannot be reversed", "fully anonymous", "bank-grade", "100% secure", "compliant" without proof).
-- [ ] 🟡 Each document has an effective date and a version history, and users are told about material changes.
-- [ ] 🟡 Documents are in the languages users use, and the translations match.
-- [ ] 🟡 Contact details work (the email inbox is monitored).
+- [ ] 🔴 **Required documents exist:** each one is reachable without logging in and linked where users need it.
+- [ ] 🔴 **Documents match the app today,** including recently added fields and features (compare against the data map).
+- [ ] 🔴 **No overstated claims:** ("cannot be reversed", "fully anonymous", "bank-grade", "100% secure", "compliant" without proof).
+- [ ] 🟡 **Dated and versioned:** each document has an effective date and a version history, and users are told about material changes.
+- [ ] 🟡 **In the users' languages,** and the translations match.
+- [ ] 🟡 **Contact details work** (the email inbox is monitored).
 
 <a id="enterprise"></a>
 
@@ -827,6 +947,21 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 ### 💡 Other suggestions (not changed)
 
 - <Improvements you noticed that aren't launch issues. Listed only; never applied without being asked.>
+
+### 🧭 Coverage
+
+| Module | Status | Passed | Failed | N/A | Can't tell | Method |
+|---|---|---|---|---|---|---|
+| AI blind spots | ✅ checked | 15 | 2 | 1 | 0 | code review, `npm audit`, grep |
+| Security & auth | ✅ checked | | | | | |
+| Data, reliability & testing | ✅ checked | | | | | |
+| DevOps & operations | ◐ partly | | | | | <why: e.g. "backups, MFA, billing alerts are dashboard settings: see questions"> |
+| Functional QA | ◐ partly | | | | | <e.g. "static review of handlers; no browser run: `npx playwright …` to complete"> |
+| Legal, privacy & licensing | ✅ checked | | | | | |
+| UX & launch | ✅ checked | | | | | |
+| Platform traps (<platforms>) | ✅ checked | | | | | |
+| <profile modules that apply: AI features / Kids & education / Health / Fintech / Policy pack / Enterprise> | | | | | | |
+| <profile modules that don't apply> | ➖ not applicable | | | | | <reason, e.g. "no health data"> |
 
 ### Not checked
 
@@ -954,6 +1089,21 @@ Do these in order. **Rotating the key is the fix.** Deleting the line is not.
 3. If the browser needed it, put a server route in between that calls the provider.
 4. Add `.env*` (except `.env.example`) to `.gitignore`. Turn on GitHub secret scanning and push protection, or gitleaks in CI.
 5. Rewriting git history (git filter-repo) is optional once the key is rotated. Tell the user it's a destructive, team-wide operation.
+
+### Data leakage
+
+#### API returns too much data
+Send a response shape that lists exactly the fields the screen needs (a DTO or `select`), never the raw row:
+```ts
+const user = await db.user.findUnique({ where: { id }, select: { id: true, name: true, avatarUrl: true } });
+```
+For server-rendered frameworks, pass only those fields to client components. **Test:** the response for another user's public profile contains no email, phone, password hash or internal flags.
+
+#### Account enumeration
+Return the same message, with similar timing, whether or not the account exists: *"If an account exists for that email, we've sent a link."* For signup, send a "you already have an account" **email** instead of showing it on screen. Rate-limit these endpoints.
+
+#### Private data in shared caches
+Add `Cache-Control: private, no-store` to authenticated responses, and make sure CDN or framework caching (e.g. `revalidate`, edge cache rules) is off for personalised routes. **Test:** two users fetch the same URL and each sees only their own data.
 
 ### Input and injection
 

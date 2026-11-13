@@ -38,3 +38,28 @@ Record each broken item with the page, the element (its text or selector), what 
 ## Cross-device
 - [ ] 🔴 **Main journeys work on a phone** (375px wide) and in Safari (iOS) and Chrome.
 - [ ] 🟡 **Slow network** (throttle to "Fast 3G" or "Slow 4G"): no broken state, and timeouts show a message.
+
+## Messages and microcopy
+- [ ] 🔴 **Error messages are clear and helpful:** they say what went wrong and what to do next, in plain words ("Your card was declined. Try another card."). No raw codes, "undefined", "null", `[object Object]`, stack traces or "Something went wrong" with no way forward.
+- [ ] 🔴 **Every important action confirms success:** saving, sending, paying, uploading, inviting and deleting all show a visible confirmation, and the result appears without a refresh.
+- [ ] 🔴 **Destructive actions ask first:** deleting, cancelling a subscription, leaving a team or removing data shows a confirmation that names what will be lost. Undo is offered where it's cheap.
+- [ ] 🟡 **Payment results are unambiguous:** success, failure, pending and cancelled each have a clear screen. Users are never left unsure whether they were charged.
+- [ ] 🟡 **Messages are consistent:** same tone, terms and capitalisation across the app (e.g. "Delete" vs "Remove"), and in the users' language(s).
+- [ ] 🟡 **No typos or grammar mistakes** in UI text, emails, error messages and legal pages. Run a spell-check over the copy.
+- [ ] 🟡 **Empty and first-use states guide the user:** a short explanation and a clear next action, not a blank screen.
+- [ ] 🟢 **Notifications and toasts** stay long enough to read, can be dismissed, and are announced to screen readers.
+
+## Edge cases
+- [ ] 🔴 **Money and numbers are correct:** prices, taxes, discounts and totals round correctly (integers in the smallest currency unit, no floating-point errors), with the right currency symbol and format. Zero, negative and very large amounts are handled.
+- [ ] 🟡 **Unusual input works:** very long names and text, empty optional fields, emoji, non-Latin scripts (e.g. Hindi, Tamil, Arabic), apostrophes and quotes (`O'Brien`), and leading or trailing spaces.
+- [ ] 🟡 **Dates and times are right for the user:** time zones (including users in a different time zone from the server), daylight saving, midnight and month-end, and date formats for the region.
+- [ ] 🟡 **Lists behave at the edges:** zero, one and many items. The last page of pagination, sorting, filtering and search with no results all work.
+- [ ] 🟡 **Limits are explained:** hitting a plan limit, quota, file size or character limit shows a clear message and what to do, never a silent failure.
+- [ ] 🟡 **Files at the edges:** the largest allowed upload, wrong file types, an interrupted upload and duplicate file names.
+
+## Sessions and journeys
+- [ ] 🔴 **Smoke test of every main journey, for every user role** (e.g. visitor, free user, paid user, admin, parent/child): sign up, log in, the core action, pay, cancel, log out, delete account. Each step works and shows the right screens.
+- [ ] 🟡 **Session expiry mid-task:** if the session expires while someone is filling a form or paying, they're asked to sign in again without losing their work or being charged twice.
+- [ ] 🟡 **Multiple tabs and devices:** logging out, changing plan or editing data in one tab or device is reflected in others, with no stale or conflicting saves.
+- [ ] 🟡 **Role changes take effect immediately:** downgraded, removed or banned users lose access straight away, including in open sessions.
+- [ ] 🟡 **Notifications and emails** for each journey (welcome, receipt, password reset, invite, alerts) are sent once, arrive, show the right details and link to working pages.

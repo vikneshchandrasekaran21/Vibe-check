@@ -1,5 +1,41 @@
 # Changelog
 
+## v2.4.0 (2026-11-13)
+
+- **🔐 Encryption:** at rest, in transit and per field are now 🔴 for apps with children's, health, financial or ID data.
+- **🕳️ New "Data leakage" section (10 checks):**
+  - APIs returning hidden fields, account enumeration, private pages cached for others
+  - tokens in URLs and referrers, guessable share links
+  - data sent to analytics, session replay and error tracking
+  - internals in client bundles
+  - exports (including CSV formula injection), sensitive email subjects
+  - deleted data that isn't really gone
+- **📈 New "Load and stress" section (8 checks):** load, spike, data-volume, concurrency and soak tests, graceful overload and platform limits. **Never against production.** Only staging or local, with approval and paid APIs mocked.
+- **🖱️ General QA, 3 new sections (19 checks):**
+  - **Messages and microcopy:** clear error messages, success confirmations, delete confirmations with undo, payment result screens, consistent wording, typos, empty states, toasts.
+  - **Edge cases:** money rounding, unusual text (emoji, Hindi and Tamil, apostrophes), time zones and DST, list edges, limits, file edges.
+  - **Sessions and journeys:** a smoke test of every journey for every role, session expiry mid-task, multiple tabs and devices, role changes taking effect, notifications per journey.
+- **🛠️ Fix playbook:** new recipes for over-sharing APIs, account enumeration and private data in shared caches.
+
+## v2.3.0 (2026-11-13)
+
+From a real full run on a live app, where DevOps coverage was thin and parts of the report format were skipped.
+
+- **New core module: ⚙️ DevOps & operations** (40 checks):
+  - CI on every push, protected main, Dependabot
+  - separate environments, automated deploys and rollback, platform default domains
+  - error alerts that reach a human, uptime and **cron monitoring**, third-party outage handling
+  - logs without personal data
+  - backups with a tested restore, disaster recovery
+  - MFA everywhere, secret rotation, bus factor
+  - billing alerts, domain and SSL expiry, email that actually sends, incident runbook
+- **The reliability module is now "Data, reliability & testing":** infrastructure moved to DevOps. It adds scheduled cleanup jobs and payment **replay tests**.
+- **🧭 Coverage table in every report:** each module marked ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with counts and method, so you can see exactly what was checked.
+- **"Before you reply" self-check:** the agent confirms coverage, evidence, fix prompts, safe-to-fix marks, the saved report and the score card before answering.
+- **Fresh evidence every run:** findings from earlier runs are re-checked and marked still open, fixed or new, never copied forward. A new level starts every step from the beginning.
+- **Check everything that applies, item by item.** No sampling. Unfinished modules must be shown as unfinished.
+- **`scripts/validate.py`:** an automated check that every module is wired into the skill, build, zip, adapters and README, that every check has a severity and a name, and that there are no duplicates. It runs in CI.
+
 ## v2.2.0 (2026-11-13)
 
 - **The full check is now always the default.** "vibe check this app" runs everything that applies. Quick runs only when you say "quick", and it ends by suggesting the full check.
