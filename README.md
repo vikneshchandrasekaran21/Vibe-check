@@ -167,6 +167,26 @@ Score: 96 / 121 checks passed · 🔴 2 blockers · 🟡 9 to fix before scale �
    can't fetch user B's invoice. Don't change anything else."
 ```
 
+### 🏁 Show your score
+
+Every report ends with a one-line **score card**, made to screenshot and share:
+
+```text
+vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
+```
+
+Start at 🔴? Most people do. Fix, re-run, and post your 🔴 → 🟢 with **#vibecheck**.
+
+If you reach 🟢 at Launch level or above, add the badge to your README:
+
+```markdown
+[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
+```
+
+[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
+
+The report ends with a small "Checked with vibe-check" footer. Tell your agent *"no footer"* to remove it. It never adds anything to your app.
+
 ---
 
 ## What it checks
@@ -279,6 +299,16 @@ On purpose. It audits first so you see what's wrong. Then say *"fix the safe ite
 Seen AI tools keep making a mistake that isn't covered? PRs are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Edit only `skills/vibe-check/`, then run `python3 scripts/build.py` to regenerate `dist/` and `adapters/`. CI checks that they're in sync.
+
+## 🏆 Hall of 🟢
+
+Projects that passed vibe-check at **Launch level or above** and asked to be listed.
+
+| Project | Level | Score | Checked |
+|---|---|---|---|
+| *Yours could be first* | | | |
+
+**Get listed:** reach 🟢 SHIP at Launch or Enterprise level, then **[submit your project](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Hall%20of%20Green%3A%20%3Cproject%3E&labels=hall-of-green&body=Project%20URL%3A%0AScore%20card%3A%0ALevel%3A%0ADate%3A)** with your score card. Scores are self-reported, and listings are removed if a project is reported as no longer passing.
 
 ## Changelog
 

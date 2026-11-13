@@ -3,7 +3,7 @@ name: vibe-check
 description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   homepage: "https://github.com/vikneshchandrasekaran21/vibe-check"
 ---
 
@@ -122,7 +122,8 @@ Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or t
 
 1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in `references/report-template.md`.
 2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
-3. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+3. **End with the score card**, plus, only for 🟢, the badge snippet, the Hall of 🟢 link and a one-line ⭐ request (see "Score card, badge and footer" in the report template). The saved report ends with the removable footer.
+4. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
 
 ## Step 6: Fix (only after the user approves)
 

@@ -55,6 +55,17 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 ## Not checked
 
 - <Areas or commands skipped, why, and the exact command for the user to run, e.g. "Build not run (shared folder in use): run `npm run build`".>
+
+## 🏁 Score card
+
+```text
+vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Launch level · 13 Nov 2026
+```
+
+<only if 🟢: the badge snippet and the Hall of 🟢 link, see below>
+
+---
+<sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/vibe-check</sub>
 ````
 
 ## Writing tips
@@ -64,3 +75,31 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 - For dependency findings, give the advisory ID, installed version and fixed version.
 - Never print a full secret. Show its first 4 characters and its location.
 - If something is fine, don't invent a problem to look thorough.
+
+## Score card, badge and footer
+
+These go at the very end of the saved report **and** the chat summary.
+
+### Score card (always)
+One line, in a `text` code block, so it screenshots cleanly:
+
+`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick|Launch|Enterprise> level · <D Mon YYYY>`
+
+- `passed / applicable` counts only items marked PASS out of items that weren't N/A. CAN'T TELL counts as not passed.
+- **Never include** findings, secrets, private URLs, file paths, or the app name, unless the user asks for the app name. The card is meant to be shared publicly.
+- If the score improved since the last report in `.vibe-check/reports/`, add the change: `· was 🔴 71/118`. Before-and-after posts are the most shared.
+
+### Badge (only for 🟢 SHIP at Launch or Enterprise level)
+Offer this snippet for the user's README. **Don't add it yourself** unless the user says yes (scope guard):
+
+```markdown
+[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20<passed>%2F<applicable>-brightgreen)](https://github.com/vikneshchandrasekaran21/vibe-check)
+```
+
+Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash). Then add: *"Want to be listed in the Hall of 🟢? [Submit your project](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Hall%20of%20Green%3A%20%3Cproject%3E&labels=hall-of-green&body=Project%20URL%3A%0AScore%20card%3A%0ALevel%3A%0ADate%3A)."*
+
+### Star request (only for 🟢, once)
+One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.
+
+### Footer (always, removable)
+The last line of the saved report: `<sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/vibe-check</sub>`. Leave it out if the user has asked for no footer (or `.vibe-check/config` contains `footer: false`). Never add it to the user's app, pages or code, only to the report.
