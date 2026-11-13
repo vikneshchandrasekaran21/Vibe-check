@@ -1,0 +1,9 @@
+{
+  "name": "pantry-pass",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Meal-kit credits, coupons, referrals and an AI recipe helper. A benchmark app for vibe-check's hunt mode.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.21.2" }
+}

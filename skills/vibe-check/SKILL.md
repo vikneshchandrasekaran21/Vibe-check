@@ -3,7 +3,7 @@ name: vibe-check
 description: Full code audit of AI-built apps before launch (security, data, legal, ops, vulnerabilities). Not a design review. Use for "vibe check", "ready to ship?", "security audit", "fix vibe-check issues".
 license: MIT
 metadata:
-  version: "2.8.1"
+  version: "3.0.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -21,7 +21,7 @@ The **first line of every vibe-check reply** is: `Running vibe-check v<version> 
 
 ## Ground rules (never break these)
 
-1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
+1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6). Notes, ledgers, reports and hunt proofs go only in `.vibe-check/` (gitignored).
 2. **Evidence or it didn't happen: quote the proof.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value. Every FAIL **quotes the exact evidence**: the relevant code lines (re-read from the file just before writing the report, so line numbers and content are current), or the exact command and the part of its output that shows the problem. A finding you can't quote is not a finding. Drop it, or turn it into a question.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
@@ -80,7 +80,8 @@ Work out as much as you can from the code, then ask the user **only** what you c
 3. **Does it take money?** Payments, subscriptions, wallets, payouts.
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
 5. **Where are users?** India, EU/UK, US (which states), Canada (Quebec?), Germany/Austria/Switzerland, other. Is there a government or enterprise buyer?
-6. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
+6. **Can it run for testing?** Does it run locally, or is there a staging or preview URL? May I run safe tests against it with two test accounts (never production)?
+7. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
 
 Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
@@ -180,6 +181,7 @@ Date: YYYY-MM-DD
 | UX, accessibility, launch basics, email, abuse | `references/launch-ux.md` |
 | Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | `references/lawsuits.md` |
 | Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | `references/supply-chain.md` |
+| **Hunt: find what no checklist describes** (threat model, invariants, abuse cases, path differences, assumptions, variants, chains) | `references/hunt.md` |
 | Known vulnerabilities in everything the app runs: runtime, framework, CMS and plugins, packages in every ecosystem, server and container image, end-of-life, actively exploited (CISA KEV) | `references/vulnerabilities.md` |
 | Maintainability and handover: code health, docs, account ownership | `references/maintainability.md` |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
@@ -199,6 +201,7 @@ Date: YYYY-MM-DD
 | Runs on AWS, Google Cloud, Azure or similar, or uses Kubernetes, Terraform or Docker in production | `references/cloud-infra.md` |
 | A desktop app (Electron, Tauri) or a browser extension | `references/desktop-extensions.md` |
 | Several languages or countries, or non-English users | `references/i18n.md` |
+| Full and Enterprise, when the app runs locally or there's a staging URL: tests against the running app (two-account, role, logged-out, rate limits, errors, uploads, ZAP baseline, nuclei) | `references/live-tests.md` |
 | An AI agent takes actions, or the project is an MCP server, plugin or tool provider | `references/ai-agents.md` |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
@@ -219,6 +222,10 @@ The ledger is the tally. Don't keep counts in your head: `coverage.py` produces 
 | Build | List it under "Not checked", with the exact command for the user to run |
 
 **vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
+
+## Step 4a: Hunt (find what no checklist describes)
+
+After the modules, switch from checking to **attacking**: follow `references/hunt.md`. Write the threat model, then test hypotheses against the app's own logic (invariants, abuse cases, path differences, assumptions, variants of every finding, chains) and record each as a `T-` row, proven, disproven or untested. Only on the user's own app, locally or on their staging, with the smallest safe proof in `.vibe-check/proofs/` (gitignored), never a working exploit. A Full check needs at least 12 hypotheses using at least 4 methods; Enterprise at least 25 using at least 6. Keep going while hypotheses still turn up bugs.
 
 ## Step 4b: Verify before reporting (second look)
 
@@ -250,8 +257,8 @@ Use the format in `references/report-template.md`. It must contain, in this orde
 3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
 4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
 5. **What passed**, with evidence.
-6. **Coverage:** paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
-7. **Not checked:** anything skipped, with the exact command or step for the user.
+6. **Coverage and standards:** paste the tables `coverage.py` printed, including the **Standards** table (OWASP Top 10:2025, API Top 10, LLM Top 10, Mobile Top 10, ASVS 5.0 chapters and CWE Top 25, mapped in `references/standards.md`). Call it a coverage view, never a certification. Then paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
+7. **Not checked:** anything skipped, with the exact command or step for the user. Then **Only a human can confirm** (pentest, mobile binary review, legal sign-off, restore drill, and the standards items marked *Human*) and **When to run vibe-check again** (before each launch, after adding payments, sign-in, uploads, AI or a new country, and at least monthly).
 8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
 
 **Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md`, and copy the ledger next to it as `.vibe-check/reports/YYYY-MM-DD-ledger.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
@@ -264,6 +271,9 @@ Go through this list and fix anything missing **before** sending the report:
 
 - [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
 - [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
+- [ ] The Standards table from `coverage.py` is in the report, called a coverage view (not a certification), plus *Only a human can confirm* and *When to run vibe-check again*.
+- [ ] Live tests (`references/live-tests.md`) ran against local or staging with the user's OK, or are marked `CAN'T TELL` with the command, and nothing ran against production.
+- [ ] The hunt ran (Full and Enterprise): a threat model, enough `T-` hypotheses across enough methods, every one proven, disproven or untested with evidence, and `PROVEN NEW` findings marked 🎯 *Found by hunting*.
 - [ ] Every inventory category is accounted for (checked/found), every sweep hit has a verdict (FINDING or RULED OUT), and every component in `.vibe-check/versions.md` has a version verdict with its source.
 - [ ] The *Tools run* table lists every tool tried, with its command and result, including "not installed".
 - [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.

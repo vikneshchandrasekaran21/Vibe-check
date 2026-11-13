@@ -57,7 +57,7 @@ else:
 ref_files = {p.name for p in REFS.glob("*.md")}
 mentioned = set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill))
 for f in sorted(mentioned - ref_files): err(f"SKILL.md mentions missing file references/{f}")
-support = {"fixes.md", "report-template.md", "sweep-patterns.md"}
+support = {"fixes.md", "report-template.md", "sweep-patterns.md", "standards.md"}
 for f in sorted(ref_files - mentioned - support): err(f"references/{f} is not listed in SKILL.md's module tables")
 # bare `x.md` mentions anywhere in the skill must exist
 all_text = skill + "".join((REFS / f).read_text() for f in ref_files)
@@ -130,7 +130,7 @@ for must in ["quotes", "second look", "Confirmed", "Likely", "from memory", "cov
 if "## Step 4b: Verify before reporting" not in skill: err("SKILL.md: missing 'Step 4b: Verify before reporting'")
 # every module in coverage template rows
 cov = tpl.split("## 🧭 Coverage", 1)[1].split("## Not checked", 1)[0] if "## 🧭 Coverage" in tpl else ""
-for label in ["blind-spots", "security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms", "lawsuits", "supply-chain", "vulnerabilities", "maintainability"]:
+for label in ["blind-spots", "security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms", "lawsuits", "supply-chain", "vulnerabilities", "hunt", "maintainability"]:
     if label.lower() not in cov.lower(): err(f"report-template.md coverage table is missing '{label}'")
 
 # 10. scripts, IDs, test bench
@@ -230,6 +230,72 @@ for _d, _, _fs in _os.walk(ROOT / "adapters"):
             err(f"{Path(_d, _fn).relative_to(ROOT)}: header isn't valid YAML: {e}")
 if "Skill files:" not in tpl: err("report-template.md header is missing 'Skill files:'")
 if "--cleanup-tag" in rel: err("release.sh must not delete tags: older installs read their checklists from their version tag")
+
+# 14. exactly one skill in the repo (a stray local install would be picked up by installers)
+import subprocess as _sp
+_skills = []
+for _d, _dirs, _fs in _os.walk(ROOT):
+    _dirs[:] = [x for x in _dirs if x not in (".git", "node_modules", "__pycache__")]
+    if "SKILL.md" in _fs:
+        _skills.append(Path(_d, "SKILL.md").relative_to(ROOT).as_posix())
+if _skills != ["skills/vibe-check/SKILL.md"]:
+    err(f"the repo must contain exactly one SKILL.md (skills/vibe-check/SKILL.md), found: {_skills}. "
+        "Delete local installs like .agents/ (they're gitignored)")
+_gi = (ROOT / ".gitignore").read_text() if (ROOT / ".gitignore").exists() else ""
+for _must in [".agents/", "skills-lock.json", ".vibe-check/"]:
+    if _must not in _gi: err(f".gitignore must include {_must}")
+if "git rm -r -q --cached --ignore-unmatch .agents" not in rel: err("release.sh must untrack local skill installs before committing")
+
+# 15. hunt mode: method, safety rules, report section, benchmark
+hunt = (REFS / "hunt.md").read_text() if (REFS / "hunt.md").exists() else ""
+for must in ["Only the user's own app", "No working exploits", ".vibe-check/proofs/", "report it privately", "## Threat model",
+             "PROVEN NEW", "DISPROVEN", "UNTESTED", "at least 12 hypotheses", "at least 25"]:
+    if must not in hunt: err(f"references/hunt.md is missing '{must}'")
+for must in ["## Step 4a: Hunt", "references/hunt.md", "Found by hunting"]:
+    if must not in skill: err(f"SKILL.md is missing '{must}' (hunt mode)")
+for must in ["🎯 Hunt", "found by hunting"]:
+    if must.lower() not in tpl.lower(): err(f"report-template.md is missing '{must}' (hunt section)")
+for f in ["bench/hunt-app/server.js", "bench/hunt-answers.json", "bench/score.py", "bench/README.md"]:
+    if not (ROOT / f).exists(): err(f"{f} is missing (hunt benchmark)")
+if (ROOT / "bench" / "hunt-app" / "hunt-answers.json").exists() or any(p.name.endswith("answers.json") for p in (ROOT / "bench" / "hunt-app").rglob("*")):
+    err("the hunt answer key must stay outside bench/hunt-app/")
+if ".vibe-check/proofs" not in skill: err("SKILL.md must say hunt proofs go in .vibe-check/proofs")
+
+# 16. standards mapping: complete, real check IDs, known item counts
+std_text = (REFS / "standards.md").read_text() if (REFS / "standards.md").exists() else ""
+expected = {"OWASP Top 10:2025": 10, "OWASP API Security Top 10 (2023)": 10, "OWASP Top 10 for LLM Applications (2025)": 10,
+            "OWASP Mobile Top 10 (2024)": 10, "OWASP ASVS 5.0.0 (by chapter)": 17, "2025 CWE Top 25": 25}
+sections = {}
+cur = None
+for line in std_text.splitlines():
+    if line.startswith("## "):
+        cur = line[3:].strip(); sections[cur] = []
+    elif cur and line.startswith("|"):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) == 3 and cells[0] != "ID" and not set(cells[0]) <= set("-: "):
+            sections[cur].append(cells)
+for title, n in expected.items():
+    items = sections.get(title)
+    if items is None:
+        err(f"standards.md is missing the section '{title}'"); continue
+    if len(items) != n: err(f"standards.md '{title}' has {len(items)} items, expected {n}")
+    seen = set()
+    for iid, name, mapped in items:
+        if iid in seen: err(f"standards.md '{title}': duplicate item {iid}")
+        seen.add(iid)
+        ids = re.findall(r"\b(?:BS-\d{2}|[A-Z]+-\d{3})\b", mapped)
+        if not ids: err(f"standards.md {iid}: maps to no vibe-check check")
+        for cid in ids:
+            if cid not in all_ids and cid not in bs_ids: err(f"standards.md {iid} maps to {cid}, which isn't a check ID")
+for must in ["not a certification", "CC BY-SA", "Human"]:
+    if must not in std_text: err(f"standards.md is missing '{must}'")
+for must in ["references/standards.md", "references/live-tests.md", "Only a human can confirm", "When to run vibe-check again", "never production"]:
+    if must not in skill: err(f"SKILL.md is missing '{must}' (v3.0)")
+for must in ["📏 Standards", "not a certification", "Only a human can confirm", "When to run vibe-check again"]:
+    if must not in tpl: err(f"report-template.md is missing '{must}' (v3.0)")
+live = (REFS / "live-tests.md").read_text() if (REFS / "live-tests.md").exists() else ""
+for must in ["never against production", "user's OK", "two test accounts", "zap-baseline.py", "nuclei", "exclude intrusive"]:
+    if must not in live: err(f"live-tests.md is missing '{must}' (safety)")
 
 core_tbl = skill.split("**Core modules**", 1)[1].split("**Profile modules**", 1)[0] if "**Core modules**" in skill else ""
 core_files = re.findall(r"`references/([a-z0-9-]+)\.md`", core_tbl)

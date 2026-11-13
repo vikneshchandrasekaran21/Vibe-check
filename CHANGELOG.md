@@ -1,5 +1,39 @@
 # Changelog
 
+## v3.0.0 (2026-11-14)
+
+**Standards, real tests on the running app, and what only a human can confirm.**
+- **Standards mapping (`references/standards.md`):** every item of the **OWASP Top 10:2025** (10), **OWASP API Security Top 10 2023** (10), **OWASP Top 10 for LLM Applications 2025** (10), **OWASP Mobile Top 10 2024** (10), **OWASP ASVS 5.0.0** (17 chapters) and the **2025 CWE Top 25** (25) is mapped to vibe-check checks. Items vibe-check can't confirm (memory safety of native code, mobile binary protections, model-training data, WebRTC media) are marked *Human*. `coverage.py` prints a Standards table (✅ / ❌ / ◐ / ➖ per standard, with the items that failed) computed from the ledger. The report calls it a coverage view, never a certification. The lists were checked against top10.owasp.org and cwe.mitre.org.
+- **New profile module `live-tests.md` (11 checks, `LIVE-`):** tests against the **running app, local or staging only, with the user's OK** (never production, test accounts and test payment modes only):
+  - user B against user A's data on every object type and API path
+  - normal users against admin functions, and logged-out visitors against private routes
+  - hunt proofs re-run as real parallel requests
+  - rate limits, error messages and uploads tested for real
+  - **OWASP ZAP baseline** and **nuclei** with safe settings
+  - the tests saved so they can be re-run
+- **Step 1 asks** whether the app can run locally or has a staging URL, and for permission to test it.
+- **The report gets two new sections:** *Only a human can confirm* (pentest, mobile binary review, legal sign-off, restore drill, standards items marked Human) and *When to run vibe-check again*.
+- **The validator checks** that every standard has the right number of items, every item maps to at least one real check ID, and the live-test safety rules are present.
+
+## v2.9.0 (2026-11-14)
+
+**Hunt mode: find what no checklist describes.**
+- **New core module `hunt.md` (9 checks, `HUNT-`), run as Step 4a of every Full and Enterprise check:** after the checklists, the agent attacks the app's own logic. It writes a **threat model** (assets, actors, trust boundaries, entry points), then tests hypotheses with seven methods:
+  - **invariants** (*"credits never go below zero"*), attacked with concurrent, repeated, out-of-order, edge-value and time-based requests
+  - **abuse cases** for every money, quota, invite, coupon, referral, vote, upload, sharing, export, account-change and AI feature
+  - **the same action across every path** (web, API, mobile, `/v1/`, admin, jobs, webhooks)
+  - **questioned assumptions**
+  - **variants** of every confirmed finding
+  - **chains** of smaller findings
+- **Every hypothesis is a `T-` row,** proven (with the smallest safe proof in `.vibe-check/proofs/`), disproven (with what stopped it) or untested (with why). `coverage.py` enforces the minimums:
+  - Full needs 12 or more hypotheses across 4 or more methods, including invariants and abuse cases; Enterprise needs 25 or more across 6 or more
+  - any confirmed failure needs a variant search, and two or more failures need a chain search
+  - a threat model is required
+- **Proven new bugs are marked 🎯 *Found by hunting*** in the report, which has a new Hunt section.
+- **Hunting safety rules:** only the user's own app, locally or on staging, no working exploits, proofs kept out of the user's code, and private disclosure for suspected bugs in other people's software.
+- **Hunt benchmark (`bench/`):** "Pantry Pass", a realistic Express app with **12 logic bugs no checklist line or sweep pattern names**, with the answer key kept outside the app and `bench/score.py` to measure recall. The test bench fails if the sweep ever starts catching a benchmark bug, because then it's no longer novel.
+- **Repo hygiene:** a local skill install (`.agents/`, `skills-lock.json`) was committed by accident in v2.8.1. It's now removed and gitignored, `release.sh` untracks it, and the validator fails unless the repo holds exactly one SKILL.md.
+
 ## v2.8.1 (2026-11-14)
 
 **Can't be mistaken for a design review.**

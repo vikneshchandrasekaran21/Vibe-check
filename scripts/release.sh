@@ -21,6 +21,8 @@ echo "== Releasing vibe-check v$V"
 python3 scripts/build.py
 python3 scripts/validate.py
 
+# never ship a local skill install (npx skills add run inside this repo) or a report
+git rm -r -q --cached --ignore-unmatch .agents .claude skills-lock.json .vibe-check >/dev/null 2>&1 || true
 git add -A
 if git diff --cached --quiet; then echo "(nothing new to commit)"; else git commit -q -m "v$V"; fi
 git push -q

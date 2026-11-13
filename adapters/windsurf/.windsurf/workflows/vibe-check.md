@@ -18,7 +18,7 @@ The **first line of every vibe-check reply** is: `Running vibe-check v<version> 
 
 ## Ground rules (never break these)
 
-1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
+1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6). Notes, ledgers, reports and hunt proofs go only in `.vibe-check/` (gitignored).
 2. **Evidence or it didn't happen: quote the proof.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value. Every FAIL **quotes the exact evidence**: the relevant code lines (re-read from the file just before writing the report, so line numbers and content are current), or the exact command and the part of its output that shows the problem. A finding you can't quote is not a finding. Drop it, or turn it into a question.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
 4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
@@ -77,7 +77,8 @@ Work out as much as you can from the code, then ask the user **only** what you c
 3. **Does it take money?** Payments, subscriptions, wallets, payouts.
 4. **Sensitive data?** Health, financial, government ID, location, biometrics.
 5. **Where are users?** India, EU/UK, US (which states), Canada (Quebec?), Germany/Austria/Switzerland, other. Is there a government or enterprise buyer?
-6. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
+6. **Can it run for testing?** Does it run locally, or is there a staging or preview URL? May I run safe tests against it with two test accounts (never production)?
+7. **What kind of product?** Web app, mobile app, desktop app, browser extension, API or SDK. Can users post, chat or trade with each other? Does it support several languages? Does an AI agent take actions, or is it an MCP server? Which cloud does it run on?
 
 Then pick a **level**. **The default is always 🟡 Full.** Run Quick only when the user explicitly says "quick". Never downgrade on your own because the repo is big or time is short; if a full run will take long, say so and continue. "Launch" and "full" both mean Full.
 
@@ -177,6 +178,7 @@ Date: YYYY-MM-DD
 | UX, accessibility, launch basics, email, abuse | the **launch-ux** section below |
 | Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | the **lawsuits** section below |
 | Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | the **supply-chain** section below |
+| **Hunt: find what no checklist describes** (threat model, invariants, abuse cases, path differences, assumptions, variants, chains) | the **hunt** section below |
 | Known vulnerabilities in everything the app runs: runtime, framework, CMS and plugins, packages in every ecosystem, server and container image, end-of-life, actively exploited (CISA KEV) | the **vulnerabilities** section below |
 | Maintainability and handover: code health, docs, account ownership | the **maintainability** section below |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | the **platforms** section below |
@@ -196,6 +198,7 @@ Date: YYYY-MM-DD
 | Runs on AWS, Google Cloud, Azure or similar, or uses Kubernetes, Terraform or Docker in production | the **cloud-infra** section below |
 | A desktop app (Electron, Tauri) or a browser extension | the **desktop-extensions** section below |
 | Several languages or countries, or non-English users | `references/i18n.md` |
+| Full and Enterprise, when the app runs locally or there's a staging URL: tests against the running app (two-account, role, logged-out, rate limits, errors, uploads, ZAP baseline, nuclei) | the **live-tests** section below |
 | An AI agent takes actions, or the project is an MCP server, plugin or tool provider | the **ai-agents** section below |
 
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
@@ -216,6 +219,10 @@ The ledger is the tally. Don't keep counts in your head: `coverage.py` produces 
 | Build | List it under "Not checked", with the exact command for the user to run |
 
 **vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
+
+## Step 4a: Hunt (find what no checklist describes)
+
+After the modules, switch from checking to **attacking**: follow the **hunt** section below. Write the threat model, then test hypotheses against the app's own logic (invariants, abuse cases, path differences, assumptions, variants of every finding, chains) and record each as a `T-` row, proven, disproven or untested. Only on the user's own app, locally or on their staging, with the smallest safe proof in `.vibe-check/proofs/` (gitignored), never a working exploit. A Full check needs at least 12 hypotheses using at least 4 methods; Enterprise at least 25 using at least 6. Keep going while hypotheses still turn up bugs.
 
 ## Step 4b: Verify before reporting (second look)
 
@@ -247,8 +254,8 @@ Use the format in the **report-template** section below. It must contain, in thi
 3. **🟡 Fix before scale:** each with evidence, fix and safe to auto-fix.
 4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
 5. **What passed**, with evidence.
-6. **Coverage:** paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
-7. **Not checked:** anything skipped, with the exact command or step for the user.
+6. **Coverage and standards:** paste the tables `coverage.py` printed, including the **Standards** table (OWASP Top 10:2025, API Top 10, LLM Top 10, Mobile Top 10, ASVS 5.0 chapters and CWE Top 25, mapped in the **standards** section below). Call it a coverage view, never a certification. Then paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❌ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❌ says why and what would complete it.
+7. **Not checked:** anything skipped, with the exact command or step for the user. Then **Only a human can confirm** (pentest, mobile binary review, legal sign-off, restore drill, and the standards items marked *Human*) and **When to run vibe-check again** (before each launch, after adding payments, sign-in, uploads, AI or a new country, and at least monthly).
 8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
 
 **Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md`, and copy the ledger next to it as `.vibe-check/reports/YYYY-MM-DD-ledger.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
@@ -261,6 +268,9 @@ Go through this list and fix anything missing **before** sending the report:
 
 - [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
 - [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
+- [ ] The Standards table from `coverage.py` is in the report, called a coverage view (not a certification), plus *Only a human can confirm* and *When to run vibe-check again*.
+- [ ] Live tests (the **live-tests** section below) ran against local or staging with the user's OK, or are marked `CAN'T TELL` with the command, and nothing ran against production.
+- [ ] The hunt ran (Full and Enterprise): a threat model, enough `T-` hypotheses across enough methods, every one proven, disproven or untested with evidence, and `PROVEN NEW` findings marked 🎯 *Found by hunting*.
 - [ ] Every inventory category is accounted for (checked/found), every sweep hit has a verdict (FINDING or RULED OUT), and every component in `.vibe-check/versions.md` has a version verdict with its source.
 - [ ] The *Tools run* table lists every tool tried, with its command and result, including "not installed".
 - [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
@@ -975,6 +985,56 @@ Record every tool in the ledger's **Tools run** table, including "not installed"
 
 For every 🔴, the ledger row and the report give: the component and exact version, the advisory ID (CVE/GHSA), the fixed version, the source URL opened during this run, and the workaround if one exists.
 
+<a id="hunt"></a>
+
+## Hunt: find what no checklist describes
+
+Load this file for every Full and Enterprise check (Step 4a). The other modules **check** known problems. This one **discovers** new ones: the bugs in *this* app's own logic that no scanner rule or checklist line can name, like a credit balance that two requests can spend twice, or an old endpoint that skips the ownership check the new one has. Think like an attacker who wants the app's money, data or admin powers, then prove or disprove each idea.
+
+### Safety rules for hunting (on top of the ground rules)
+- **Only the user's own app,** in this project, run **locally or on their staging** with test data. Never production, never anyone else's system.
+- **Prove with the smallest safe proof:** a failing test, a script against a local server and database, or the exact quoted code path. Put proof files in `.vibe-check/proofs/` (gitignored), never in the user's code during the audit.
+- **No working exploits:** no payloads meant to be reused, no instructions for attacking other people's apps.
+- **Suspected bug in someone else's software** (a library, framework, runtime or SaaS API): write *"possible new vulnerability in <project>: report it privately"* with the project's security contact or `SECURITY.md`. Never publish details or build an attack.
+- **Can't run anything?** Hunt by reading code: a hypothesis proven only by code reading is at most 🔎 Likely, with the code path quoted.
+
+### The method
+- [ ] 🔴 HUNT-001 **Threat model written down:** from the inventory, list the app's **assets** (money, credits, quotas, private data, accounts, admin powers, the AI bill), its **actors** (visitor, user, other user, team member, admin, webhook sender, the AI model's output), its **trust boundaries** (browser → API, API → database, app → third parties, AI output → tools) and its **entry points** (every route, action, webhook, job, upload, realtime channel). Write it in the ledger under `## Threat model`.
+- [ ] 🔴 HUNT-002 **Invariants attacked:** for every asset, write the rules that must always hold (*"credits never go below zero"*, *"a user only sees their own rows"*, *"scans never exceed the plan"*, *"an order ships only after it's paid"*, *"one invite gives one seat"*). Attack each one: **two requests at once**, the same request **twice**, **out of order**, at the **edges** (0, −1, huge, decimals, empty, Unicode), and across **time** (midnight, month end, time zones, plan changes).
+- [ ] 🔴 HUNT-003 **Abuse cases per feature:** for every money, credit, quota, invite, coupon, referral, vote, reward, upload, sharing, export, account-change and AI feature in the inventory, write how a greedy or malicious user would abuse it (free credits, stacked discounts, unlimited trials, fake referrals, vote stuffing, other people's files, a huge AI bill) and test it.
+- [ ] 🟡 HUNT-004 **Same action, every path:** compare each sensitive action across the web app, API, mobile app, old versions (`/v1/`), admin routes, server actions, webhooks, background jobs and imports. Any path with **less** checking (auth, ownership, validation, limits, payment state) than the others is a finding.
+- [ ] 🟡 HUNT-005 **Assumptions questioned:** list what the code silently trusts (*"only Stripe calls this"*, *"IDs can't be guessed"*, *"the client sends the right price, role or user ID"*, *"this runs once"*, *"the email is verified"*, *"the AI returns valid JSON"*, *"the file is really an image"*) and break each one.
+- [ ] 🔴 HUNT-006 **Variants of every confirmed finding:** turn each confirmed FAIL (from any module) into a pattern and search the whole codebase for siblings. One missing ownership check usually means more.
+- [ ] 🟡 HUNT-007 **Chains:** combine findings, including 🟡 and 🟢 ones, into attack paths (for example an open redirect plus a sign-in callback that keeps the token: account takeover). Report a chain at the severity of its worst outcome.
+- [ ] 🟡 HUNT-008 **Every hunt finding has a proof and a variant search:** a failing test or local script in `.vibe-check/proofs/`, or the quoted code path for 🔎 Likely, plus the variant search (HUNT-006) for it.
+- [ ] 🟡 HUNT-009 **Nothing silently skipped:** every hypothesis gets a row, including disproven and untested ones (with why), so the user sees what was tried.
+
+### Recording hypotheses
+Each hypothesis is a `T-` row in the ledger, under `## Hunt`:
+
+```markdown
+### Threat model
+- Assets: credits (users.credits), Pro plan, private notes, admin panel, OpenAI bill
+- Actors: visitor, user, other user, team admin, Stripe webhook, AI output
+- Boundaries: browser → /api, /api → Supabase (service role in server only), app → OpenAI
+- Entry points: 23 pages, 47 API routes, 3 webhooks, 2 cron jobs (inventory)
+
+### Hunt
+| ID | Hypothesis | Method | Result | Evidence |
+|---|---|---|---|---|
+| T-001 | Two spends at once can take credits below zero | INVARIANT | PROVEN NEW | .vibe-check/proofs/credits-race.test.ts: 2 parallel calls, balance 10 → -10; api/spend.ts:14-19 read-then-write without a transaction |
+| T-002 | Coupon can be applied twice to one order | ABUSE | DISPROVEN | api/coupon.ts:22 unique (order_id) constraint, insert fails on the second call |
+| T-003 | /api/v1/export skips the owner check that /api/export has | PATH | PROVEN SEC-075 | api/v1/export.ts:9 queries by id only; proof: user B exports user A's data |
+| T-004 | Plan change mid-month resets the scan counter | INVARIANT | UNTESTED | needs a Stripe test-mode subscription; question for the user |
+```
+
+- **Method:** `THREAT`, `INVARIANT`, `ABUSE`, `PATH`, `ASSUMPTION`, `VARIANT` or `CHAIN`.
+- **Result:** `PROVEN NEW` (no checklist line describes it), `PROVEN <check ID>` (it's a finding under that check), `DISPROVEN` (with what stopped it) or `UNTESTED` (with why, and what would test it).
+- `coverage.py` counts them. A Full check needs **at least 12 hypotheses** using **at least 4 different methods** (including `INVARIANT` and `ABUSE`); Enterprise needs **at least 25** using **at least 6**. Any confirmed FAIL needs at least one `VARIANT` row (ideally one per finding), and two or more FAILs need a `CHAIN` row. These are minimums: keep going while hypotheses are still turning up bugs.
+
+### Where hunt findings go in the report
+Proven hunt findings go through the second look (Step 4b) like any other finding, then into 🔴 or 🟡 with the usual fields. `PROVEN NEW` ones are marked **🎯 Found by hunting** (no checklist line describes it). The report's *Hunt* section lists how many hypotheses were tried, proven, disproven and untested, and the most interesting disproven ones (they show the user what's already solid).
+
 <a id="maintainability"></a>
 
 ## Maintainability and handover
@@ -1403,6 +1463,31 @@ Load this file when the app supports more than one language or region, sells to 
 - [ ] 🟡 LOC-016 **Payment methods** fit each region (UPI in India, iDEAL in the Netherlands, local cards), if the app sells there.
 - [ ] 🟢 LOC-017 **Regional content and features** that are restricted or different per country (age limits, banned products, data residency) are handled.
 
+<a id="live-tests"></a>
+
+## Tests against the running app (staging or local only)
+
+Load this file when the app can run locally or the user has a **staging or preview URL**, at the Full and Enterprise levels. Reading code shows what *should* happen; these tests show what *does* happen when someone actually tries. Each test is quick, safe and repeatable.
+
+### The rules for live tests
+- **Only with the user's OK, and never against production.** Ask once: *"Can I run safe tests against <local or staging URL> with two test accounts? Nothing touches production."* Without a yes, mark the tests `CAN'T TELL` with the exact command for the user. Production stays **read-only** (ground rule 6): GET and HEAD requests only.
+- **Test accounts and test data only.** Create or ask for two normal users (A and B) and, if there are roles, one of each. Use payment test modes (Stripe test keys, Razorpay test mode). Never real cards, real people's data or real emails.
+- **Scanners use safe settings only:** passive or baseline modes, no denial-of-service, brute-force or fuzzing templates, low request rates, and stop as soon as anything looks unstable.
+- **Save what you ran:** every command and its result goes in the ledger's *Tools run* table, and test scripts go in `.vibe-check/proofs/` (gitignored).
+
+### Checks
+- [ ] 🔴 LIVE-001 **The target is safe to test:** the user said yes, the URL is local or staging (not production: check the domain, the environment variables and the database it points at), payments are in test mode, and the data can be reset.
+- [ ] 🔴 LIVE-002 **User B can't touch user A's things:** for every object type in the inventory (notes, orders, files, invoices, projects, messages…), user B tries to **read, list, update, delete and export** user A's item by its ID, through every API path including old versions. Every attempt must fail (403 or 404) and leave A's data unchanged.
+- [ ] 🔴 LIVE-003 **Normal users can't use higher roles' functions:** a normal user calls every admin, staff, owner and internal endpoint and action. All are refused, including hidden ones that aren't linked in the UI.
+- [ ] 🔴 LIVE-004 **Logged-out visitors are refused:** every non-public page and API route returns 401 or a redirect to sign-in with no data, including server actions, file URLs and realtime channels.
+- [ ] 🟡 LIVE-005 **Hunt proofs re-run against the running app:** the race, replay and limit hypotheses from the hunt (Step 4a) are re-run as real parallel requests against the local or staging server, and the invariants hold.
+- [ ] 🟡 LIVE-006 **Rate limits actually trigger:** repeated sign-in, sign-up, reset, OTP and expensive (AI, export, upload) requests get 429s at the documented limits, per user and per IP.
+- [ ] 🟡 LIVE-007 **Errors stay quiet:** malformed JSON, wrong types, huge inputs, unknown routes and forced server errors return a friendly message, never a stack trace, SQL error, file path or framework debug page.
+- [ ] 🟡 LIVE-008 **Uploads are really checked:** an SVG with a script, an HTML file renamed to `.jpg`, an oversized file and a ZIP with `../` paths are each rejected or made harmless, and uploaded files are served from a separate domain or with `Content-Disposition: attachment`.
+- [ ] 🟡 LIVE-009 **OWASP ZAP baseline scan:** run ZAP's baseline (passive) scan against the staging URL, for example `docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t <staging URL>`, and review each warning with the second look. If Docker or ZAP isn't available, say so in *Tools run*.
+- [ ] 🟡 LIVE-010 **Known-issue templates (nuclei):** if `nuclei` is installed, run it against the staging URL with safe settings (exclude intrusive, DoS and fuzzing templates; low rate). Its community templates are updated as new vulnerabilities and misconfigurations are published. Review every match with the second look.
+- [ ] 🟢 LIVE-011 **The tests can be re-run:** the two-account, role and logged-out tests are saved as scripts (in `.vibe-check/proofs/`), and offered to the user as permanent tests in their suite (only with their OK, under the scope guard).
+
 <a id="report-template"></a>
 
 ## Report template
@@ -1490,6 +1575,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | lawsuits | ✅ | 14 | | | | | |
 | supply-chain | ✅ | 22 | | | | | |
 | vulnerabilities | ✅ | 15 | | | | | |
+| hunt | ✅ | 9 | | | | | |
 | maintainability | ✅ | 16 | | | | | |
 | <each profile module> | ✅ / ➖ | | | | | | |
 | **Total** | | | | | | | |
@@ -1512,6 +1598,15 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 **Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
 
+**🎯 Hunt** (attacking the app's own logic; `T-` rows in the ledger): <N> hypotheses using <M> methods → <P> proven (<X> new, not in any checklist), <D> disproven, <U> untested.
+
+| Hypothesis | Method | Result |
+|---|---|---|
+| Two spends at once can take credits below zero | Invariant | 🎯 **Proven, found by hunting** (blocker 2) |
+| `/api/v1/export` skips the owner check `/api/export` has | Path | Proven (SEC-075, blocker 3) |
+| A coupon can be applied twice | Abuse | Disproven: unique constraint on order_id |
+| <untested ones, with what would test them> | | Untested: <why> |
+
 **Known vulnerabilities** (from `versions.py` and the audit tools; every verdict links the source opened in this run):
 
 | Component | Version | Status | Advisory / end-of-life | Fixed in / workaround | Source |
@@ -1530,10 +1625,31 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Lint · tests · build | `npm run lint` · `npm test` · `npm run build` | <result, or "no test script"> |
 | Secret scanner | `gitleaks detect` | not installed: used `sweep.py --history` |
 
+### 📏 Standards
+
+*Pasted from `coverage.py`: how this audit's checks came out for each item of each standard (mapping in `references/standards.md`). A coverage view, not a certification.*
+
+| Standard | ✅ | ❌ | ◐ | ➖ | Items that failed |
+|---|---|---|---|---|---|
+| OWASP Top 10:2025 | 7 | 2 | 1 | 0 | A01:2025, A06:2025 |
+| OWASP API Security Top 10 (2023) | | | | | |
+| OWASP Top 10 for LLM Applications (2025) | | | | | |
+| OWASP Mobile Top 10 (2024) | | | | | |
+| OWASP ASVS 5.0.0 (by chapter) | | | | | |
+| 2025 CWE Top 25 | | | | | |
+
 ### Not checked
 
 - <Areas or commands skipped, why, and the exact command for the user to run, e.g. "Build not run (shared folder in use): run `npm run build`".>
 
+
+### 👤 Only a human can confirm
+- <e.g. a penetration test before your first enterprise customer or before handling health or payment data at scale>
+- <mobile binary review (obfuscation, tamper resistance) for M7, memory-safety testing for any native code>
+- <legal sign-off on the policies and the "Needs a lawyer" list; a backup restore drill; the standards items marked *Human*>
+
+### 🔁 When to run vibe-check again
+Before each launch or big release; after adding payments, sign-in, uploads, AI features, a new country or a new kind of user (children, patients, companies); and at least monthly, because new vulnerabilities and rules appear all the time.
 ### 🏁 Score card
 
 ```text
@@ -2025,3 +2141,119 @@ Add a non-root user (`RUN adduser -D app` / `USER app`, or the image's built-in 
   (?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)
   ```
 - **ENV-TRACKED** → `SEC-022`: a `.env` file (not `.example`) is tracked by git (`git ls-files`)
+
+<a id="standards"></a>
+
+## Standards mapping
+
+Every item of six widely used security standards, mapped to the vibe-check checks that cover it. `coverage.py` reads these tables and adds a **Standards** section to the report: for each item, ✅ (every mapped check passed), ❌ (a mapped check failed), ◐ (some mapped checks couldn't be confirmed or weren't done) or ➖ (doesn't apply). It's a coverage view of this audit, **not a certification or a compliance attestation.**
+
+Item IDs and names are the standards' own; the mapping and the checks are vibe-check's. Standard text isn't copied here: read each standard for its full requirements (OWASP ASVS is CC BY-SA 4.0). ASVS is mapped by chapter. Items marked **Human** need a specialist (for example memory-safety testing of native code or a mobile binary review), and the report lists them under *Only a human can confirm*.
+
+Sources (checked 2026-11-14): OWASP Top 10:2025 (top10.owasp.org), OWASP API Security Top 10 2023, OWASP Top 10 for LLM Applications 2025, OWASP Mobile Top 10 2024, OWASP ASVS 5.0.0 (May 2025), 2025 CWE Top 25 (cwe.mitre.org). Re-check these lists when a new edition is published, then update this file.
+
+### OWASP Top 10:2025
+| ID | Name | vibe-check checks |
+|---|---|---|
+| A01:2025 | Broken Access Control | BS-01, BS-02, SEC-014, SEC-015, SEC-016, SEC-017, SEC-019, SEC-020, SEC-034, SEC-059, SEC-075, SEC-076, PLT-004, PLT-011, HUNT-004, LIVE-002, LIVE-003, LIVE-004 |
+| A02:2025 | Security Misconfiguration | BS-11, SEC-037, SEC-046, SEC-061, SEC-079, SEC-080, PLT-043, PLT-044, OPS-041, VUL-012 |
+| A03:2025 | Software Supply Chain Failures | BS-09, BS-19, SEC-048, SEC-049, SUP-001, SUP-002, SUP-003, SUP-006, SUP-007, SUP-008, SUP-014, VUL-005, VUL-006, VUL-007, VUL-008, VUL-013 |
+| A04:2025 | Cryptographic Failures | SEC-040, SEC-041, SEC-042, SEC-043, SEC-044, SEC-045, SEC-047, SEC-072 |
+| A05:2025 | Injection | BS-04, SEC-027, SEC-028, SEC-029, SEC-030, SEC-031, SEC-065, SEC-066, SEC-068, AIF-009 |
+| A06:2025 | Insecure Design | BS-06, BS-08, HUNT-001, HUNT-002, HUNT-003, HUNT-005, SEC-053, SEC-071, REL-044 |
+| A07:2025 | Authentication Failures | SEC-001, SEC-002, SEC-004, SEC-005, SEC-006, SEC-007, SEC-009, SEC-010, SEC-011, SEC-056, SEC-071, SEC-073 |
+| A08:2025 | Software or Data Integrity Failures | BS-05, SEC-018, SEC-038, PLT-038, REL-006, SUP-007, SUP-013, SUP-015 |
+| A09:2025 | Security Logging & Alerting Failures | SEC-021, OPS-014, OPS-019, OPS-020, OPS-023, AGT-011 |
+| A10:2025 | Mishandling of Exceptional Conditions | BS-07, REL-002, REL-003, REL-049, QA-022, LIVE-007 |
+
+### OWASP API Security Top 10 (2023)
+| ID | Name | vibe-check checks |
+|---|---|---|
+| API1:2023 | Broken Object Level Authorization | SEC-015, SEC-075, LIVE-002 |
+| API2:2023 | Broken Authentication | SEC-001, SEC-004, SEC-007, SEC-009, SEC-024 |
+| API3:2023 | Broken Object Property Level Authorization | BS-05, SEC-018, SEC-055 |
+| API4:2023 | Unrestricted Resource Consumption | SEC-053, SEC-074, SEC-077, REL-044, AIF-002, LIVE-006 |
+| API5:2023 | Broken Function Level Authorization | SEC-014, SEC-016, SEC-075, LIVE-003 |
+| API6:2023 | Unrestricted Access to Sensitive Business Flows | HUNT-003, SEC-054, UX-025 |
+| API7:2023 | Server Side Request Forgery | SEC-034, SEC-078 |
+| API8:2023 | Security Misconfiguration | SEC-037, SEC-046, SEC-074, PLT-043 |
+| API9:2023 | Improper Inventory Management | SEC-075, HUNT-004, REL-007, REL-008 |
+| API10:2023 | Unsafe Consumption of APIs | REL-003, PLT-038, AIF-008, AGT-004 |
+
+### OWASP Top 10 for LLM Applications (2025)
+| ID | Name | vibe-check checks |
+|---|---|---|
+| LLM01:2025 | Prompt Injection | AIF-009, AGT-004 |
+| LLM02:2025 | Sensitive Information Disclosure | AIF-011, AIF-012, AIF-016 |
+| LLM03:2025 | Supply Chain | SUP-002, VUL-005, AGT-020 |
+| LLM04:2025 | Data and Model Poisoning | AIF-022, Human: training and fine-tuning data provenance can't be checked from app code |
+| LLM05:2025 | Improper Output Handling | AIF-008, AIF-013, AIF-014 |
+| LLM06:2025 | Excessive Agency | AIF-010, AGT-001, AGT-002, AGT-003 |
+| LLM07:2025 | System Prompt Leakage | AIF-012 |
+| LLM08:2025 | Vector and Embedding Weaknesses | AIF-011, SEC-020 |
+| LLM09:2025 | Misinformation | AIF-019, AIF-020 |
+| LLM10:2025 | Unbounded Consumption | AIF-002, AIF-003, AIF-004, AGT-008 |
+
+### OWASP Mobile Top 10 (2024)
+| ID | Name | vibe-check checks |
+|---|---|---|
+| M1 | Improper Credential Usage | SEC-022, MOB-011 |
+| M2 | Inadequate Supply Chain Security | SEC-048, SUP-002, VUL-010 |
+| M3 | Insecure Authentication/Authorization | SEC-001, SEC-014, MOB-014 |
+| M4 | Insufficient Input/Output Validation | SEC-027, MOB-015 |
+| M5 | Insecure Communication | SEC-045, MOB-013 |
+| M6 | Inadequate Privacy Controls | LEG-001, MOB-003, MOB-004, MOB-006 |
+| M7 | Insufficient Binary Protections | MOB-016, Human: obfuscation and tamper resistance need a mobile binary review |
+| M8 | Security Misconfiguration | MOB-014, MOB-015, MOB-016 |
+| M9 | Insecure Data Storage | MOB-012, MOB-017 |
+| M10 | Insufficient Cryptography | SEC-041, SEC-042, SEC-047 |
+
+### OWASP ASVS 5.0.0 (by chapter)
+| ID | Name | vibe-check checks |
+|---|---|---|
+| V1 | Encoding and Sanitization | SEC-028, SEC-029, SEC-030, SEC-031, SEC-038, SEC-065, SEC-066, SEC-068 |
+| V2 | Validation and Business Logic | BS-04, BS-08, SEC-027, SEC-053, HUNT-002, HUNT-003, REL-048 |
+| V3 | Web Frontend Security | SEC-003, SEC-035, SEC-036, SEC-046, SUP-015, SUP-017 |
+| V4 | API and Web Service | SEC-037, SEC-074, SEC-075, SEC-076, REL-001 |
+| V5 | File Handling | SEC-032, SEC-033, SEC-077, SEC-078, LIVE-008 |
+| V6 | Authentication | SEC-001, SEC-005, SEC-006, SEC-007, SEC-008, SEC-010, SEC-071, SEC-073 |
+| V7 | Session Management | SEC-002, SEC-003, SEC-009, QA-037 |
+| V8 | Authorization | BS-01, SEC-014, SEC-015, SEC-016, SEC-017, SEC-020, SEC-075 |
+| V9 | Self-contained Tokens | SEC-004, SEC-009 |
+| V10 | OAuth and OIDC | SEC-011, SEC-013 |
+| V11 | Cryptography | SEC-041, SEC-042, SEC-043, SEC-044, SEC-047, SEC-072 |
+| V12 | Secure Communication | SEC-040, SEC-045, MOB-013 |
+| V13 | Configuration | SEC-022, SEC-023, SEC-079, SEC-080, PLT-043, PLT-044, VUL-012, OPS-042 |
+| V14 | Data Protection | SEC-055, SEC-057, SEC-058, SEC-063, SEC-064, LEG-012 |
+| V15 | Secure Coding and Architecture | SEC-048, SEC-067, SEC-082, SUP-002, VUL-005, REL-032 |
+| V16 | Security Logging and Error Handling | SEC-021, OPS-014, OPS-019, OPS-023, REL-002, QA-022 |
+| V17 | WebRTC | SEC-076, Human: TURN, media and signaling security for WebRTC apps needs a specialist review |
+
+### 2025 CWE Top 25
+| ID | Name | vibe-check checks |
+|---|---|---|
+| CWE-79 | Cross-site Scripting | SEC-030 |
+| CWE-89 | SQL Injection | SEC-028 |
+| CWE-352 | Cross-Site Request Forgery (CSRF) | SEC-036 |
+| CWE-862 | Missing Authorization | BS-01, SEC-014 |
+| CWE-787 | Out-of-bounds Write | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-22 | Path Traversal | SEC-033, SEC-077 |
+| CWE-416 | Use After Free | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-125 | Out-of-bounds Read | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-78 | OS Command Injection | SEC-031 |
+| CWE-94 | Code Injection | SEC-031, SEC-065 |
+| CWE-120 | Classic Buffer Overflow | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-434 | Unrestricted Upload of Dangerous File Type | SEC-032, LIVE-008 |
+| CWE-476 | NULL Pointer Dereference | REL-002, VUL-005 |
+| CWE-121 | Stack-based Buffer Overflow | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-502 | Deserialization of Untrusted Data | SEC-038 |
+| CWE-122 | Heap-based Buffer Overflow | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
+| CWE-863 | Incorrect Authorization | SEC-016, SEC-075 |
+| CWE-20 | Improper Input Validation | BS-04, SEC-027 |
+| CWE-284 | Improper Access Control | SEC-014, SEC-019 |
+| CWE-200 | Exposure of Sensitive Information | SEC-055, SEC-061, SEC-079 |
+| CWE-306 | Missing Authentication for Critical Function | SEC-014, LIVE-004 |
+| CWE-918 | Server-Side Request Forgery (SSRF) | SEC-034, SEC-078 |
+| CWE-77 | Command Injection | SEC-031 |
+| CWE-639 | Authorization Bypass Through User-Controlled Key | SEC-015 |
+| CWE-770 | Allocation of Resources Without Limits or Throttling | SEC-053, REL-044, AIF-002 |

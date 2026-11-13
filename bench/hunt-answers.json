@@ -1,0 +1,30 @@
+{
+  "app": "bench/hunt-app",
+  "note": "Logic bugs that no vibe-check checklist line or sweep pattern names directly. Keep this file outside the copy of the app you audit.",
+  "bugs": [
+    {"id": "B01", "title": "Credits can be spent twice at once (read-then-write race)", "method": "INVARIANT", "severity": "🔴",
+     "file": "routes/credits.js", "keywords": ["race", "concurren", "parallel", "at once", "simultaneous", "atomic", "transaction", "double"]},
+    {"id": "B02", "title": "Daily free credit trusts the client's date", "method": "ASSUMPTION", "severity": "🟡",
+     "file": "routes/credits.js", "keywords": ["today", "client", "date", "daily", "req.body.today"]},
+    {"id": "B03", "title": "Coupons stack: the same code can be applied again and again", "method": "ABUSE", "severity": "🔴",
+     "file": "routes/checkout.js", "keywords": ["stack", "twice", "again", "repeat", "same code", "multiple", "duplicate"]},
+    {"id": "B04", "title": "Negative quantity or oversized discount turns into store credit", "method": "INVARIANT", "severity": "🔴",
+     "file": "routes/checkout.js", "keywords": ["negative", "store credit", "storecredit", "quantity", "below zero", "-"]},
+    {"id": "B05", "title": "Staff can ship an order that was never paid", "method": "INVARIANT", "severity": "🟡",
+     "file": "routes/orders.js", "keywords": ["paid", "status", "unpaid", "payment", "state"]},
+    {"id": "B06", "title": "The v1 export endpoint skips the owner check the v2 note route has", "method": "PATH", "severity": "🔴",
+     "file": "routes/legacy.js", "keywords": ["owner", "v1", "other user", "another user", "export", "userid"]},
+    {"id": "B07", "title": "Accepting an invite lets the joiner pick their own role", "method": "ASSUMPTION", "severity": "🔴",
+     "file": "routes/invites.js", "keywords": ["role", "req.body.role", "owner", "admin", "escalat"]},
+    {"id": "B08", "title": "Switching plans resets the monthly scan counter", "method": "INVARIANT", "severity": "🔴",
+     "file": "routes/billing.js", "keywords": ["reset", "scansused", "scans", "plan", "switch", "unlimited"]},
+    {"id": "B09", "title": "Referral bonus can be farmed with your own email aliases", "method": "ABUSE", "severity": "🟡",
+     "file": "routes/referrals.js", "keywords": ["self", "alias", "+", "own", "farm", "fake", "unlimited", "same person"]},
+    {"id": "B10", "title": "Payment webhook retries add credits again (no event de-duplication)", "method": "ABUSE", "severity": "🔴",
+     "file": "routes/webhooks.js", "keywords": ["retry", "retries", "replay", "duplicate", "idempot", "twice", "event id", "event.id"]},
+    {"id": "B11", "title": "Sign-in redirect to any URL hands the session token to another site (chain: open redirect + token in URL)", "method": "CHAIN", "severity": "🔴",
+     "file": "routes/auth-links.js", "keywords": ["redirect", "next", "token", "session", "takeover", "open redirect"]},
+    {"id": "B12", "title": "AI endpoint lets any user pick the model and token count, with no per-user limit", "method": "ABUSE", "severity": "🟡",
+     "file": "routes/ai.js", "keywords": ["model", "maxtokens", "max_tokens", "cost", "bill", "limit", "rate"]}
+  ]
+}

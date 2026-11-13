@@ -44,7 +44,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 
 | | |
 |---|---|
-| 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 24 modules. It asks a few questions about your app and runs only the modules that apply |
+| 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 26 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
 | 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
@@ -275,6 +275,9 @@ The report ends with a small "Checked with vibe-check" footer. Tell your agent *
 | 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), responsive design, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse |
 | ⚖️ **Lawsuit magnets & jurisdictions** | What people actually get sued over: **Google Fonts and other IP leaks**, **pixels, session replay and chat widgets before consent** (California wiretap suits), embeds, **ADA accessibility on revenue paths** (and overlays that don't help), **auto-renewal and click-to-cancel**, marketing opt-in (CASL, TCPA), fake urgency, fair cookie banners, **Impressum**, **Quebec French**, biometrics, plus a **country table** (EU, DACH, UK, US, Canada, India, Brazil, Australia, Asia, app stores) |
 | 🔗 **Supply chain & CI** | Lockfiles, typosquats, install scripts, dependency confusion, **GitHub Actions pinned to SHAs**, `pull_request_target`, token permissions, secrets in logs, third-party scripts, SRI, tag managers, secret scanning |
+| 🧪 **Tests against the running app** | With your OK, on local or staging only (never production): user B tries to read, change and delete user A's data on every object type; normal users try admin functions; logged-out visitors try private routes; rate limits, error messages and uploads are tested for real; OWASP ZAP baseline and nuclei run with safe settings |
+| 📏 **Standards view** | Every result is mapped to the **OWASP Top 10:2025, API Security Top 10, LLM Top 10, Mobile Top 10, ASVS 5.0 (by chapter) and the 2025 CWE Top 25**, so the report shows ✅/❌/◐ per item. A coverage view of the audit, not a certification. The report also lists what *only a human* can confirm and when to run again |
+| 🎯 **Hunt mode** | After the checklists, the agent **attacks the app's own logic** to find bugs no scanner or checklist describes. It writes a threat model, then tests invariants (*credits never below zero*), abuse cases for every money, quota and invite feature, the same action across web, API, mobile and old endpoints, hidden assumptions, variants of every finding, and chains. Each idea is proven with a safe local test, disproven, or marked untested. New ones are marked 🎯 *Found by hunting* |
 | 🧯 **Known vulnerabilities** | Every component the app runs, with exact versions (`versions.py`): runtime (PHP, Node, Python…), framework, CMS **and each plugin**, packages in every ecosystem, Docker images, database engines, SDKs. Checked against **today's** security releases and advisories, end-of-life dates and CISA's **actively exploited** list, with the right audit tool per ecosystem and official workarounds |
 | 🧹 **Maintainability & handover** | Strict types, linting, dead and duplicated code, README and `.env.example`, architecture notes, AI rules files, **who owns every account**, credentials in a vault, due-diligence pack |
 | 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, **Cloudflare** (TLS minimum, `workers.dev`, R2), Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
@@ -305,7 +308,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 ## Free & open source: what's included
 
 **Everything in this repo is free, forever (MIT):**
-- ✅ All 19 blind spots, 600+ checks and 24 modules, at all three levels
+- ✅ All 19 blind spots, 600+ checks and 26 modules, at all three levels
 - ✅ The fix playbook, "fix safe items", the scope guard and report history
 - ✅ Works in every tool listed above, with your own AI subscription
 - ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
@@ -351,6 +354,7 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── platforms.md          core: Supabase, Firebase, Cloudflare, Vercel, builders, ...
     ├── lawsuits.md           core: lawsuit magnets & jurisdictions
     ├── supply-chain.md       core: dependencies, CI/CD, third-party scripts
+    ├── hunt.md               core: hunt mode, attacking the app's own logic to find what no checklist describes
     ├── vulnerabilities.md    core: known vulnerabilities in the runtime, frameworks, CMS, plugins, images; end-of-life; actively exploited
     ├── maintainability.md    core: code health, docs, ownership, handover
     ├── ai-features.md        profile: LLM and AI features
@@ -364,9 +368,11 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── community.md          profile: community, chat and marketplaces
     ├── cloud-infra.md        profile: AWS, GCP, Azure, Kubernetes, Terraform
     ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
+    ├── live-tests.md         profile: tests against the running app on local or staging (two accounts, roles, logged out, ZAP, nuclei)
     ├── i18n.md               profile: languages, regions, formats
     ├── fixes.md              fix playbook
     ├── report-template.md    report format
+    ├── standards.md          OWASP Top 10:2025, API, LLM, Mobile, ASVS 5.0 chapters and CWE Top 25, mapped to vibe-check checks
     └── sweep-patterns.md     the sweep patterns, for doing it by hand  [generated]
 dist/vibe-check.md          ← everything in one file (for paste-in tools)   [generated]
 dist/vibe-check.zip         ← upload-ready skill for the Claude app           [generated]

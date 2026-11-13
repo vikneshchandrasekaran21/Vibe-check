@@ -28,6 +28,7 @@ REF_ORDER = [
     "lawsuits.md",
     "supply-chain.md",
     "vulnerabilities.md",
+    "hunt.md",
     "maintainability.md",
     "ai-features.md",
     "ai-agents.md",
@@ -41,9 +42,11 @@ REF_ORDER = [
     "cloud-infra.md",
     "desktop-extensions.md",
     "i18n.md",
+    "live-tests.md",
     "report-template.md",
     "fixes.md",
     "sweep-patterns.md",
+    "standards.md",
 ]
 DESCRIPTION = (
     "Full code audit for AI-built (vibe-coded) apps before launch: security, auth, data, reliability, "

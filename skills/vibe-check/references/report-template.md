@@ -83,6 +83,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | lawsuits | ✅ | 14 | | | | | |
 | supply-chain | ✅ | 22 | | | | | |
 | vulnerabilities | ✅ | 15 | | | | | |
+| hunt | ✅ | 9 | | | | | |
 | maintainability | ✅ | 16 | | | | | |
 | <each profile module> | ✅ / ➖ | | | | | | |
 | **Total** | | | | | | | |
@@ -105,6 +106,15 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 **Sweep** (from `sweep.py`, every file + git history): <N> hits → <F> findings, <R> ruled out after the second look.
 
+**🎯 Hunt** (attacking the app's own logic; `T-` rows in the ledger): <N> hypotheses using <M> methods → <P> proven (<X> new, not in any checklist), <D> disproven, <U> untested.
+
+| Hypothesis | Method | Result |
+|---|---|---|
+| Two spends at once can take credits below zero | Invariant | 🎯 **Proven, found by hunting** (blocker 2) |
+| `/api/v1/export` skips the owner check `/api/export` has | Path | Proven (SEC-075, blocker 3) |
+| A coupon can be applied twice | Abuse | Disproven: unique constraint on order_id |
+| <untested ones, with what would test them> | | Untested: <why> |
+
 **Known vulnerabilities** (from `versions.py` and the audit tools; every verdict links the source opened in this run):
 
 | Component | Version | Status | Advisory / end-of-life | Fixed in / workaround | Source |
@@ -123,10 +133,31 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | Lint · tests · build | `npm run lint` · `npm test` · `npm run build` | <result, or "no test script"> |
 | Secret scanner | `gitleaks detect` | not installed: used `sweep.py --history` |
 
+## 📏 Standards
+
+*Pasted from `coverage.py`: how this audit's checks came out for each item of each standard (mapping in `references/standards.md`). A coverage view, not a certification.*
+
+| Standard | ✅ | ❌ | ◐ | ➖ | Items that failed |
+|---|---|---|---|---|---|
+| OWASP Top 10:2025 | 7 | 2 | 1 | 0 | A01:2025, A06:2025 |
+| OWASP API Security Top 10 (2023) | | | | | |
+| OWASP Top 10 for LLM Applications (2025) | | | | | |
+| OWASP Mobile Top 10 (2024) | | | | | |
+| OWASP ASVS 5.0.0 (by chapter) | | | | | |
+| 2025 CWE Top 25 | | | | | |
+
 ## Not checked
 
 - <Areas or commands skipped, why, and the exact command for the user to run, e.g. "Build not run (shared folder in use): run `npm run build`".>
 
+
+## 👤 Only a human can confirm
+- <e.g. a penetration test before your first enterprise customer or before handling health or payment data at scale>
+- <mobile binary review (obfuscation, tamper resistance) for M7, memory-safety testing for any native code>
+- <legal sign-off on the policies and the "Needs a lawyer" list; a backup restore drill; the standards items marked *Human*>
+
+## 🔁 When to run vibe-check again
+Before each launch or big release; after adding payments, sign-in, uploads, AI features, a new country or a new kind of user (children, patients, companies); and at least monthly, because new vulnerabilities and rules appear all the time.
 ## 🏁 Score card
 
 ```text

@@ -138,9 +138,20 @@ def all_ids() -> list:
     return ids
 
 
-def ledger(out: Path, rows: list, level: str = "Full") -> Path:
+THREAT = ("## Threat model\n- Assets: credits, private notes, admin panel\n- Actors: visitor, user, other user, admin, webhook\n"
+          "- Boundaries: browser -> /api, /api -> database\n- Entry points: every route in the inventory\n\n")
+METHODS = ["INVARIANT", "ABUSE", "PATH", "ASSUMPTION", "VARIANT", "CHAIN", "THREAT"]
+HUNT = [f"| T-{n:03d} | Hypothesis number {n}: something the app assumes can be broken | {METHODS[n % len(METHODS)]} | "
+        f"DISPROVEN | routes/x{n}.js:{n} stops it with a check |" for n in range(1, 13)]
+
+
+def ledger(out: Path, rows: list, level: str = "Full", hunt: list | None = None, threat: bool = True) -> Path:
     p = out / "ledger.md"
-    p.write_text(f"# vibe-check ledger\n\nLevel: {level}\n\n| ID | Result | Evidence / reason |\n|---|---|---|\n" + "\n".join(rows) + "\n")
+    hunt = HUNT if hunt is None else hunt
+    body = (f"# vibe-check ledger\n\nLevel: {level}\n\n" + (THREAT if threat else "")
+            + "| ID | Result | Evidence / reason |\n|---|---|---|\n" + "\n".join(rows) + "\n\n## Hunt\n"
+            + "| ID | Hypothesis | Method | Result | Evidence |\n|---|---|---|---|---|\n" + "\n".join(hunt) + "\n")
+    p.write_text(body)
     return p
 
 
@@ -217,15 +228,57 @@ def main() -> int:
             r = run("coverage.py", str(ledger(out, rows)))
             check(r.returncode == 1 and "GAP:" in r.stdout, f"coverage: should reject '{name}'")
 
+        # hunt rules (Full needs >= 12 hypotheses, >= 4 methods incl. INVARIANT and ABUSE, a threat model)
+        good = full + inv_rows + hit_rows
+        bad_hunt = {
+            "too few hypotheses": HUNT[:8],
+            "no INVARIANT": [h.replace("| INVARIANT |", "| PATH |") for h in HUNT],
+            "PROVEN with a made-up check ID": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | ABUSE | PROVEN SEC-999 | proofs/coupon.test.js shows it |"],
+            "PROVEN without proof": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | ABUSE | PROVEN NEW | trust me |"],
+            "bad method": HUNT[:-1] + ["| T-012 | The coupon endpoint lets one code stack many times | GUESS | DISPROVEN | routes/c.js:3 unique key |"],
+        }
+        for name, hunt in bad_hunt.items():
+            r = run("coverage.py", str(ledger(out, good, hunt=hunt)))
+            check(r.returncode == 1 and "GAP:" in r.stdout, f"coverage: should reject hunt case '{name}'")
+        r = run("coverage.py", str(ledger(out, good, threat=False)))
+        check(r.returncode == 1 and "Threat model" in r.stdout, "coverage: should require a threat model")
+        r = run("coverage.py", str(ledger(out, good, level="Enterprise")))
+        check(r.returncode == 1 and "at least 25" in r.stdout, "coverage: Enterprise should need 25 hypotheses")
+        new_row = ["| T-013 | Two spends at once take credits below zero | INVARIANT | PROVEN NEW | .vibe-check/proofs/credits.test.js: balance 10 -> -10 |"]
+        r = run("coverage.py", str(ledger(out, good, hunt=HUNT + new_row)))
+        check(r.returncode == 0 and "1 new, not in any checklist" in r.stdout, f"coverage: a proven new hunt finding should count:\n{r.stdout[-500:]}")
+
         # FAIL with a confidence label and CAN'T TELL are accepted; quick level needs fewer checks
         ok_rows = [full[0].replace("PASS", "FAIL ✅ Confirmed"), full[1].replace("PASS", "CAN'T TELL")] + full[2:] + inv_rows + hit_rows
         r = run("coverage.py", str(ledger(out, ok_rows)))
         check(r.returncode == 0 and "1 blockers" in r.stdout, f"coverage: labelled FAIL should pass and count as a blocker:\n{r.stdout[-400:]}")
+        # BS-01 (authorization) failing must show up against the standards it maps to
+        check("| OWASP Top 10:2025 |" in r.stdout and "A01:2025" in r.stdout and "CWE-862" in r.stdout and "V8" in r.stdout,
+              f"coverage: a failed check should mark its standards items as failed:\n{r.stdout[-900:]}")
         quick = [x for x in full if x.startswith("| BS-")] + inv_rows + hit_rows
         r = run("coverage.py", str(ledger(out, quick, "Quick")))
         check(r.returncode == 1, "coverage: Quick still needs every 🔴 core check")
         r = run("coverage.py", str(ledger(out, quick, "Quick")), "--remaining")
         check("security" in r.stdout and "blind-spots" not in r.stdout, "coverage --remaining: wrong list")
+
+    # hunt benchmark: bugs stay invisible to the sweep (novel), and the scorer works
+    bench = ROOT / "bench"
+    answers = json.loads((bench / "hunt-answers.json").read_text())["bugs"]
+    check(len(answers) >= 10, "bench: needs at least 10 planted logic bugs")
+    for b in answers:
+        check((bench / "hunt-app" / b["file"]).exists(), f"bench: {b['id']} points at a missing file {b['file']}")
+    with tempfile.TemporaryDirectory() as tmp3:
+        r = run("sweep.py", str(bench / "hunt-app"), "--out", tmp3)
+        bench_hits = json.loads((Path(tmp3) / "sweep.json").read_text())["hits"]
+        check(not bench_hits, f"bench: the sweep now catches benchmark bugs, so they're no longer novel: {[h['pattern'] for h in bench_hits]}")
+        perfect = Path(tmp3) / "perfect.md"
+        perfect.write_text("\n".join(f"| T-{i:03d} | {b['title']} in {b['file']} ({b['keywords'][0]}) | {b['method']} | PROVEN NEW | {b['file']}:1 |"
+                                     for i, b in enumerate(answers, 1)))
+        r = subprocess.run([sys.executable, str(bench / "score.py"), str(perfect)], capture_output=True, text=True)
+        check(f"found {len(answers)} of {len(answers)}" in r.stdout, f"bench: perfect ledger should score 100%: {r.stdout[:200]}")
+        empty = Path(tmp3) / "empty.md"; empty.write_text("| T-001 | nothing | ABUSE | DISPROVEN | x.js:1 |\n")
+        r = subprocess.run([sys.executable, str(bench / "score.py"), str(empty)], capture_output=True, text=True)
+        check(f"found 0 of {len(answers)}" in r.stdout, f"bench: empty ledger should score 0: {r.stdout[:200]}")
 
     # version check: never blocks, never fails, says the right thing
     import os, time
@@ -253,7 +306,7 @@ def main() -> int:
           and time.time() - t0 < 15,
           f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
 
-    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 16 ledger cases, 6 version-check cases, {len(EXPECT_VERSIONS)} planted versions")
+    print(f"test bench: {len(EXPECT_PATTERNS)} planted problems, {len(EXPECT_INVENTORY)} inventory categories, 23 ledger cases, 6 version-check cases, {len(EXPECT_VERSIONS)} planted versions")
     for f in failures:
         print("FAIL:", f)
     print("OK: scripts catch every planted problem." if not failures else f"{len(failures)} failure(s).")

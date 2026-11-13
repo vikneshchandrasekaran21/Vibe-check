@@ -36,10 +36,11 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent
 CORE = ["security", "reliability", "devops", "functional-qa", "legal-privacy", "launch-ux", "platforms",
-        "lawsuits", "supply-chain", "vulnerabilities", "maintainability"]
+        "lawsuits", "supply-chain", "vulnerabilities", "hunt", "maintainability"]
 LAZY = {"ok", "fine", "looks fine", "looks good", "good", "yes", "pass", "passed", "n/a", "na", "none", "-", "checked",
         "done", "no issues", "nothing found", "all good", "seems fine", "looks ok", "verified", "correct"}
 CT = "CAN'T TELL"
+HUNT_METHODS = {"THREAT", "INVARIANT", "ABUSE", "PATH", "ASSUMPTION", "VARIANT", "CHAIN"}
 SOURCE = re.compile(r"https?://|\b(?:npm audit|pnpm audit|yarn npm audit|composer audit|pip-audit|bundle audit|govulncheck|"
                     r"cargo audit|osv-scanner|trivy|docker scout|dependency-check|dotnet list package|wpscan|wp plugin list)\b", re.I)
 CHECKABLE = re.compile(r"\w\.\w|/|`|:\d|https?:|\b(?:dashboard|config|setting|header|inventory|sweep|"
@@ -67,6 +68,25 @@ def load_checklist():
             prefixes[cid.split("-")[0]] = f.stem
     order = ["blind-spots"] + [m for m in CORE if m in modules] + [m for m in modules if m not in CORE and m != "blind-spots"]
     return order, checks, prefixes
+
+
+def load_standards():
+    """Return [(standard title, [(item id, name, [check ids], human note)])] from references/standards.md."""
+    path = SKILL / "references" / "standards.md"
+    if not path.exists():
+        return []
+    out, cur = [], None
+    for line in path.read_text("utf-8").splitlines():
+        if line.startswith("## "):
+            cur = (line[3:].strip(), [])
+            out.append(cur)
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+        if cur and len(cells) == 3 and cells[0] not in ("ID",) and not set(cells[0]) <= set("-: "):
+            ids = re.findall(r"\b(?:BS-\d{2}|[A-Z]+-\d{3})\b", cells[2])
+            human = "Human:" in cells[2]
+            cur[1].append((cells[0], cells[1], ids, human))
+    return [s for s in out if s[1]]
 
 
 def expand(token: str, checks, prefixes):
@@ -123,12 +143,16 @@ def main() -> int:
     errors, warns = [], []
     results = {}   # id -> (result, evidence, confidence)
     inv_rows, hit_rows, ver_rows = {}, {}, {}
+    hunt_rows = []
     pass_evidence = {}
     for line in text.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.strip().startswith("|") else []
         if len(cells) < 3 or set(cells[0]) <= set("-: ") or cells[0].lower() in ("id", "check", "hit"):
             continue
         key, res, ev = cells[0].strip("`"), cells[1], " | ".join(cells[2:]).strip()
+        if re.match(r"^T-\d+$", key):
+            hunt_rows.append((key, cells))
+            continue
         if key.startswith("INV-"):
             inv_rows[key[4:]] = (res, ev)
             continue
@@ -246,6 +270,57 @@ def main() -> int:
     else:
         warns.append("no sweep.json next to the ledger: run sweep.py first (or say why in the report)")
 
+    # hunt: hypotheses tested by attacking the app's own logic (references/hunt.md)
+    hunt_stats = None
+    if level in ("full", "enterprise"):
+        need_n, need_m = (12, 4) if level == "full" else (25, 6)
+        methods, proven, proven_new, disproven, untested = set(), 0, 0, 0, 0
+        for key, cells in hunt_rows:
+            if len(cells) < 5:
+                errors.append(f"{key}: hunt rows are | ID | Hypothesis | Method | Result | Evidence |")
+                continue
+            hyp, meth, resu, evid = cells[1], cells[2].upper().strip("` "), cells[3].upper().strip("` "), " | ".join(cells[4:]).strip()
+            if meth not in HUNT_METHODS:
+                errors.append(f"{key}: method must be one of {', '.join(sorted(HUNT_METHODS))} (got '{cells[2]}')")
+            methods.add(meth)
+            if len(hyp) < 10:
+                errors.append(f"{key}: write the hypothesis as a full sentence")
+            if resu.startswith("PROVEN"):
+                proven += 1
+                ref = resu[len("PROVEN"):].strip()
+                if ref == "NEW":
+                    proven_new += 1
+                elif not (ref in checks):
+                    errors.append(f"{key}: PROVEN must be followed by NEW or an existing check ID (got '{cells[3]}')")
+                if not CHECKABLE.search(evid):
+                    errors.append(f"{key}: PROVEN needs a proof: a test or script in .vibe-check/proofs/, or the quoted code path")
+            elif resu.startswith("DISPROVEN"):
+                disproven += 1
+                if not CHECKABLE.search(evid):
+                    errors.append(f"{key}: DISPROVEN needs what stopped it (file:line, constraint, test)")
+            elif resu.startswith("UNTESTED"):
+                untested += 1
+                if len(evid) < 8:
+                    errors.append(f"{key}: UNTESTED needs why, and what would test it")
+            else:
+                errors.append(f"{key}: result must be PROVEN NEW, PROVEN <check ID>, DISPROVEN or UNTESTED")
+        n_fail = sum(1 for v in results.values() if v[0] == "FAIL")
+        if len(hunt_rows) < need_n:
+            errors.append(f"hunt: {len(hunt_rows)} hypotheses; a {level} check needs at least {need_n} (references/hunt.md)")
+        if len(methods & HUNT_METHODS) < need_m:
+            errors.append(f"hunt: {len(methods & HUNT_METHODS)} methods used; a {level} check needs at least {need_m}")
+        for must in ("INVARIANT", "ABUSE"):
+            if hunt_rows and must not in methods:
+                errors.append(f"hunt: no {must} hypotheses (required)")
+        if n_fail and "VARIANT" not in methods:
+            errors.append("hunt: there are confirmed FAILs but no VARIANT hypotheses (search for siblings of each finding)")
+        if n_fail >= 2 and "CHAIN" not in methods:
+            errors.append("hunt: two or more FAILs but no CHAIN hypotheses (can they combine?)")
+        tm = re.search(r"^##\s*Threat model\s*\n((?:\s*[-*].*\n?)+)", text, re.M)
+        if not tm or len([l for l in tm.group(1).splitlines() if l.strip()]) < 3:
+            errors.append("hunt: the ledger needs a '## Threat model' section with assets, actors, boundaries and entry points")
+        hunt_stats = (len(hunt_rows), proven, proven_new, disproven, untested, len(methods & HUNT_METHODS))
+
     # component versions: each needs a verdict backed by a source opened in this run, or an audit tool
     ver_path = ledger_path.parent / "versions.json"
     ver_total = ver_open = 0
@@ -324,10 +399,33 @@ def main() -> int:
             print(f"| {cat} | {done}/{total}{'' if done >= total else ' ◐'} |")
     if sweep_path.exists():
         print(f"\nSweep: {sweep_total} hits, {sweep_total - sweep_unreviewed} reviewed.")
+    if hunt_stats:
+        n, pr, new, dis, unt, nm = hunt_stats
+        print(f"\nHunt: {n} hypotheses ({nm} methods): {pr} proven ({new} new, not in any checklist), {dis} disproven, {unt} untested.")
     if ver_path.exists():
         print(f"\nVersions: {ver_total} components, {ver_total - ver_open} checked, {len(ver_bad)} outdated / end-of-life / vulnerable.")
         for b in ver_bad:
             print(f"  - {b}")
+    stds = load_standards()
+    if stds and not remaining_only:
+        print("\n## Standards (how this audit's checks came out for each item; not a certification)\n")
+        print("| Standard | ✅ | ❌ | ◐ | ➖ | Items that failed |")
+        print("|---|---|---|---|---|---|")
+        for title, items in stds:
+            tally = {"ok": 0, "fail": 0, "part": 0, "na": 0}
+            failed = []
+            for iid, name, ids, human in items:
+                rs = [results[c][0] for c in ids if c in results]
+                if any(r == "FAIL" for r in rs):
+                    tally["fail"] += 1; failed.append(iid)
+                elif rs and all(r == "N/A" for r in rs) and len(rs) == len(ids):
+                    tally["na"] += 1
+                elif rs and len(rs) == len(ids) and all(r in ("PASS", "N/A") for r in rs) and not human:
+                    tally["ok"] += 1
+                else:
+                    tally["part"] += 1
+            print(f"| {title} | {tally['ok']} | {tally['fail']} | {tally['part']} | {tally['na']} | {', '.join(failed) or '-'} |")
+        print("\n◐ = some mapped checks couldn't be confirmed, weren't done, or need a human specialist (see references/standards.md).")
     print(f"\nScore line: {tot['PASS']}/{applicable} checks passed · {blockers} blockers · {unresolved} unresolved 🔴 can't-tell")
 
     for w in warns:
