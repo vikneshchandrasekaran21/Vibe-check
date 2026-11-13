@@ -20,10 +20,16 @@ SKILL_DIR = ROOT / "skills" / "vibe-check"
 REF_ORDER = [
     "security.md",
     "reliability.md",
-    "ai-features.md",
+    "functional-qa.md",
     "legal-privacy.md",
     "launch-ux.md",
     "platforms.md",
+    "ai-features.md",
+    "kids-education.md",
+    "health.md",
+    "fintech.md",
+    "policies.md",
+    "enterprise.md",
     "report-template.md",
     "fixes.md",
 ]
@@ -45,6 +51,7 @@ def single_file() -> str:
     body = strip_frontmatter((SKILL_DIR / "SKILL.md").read_text())
     # In the single file, references are inlined below, so point to sections instead of files.
     body = re.sub(r"`references/([a-z-]+)\.md`", r"the **\1** section below", body)
+    body = re.sub(r"`([a-z-]+)\.md`", r"the **\1** section below", body)
     parts = [HEADER, body.rstrip(), "\n\n---\n\n# Reference checklists\n"]
     for name in REF_ORDER:
         ref = (SKILL_DIR / "references" / name).read_text().rstrip()

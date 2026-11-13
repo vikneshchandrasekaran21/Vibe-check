@@ -36,9 +36,10 @@ AI coding tools are great at writing code that **works in the demo**. They often
 
 | | |
 |---|---|
-| 🔍 **Audit** | **17 AI blind-spot checks** plus **250+ checks** across security, data, reliability, cost, AI features, legal and privacy, UX and platform-specific traps |
+| 🔍 **Audit** | **18 AI blind-spot checks** plus **360+ checks** in 13 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, and a "needs a lawyer" list |
-| 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns, so the agent fixes problems properly instead of guessing. Each fix gets a test and a re-check |
+| 🛠️ **Fixes** | A built-in **fix playbook** with proven patterns. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
+| 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
 
 ## 🛡️ It won't change what you built
@@ -127,18 +128,20 @@ Just ask your agent:
 
 | Say | What happens |
 |---|---|
-| *"vibe check this app"* | **Quick mode:** the 17 AI blind spots plus every 🔴 launch blocker |
-| *"run a full vibe-check before launch"* | **Full mode:** every area that applies to your app |
-| *"is this ready to ship?"* · *"what did the AI miss?"* · *"security audit"* | Quick mode, or full if you're launching or taking payments |
-| *"fix the blockers"* · *"fix #1 and #3"* | Fixes only those issues, using the fix playbook |
+| *"quick vibe check"* | 🟢 **Quick:** the 18 AI blind spots plus every 🔴 blocker. Good before any deploy |
+| *"vibe check this app"* · *"is this ready to ship?"* | 🟡 **Launch** (default): every module that applies to your app |
+| *"enterprise vibe check"* | 🔵 **Enterprise:** Launch plus enterprise and government readiness and the full policy pack |
+| *"fix the safe items"* | Applies only the fixes that are invisible to users and easy to undo |
+| *"fix the vibe-check blockers"* · *"fix #1 and #3"* | Fixes only those issues, using the fix playbook and the scope guard |
 
 ### How it works
 
-1. **Map:** your stack, the personal data you collect, every entry point, database rules and env vars. It asks about your users and business where that affects legal checks.
-2. **Blind spots first:** the 17 mistakes AI coding tools make most often.
-3. **Area checklists:** only the ones that apply to your stack.
-4. **Report:** the verdict, blockers with plain-language impact and a fix prompt, questions for you, the "needs a lawyer" list, what passed, and other suggestions.
-5. **Fix (only what you approve):** prove the bug, apply a proven pattern adapted to your stack, add a test, re-check, one issue per commit. For things only you can do (rotating a leaked key, DNS, legal decisions), it gives you exact steps.
+1. **Profile:** who uses the app, whether there are minors or students, money, sensitive data, regions. It works out what it can from the code and asks only what it can't.
+2. **Map:** stack, data map (including things like photo GPS), entry points, database rules, env vars, live and platform default domains, known issues.
+3. **Blind spots:** the 18 mistakes AI coding tools make most often.
+4. **Modules:** the core modules plus only the profile modules that apply. It uses real tools where available (audit, secret and licence scanners, Playwright, Lighthouse), and falls back to reading the code when they're missing.
+5. **Report:** saved to `.vibe-check/reports/` with a summary in chat. You get the verdict and score, blockers with a fix prompt, which items are safe to auto-fix, questions for you, a "needs a lawyer" list, what passed, and what wasn't checked.
+6. **Fix (only what you approve):** prove the bug, apply a proven pattern, add a test, re-check, one issue per commit. For things only you can do (dashboard settings, rotating keys, legal decisions), it gives you exact steps.
 
 ### Example report
 
@@ -162,18 +165,60 @@ Score: 96 / 121 checks passed · 🔴 2 blockers · 🟡 9 to fix before scale �
 
 ## What it checks
 
+**Core modules** (always run at Launch level and above):
+
 | Area | Highlights |
 |---|---|
 | 🧠 **AI blind spots** | Authorization and IDOR, RLS and Firebase rules, leaked secrets, mass assignment, prices from the client, unverified payments, missing timeouts, race conditions, invented or outdated packages, LLM spend caps, exposed admin and debug pages, unsafe AI features |
 | 🔐 **Security & auth** | Sessions, cookies, JWTs, password reset and magic links, brute force, OAuth, roles, multi-tenancy, SQL, NoSQL, XSS and command injection, uploads, SSRF, open redirects, CORS, CSRF, headers, hashing vs encryption, dependencies, rate limits |
 | 🗄️ **Data & reliability** | Migrations, indexes, constraints, backups and restore tests, idempotency, webhooks, queues, cron, caching, pooling, CI/CD, staging, rollback, disaster recovery, cost alerts, logging, error tracking, uptime |
-| 🤖 **AI features** | Keys on the server, per-user quotas, prompt injection, unsafe rendering of model output, agent tool permissions, RAG tenant isolation, provider data terms, moderation, AI disclosure |
-| ⚖️ **Legal & privacy** | Privacy policy vs actual data, terms, cookie consent, deletion and export, OSS licenses (GPL/AGPL), asset licensing, refunds, PCI, tax, age limits, honest marketing, dark patterns. GDPR, CCPA, India DPDP and COPPA items flagged for a lawyer |
+| 🖱️ **Functional QA** | Dead buttons and links, forms that don't save, missing loading, empty and error states, leftover placeholder content, console errors, broken assets, phone and Safari journeys |
+| ⚖️ **Legal & privacy** | Privacy policy vs actual data, terms, cookie consent, deletion and export, OSS licenses (GPL/AGPL), **web-font licenses**, an asset register, refunds, PCI, tax, honest marketing, dark patterns |
 | 📱 **UX & launch** | Accessibility (WCAG 2.2 AA), mobile, Core Web Vitals, 404/500 pages, SEO basics, email deliverability (SPF/DKIM/DMARC), signup and SMS abuse, app store rules |
-| 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
-| 🛠️ **Fix playbook** | Patterns and tests for IDOR, RLS, Firebase rules, leaked secrets, validation, webhooks and idempotency, race conditions, timeouts, rate limits, LLM caps, XSS, uploads, headers, cookie consent, account deletion |
+| 🧩 **Platform traps** | Supabase, Firebase, Vercel/Netlify, **Cloudflare** (TLS minimum, `workers.dev`, R2), Next.js, Lovable/Bolt/v0/Replit, Stripe/Razorpay/Paddle, Django/Rails/Express/Laravel, Expo/React Native, Docker/VPS |
+
+**Profile modules** (run only when they apply to your app):
+
+| Module | Runs when | Highlights |
+|---|---|---|
+| 🤖 **AI features** | The app uses an LLM | Keys on the server, per-user quotas, prompt injection, unsafe output rendering, agent tool permissions, RAG tenant isolation, AI disclosure |
+| 🧒 **Kids & education** | Minors, students, schools | Verifiable parental consent (DPDP, COPPA, FERPA), data minimization, **retention limits for minors' data**, photo GPS stripping, no trackers, staff access, institutional requirements |
+| 🏥 **Health** | Health, medical or fitness data | Explicit consent, no health data in analytics, encryption, audit logs, disclaimers, BAAs/DPAs, medical-device questions |
+| 💳 **Fintech** | Payments, wallets, payouts | PCI scope, ledgers, atomic transfers, reconciliation, payout fraud, local invoice and mandate rules, licensing questions |
+| 📜 **Policy pack** | Launch and above | 16 documents: when each is needed, what it must contain, where to link it, and whether it matches your real data |
+| 🏢 **Enterprise & government** | Enterprise level | SSO/SCIM, audit logs, data residency, RPO/RTO, pentest, SBOM, SOC 2/ISO readiness, security questionnaires, bus factor, GIGW/508 |
+
+Plus the 🛠️ **fix playbook**: patterns and tests for IDOR, RLS, Firebase rules, leaked secrets, validation, webhooks and idempotency, race conditions, timeouts, rate limits, LLM caps, XSS, uploads, headers, cookie consent and account deletion.
 
 Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying users**, or **🟢 recommended**. The full lists are in [`skills/vibe-check/references/`](skills/vibe-check/references).
+
+---
+
+## Free & open source: what's included
+
+**Everything in this repo is free, forever (MIT):**
+- ✅ All 18 blind spots, 360+ checks and 13 modules, at all three levels
+- ✅ The fix playbook, "fix safe items", the scope guard and report history
+- ✅ Works in every tool listed above, with your own AI subscription
+- ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
+
+**What it doesn't do (scope):**
+- ❌ It isn't a legal opinion or a certified security audit. It flags issues and tells you what to ask a lawyer or auditor.
+- ❌ No hosted scanning, dashboard or monitoring. Everything runs inside your own AI tool, on your machine.
+- ❌ It doesn't send your code anywhere and doesn't phone home.
+- ❌ It never changes your app's design, features or flows (see the guarantee above).
+
+### ⭐ vibe-check Pro (coming soon)
+
+A paid **connector** you plug into Claude Code, Cursor and other agents, for the checks a text file can't do:
+- 🌐 **Live site scan:** TLS, HTTPS, headers, exposed files, extra domains, SSL and domain expiry
+- 🖱️ **Hosted click-through:** every button, link and form, with screenshots of what's broken
+- 🗄️ **Supabase/Firebase probe:** proves whether your data is readable with the public key
+- 📧 **Email deliverability check** (SPF, DKIM, DMARC)
+- 📊 **Dashboard**, report history and shareable **PDF reports**
+- 🔔 **Weekly monitoring and alerts**
+
+Your code stays on your machine. Only URLs, lockfiles and summaries are sent. 👉 **[Join the waitlist](https://github.com/vikneshchandrasekaran21/vibe-check/issues/new?title=Pro%20waitlist&labels=pro-waitlist&body=Interested%20in%20vibe-check%20Pro.%20I%20build%20with%3A%20)**
 
 ---
 
@@ -183,12 +228,18 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 skills/vibe-check/          ← the skill (source of truth)
 ├── SKILL.md                  workflow, ground rules, AI blind spots, scope guard
 └── references/
-    ├── security.md           security & authentication
-    ├── reliability.md        data, reliability, infra, observability, testing
-    ├── ai-features.md        LLM and AI-specific risks
-    ├── legal-privacy.md      legal, privacy, licensing, payments
-    ├── launch-ux.md          accessibility, mobile, SEO, email, abuse, app stores
-    ├── platforms.md          Supabase, Firebase, Vercel, Next.js, builders, Stripe, ...
+    ├── security.md           core: security & authentication
+    ├── reliability.md        core: data, reliability, infra, observability, CI
+    ├── functional-qa.md      core: broken buttons, links, forms, states
+    ├── legal-privacy.md      core: legal, privacy, licensing (incl. fonts)
+    ├── launch-ux.md          core: accessibility, mobile, SEO, email, abuse
+    ├── platforms.md          core: Supabase, Firebase, Cloudflare, Vercel, builders, ...
+    ├── ai-features.md        profile: LLM and AI features
+    ├── kids-education.md     profile: minors, students, schools
+    ├── health.md             profile: health & medical data
+    ├── fintech.md            profile: payments, wallets, payouts
+    ├── policies.md           profile: the policy pack
+    ├── enterprise.md         profile: enterprise & government readiness
     ├── fixes.md              fix playbook
     └── report-template.md    report format
 dist/vibe-check.md          ← everything in one file (for paste-in tools)   [generated]
@@ -211,8 +262,11 @@ Any. The checks are stack-agnostic, with extra guidance for Supabase, Firebase, 
 **Is this a replacement for a lawyer or a security audit?**
 No. It catches the common, costly mistakes and tells you exactly what to take to a lawyer. For health, finance or children's data, payments at scale, or enterprise customers, also get a professional review. Treat 🟢 as "no known blockers", not a guarantee.
 
-**Quick or full?**
-Quick for everyday checks before deploys. Full before a public launch, before taking payments, or when you handle sensitive data.
+**Quick, Launch or Enterprise?**
+Quick before everyday deploys. Launch before going public, taking payments or handling personal data. Enterprise before selling to companies or government, or handling regulated data.
+
+**Why didn't it fix things automatically?**
+On purpose. It audits first so you see what's wrong. Then say *"fix the safe items"* for the invisible, easy-to-undo fixes, or name the issues you want fixed. Anything visible, or that needs a decision (like consent rules), waits for you.
 
 ## Contributing
 

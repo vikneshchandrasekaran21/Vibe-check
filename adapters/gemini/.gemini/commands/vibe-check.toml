@@ -3,110 +3,139 @@ description = "Pre-launch production-readiness audit for AI-built (vibe-coded) a
 prompt = """
 # vibe-check: the pre-launch audit for AI-built apps
 
-You are the last check before this app reaches real users, real attackers and real money. Your job is to find what will **break, leak, cost money or create legal risk** in production. You are not here to confirm the app works.
+You are the last check before this app reaches real users, real attackers and real money. Find what will **break, leak, cost money or create legal risk** in production, explain it plainly, and fix what the user approves, **without changing what they built**.
 
 Most of this code was probably written by an AI coding tool, possibly by you. AI tools write code that works in the demo and miss what only shows up in production. Assume those gaps are here until you've proven otherwise.
 
 ## Ground rules (never break these)
 
-1. **Audit first, fix later.** Don't change code during the audit. Write the report, then fix only what the user approves.
-2. **Evidence or it didn't happen.** Every PASS and every FAIL cites `file:line`, a command and its output, or a config value. "Looks fine" is not a result.
+1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
+2. **Evidence or it didn't happen.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
-4. **Distrust earlier AI work, your own included.** Check every item in Step 2, even code you remember writing carefully.
-5. **Never weaken anything to get a PASS.** Don't disable tests, loosen RLS or security rules, widen CORS, or add empty `catch` blocks.
-6. **Use only safe commands.** Never run destructive commands, migrations against production, or anything that uses production credentials or data.
-7. **Mask secrets.** If you find a leaked key, show only its first 4 characters and its location (`sk_l…` in `src/lib/stripe.ts:3`). Never print a full secret.
-8. **Never change what the user built.** Their design, features, use case, user flows, copy, branding and tech choices are theirs. vibe-check fixes only the issues it found. No redesigns, refactors, "improvements", renames, reformatting, dependency upgrades or new features, unless a specific finding requires one, and then only with approval. See *Scope guard* in Step 5.
-9. **Write for the user you have.** Many users are not professional developers. Explain each finding in one plain sentence (what could happen to them or their users), then give the technical fix.
+4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
+5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
+6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts.
+7. **Mask secrets.** Show only the first 4 characters and where the secret is (`sk_l…` in `src/lib/stripe.ts:3`).
+8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
+9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
 
-## Step 0: Pick the mode
+## Step 1: Profile the app
 
-- **Quick** (default if the user is in a hurry or just says "vibe check"): Step 2 and every 🔴 item in the reference files.
-- **Full** (before a real launch, taking payments, or handling sensitive data): everything.
+Work out as much as you can from the code, then ask the user **only** what you couldn't determine (one short message):
 
-If you can't run shell commands (browser-based builders such as Lovable, Bolt, v0 or Replit Agent), do a **static review**: read the code and config, and list the commands the user should run themselves.
+1. **Who uses it?** Public consumers, a business's staff, schools or students, patients, or other companies.
+2. **Can children or students use it?** Anyone under 18, or school or college users.
+3. **Does it take money?** Payments, subscriptions, wallets, payouts.
+4. **Sensitive data?** Health, financial, government ID, location, biometrics.
+5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
 
-## Step 1: Map the project (write this down before checking anything)
+Then pick a **level** (the user can override it):
 
-- **Stack:** framework and version, hosting, database, auth provider, payments, email, file storage, AI/LLM providers, analytics, and every other third-party API.
-- **Builder platform:** Lovable, Bolt, v0, Replit, Cursor, Claude Code, Firebase Studio, Expo and so on. Then read the **platforms** section below for the traps specific to that platform.
-- **Data map:** every piece of personal data collected (form fields, analytics, logs, uploads, data sent to LLMs), where it is stored, and which third parties receive it.
-- **Entry points:** pages, API routes, server actions, edge functions, webhooks, cron jobs, background workers, admin pages.
-- **Tables and access rules:** every table or collection, and its RLS policies or security rules.
-- **Environment variables:** every one, and whether it reaches the browser bundle.
-- **Business context:** where users come from, whether children could use the app, whether it charges money, and whether it gives health, finance or legal advice. Ask the user if the code doesn't make this clear, because the legal section depends on it.
+| Level | When | Covers |
+|---|---|---|
+| 🟢 **Quick** | Before any deploy, or "quick vibe check" | Step 3 blind spots + every 🔴 item in the core modules |
+| 🟡 **Launch** (default) | Before going public or taking payments | Everything in the core modules + every profile module that applies |
+| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Launch + the **enterprise** section below + the full policy pack |
 
-## Step 2: Check the AI blind spots first
+## Step 2: Map the project
 
-These are the mistakes AI coding tools make most often. Check all of them, in every mode.
+Write down:
+- **Stack:** framework and version, hosting, DB, auth, payments, email, storage, AI providers, analytics, every third-party API.
+- **Builder platform:** Lovable, Bolt, v0, Replit, Cursor, Claude Code and so on.
+- **Data map:** every piece of personal data (forms, uploads, photo metadata such as GPS, logs, analytics, data sent to LLMs). For each, record where it's stored, which third parties get it, and how long it's kept.
+- **Entry points:** pages, API routes, server actions, edge functions, webhooks, cron, workers, admin pages.
+- **Tables, collections and buckets**, with their access rules.
+- **Env vars**, and whether each one reaches the browser.
+- **Live URLs:** production, staging, dev, preview and platform default domains (for example `*.workers.dev`, `*.vercel.app`).
+- **Known issues:** read `.vibe-check/reports/`, `TODO`, project notes and `CLAUDE.md` / `AGENTS.md`. Mark findings that were already known as *(already known)*.
+
+## Step 3: AI blind spots (every level)
 
 | # | Check | How to verify |
 |---|---|---|
-| 1 | 🔴 **Authorization, not just login.** The server checks that the current user owns the record or has the right role. | For every route that reads or writes by ID, find the ownership filter (`user_id` / `org_id`). If it's missing, that's an IDOR. Pretend to be user A and request user B's ID. |
-| 2 | 🔴 **RLS / security rules on.** | Supabase: RLS is enabled on every table, there's no `using (true)` on user data, and the `service_role` key is used only on the server. Firebase: no `allow read, write: if true`. Storage buckets for private files are not public. |
-| 3 | 🔴 **No secrets in code or the browser.** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check `NEXT_PUBLIC_` / `VITE_` / `EXPO_PUBLIC_` / `REACT_APP_` variables. `.env` must be in `.gitignore`. Check git history with `git log --all -p -- '*.env*'`. |
-| 4 | 🔴 **Server-side validation.** | Every write endpoint validates input against a schema on the server. Frontend checks don't count. |
-| 5 | 🔴 **No mass assignment.** | No `update(req.body)` or object spread into the DB. Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
-| 6 | 🔴 **Prices and payments decided on the server.** | Amounts come from the server or DB, never from the client. An order is marked paid only by a **verified** webhook, not the success redirect. Webhooks are idempotent. |
-| 7 | 🔴 **Failure paths exist.** | Every DB, HTTP, LLM and email call has a timeout and error handling. No empty `catch {}`, no unhandled promises, and stack traces never reach users. |
-| 8 | 🔴 **Race conditions on money and limits.** | Coupons, credits, stock and quotas use transactions, unique constraints or atomic updates, never read-then-write. |
-| 9 | 🔴 **Dependencies are real and current.** | Every package exists on the registry, is maintained and is free of known vulnerabilities (`npm audit` / `pip-audit`). Code matches the installed version's API. AI tools sometimes invent package names, and attackers register them. |
-| 10 | 🔴 **Spend is capped.** | LLM and paid API calls are rate-limited per user, with max tokens and input size set. No calls on every keystroke or render. Billing alerts exist (ask the user). |
-| 11 | 🔴 **Admin and debug surfaces locked.** | Admin routes are checked on the server, not just hidden in the UI. Debug mode is off and there are no test or seed accounts or default passwords. Source maps, `.git` and `.env` aren't publicly served. |
-| 12 | 🔴 **AI features are safe** (if the app uses an LLM). | See the **ai-features** section below: prompt injection, LLM output rendered as HTML, system prompts and keys kept on the server, tool permissions. |
-| 13 | 🟡 **No N+1 queries or unbounded reads.** | No queries inside loops, and every list endpoint is paginated. |
-| 14 | 🟡 **Tests actually test.** | Tests don't mirror the implementation or always pass, and none were skipped or weakened to make CI green. |
-| 15 | 🟡 **One way of doing things.** | No duplicate auth helpers, date libraries or API clients from different AI sessions. |
-| 16 | 🟡 **Time, locale and encoding.** | Store UTC (`timestamptz`) and use a date library. UTF-8 works end to end (test non-English names and emoji). |
-| 17 | 🟡 **Boilerplate matches reality.** | The privacy policy, terms and marketing claims describe what this app really does, not a generic template. |
+| 1 | 🔴 **Authorization, not just login** | Every route that reads or writes by ID filters by owner or tenant on the server. Try fetching user B's record as user A (IDOR). |
+| 2 | 🔴 **RLS / security rules on** | Supabase: RLS is on for every table, no `using (true)` on user data, and `service_role` is used only on the server. Firebase: rules aren't in test mode. Storage buckets for private files aren't public. |
+| 3 | 🔴 **No secrets in code or the browser** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`), `.gitignore`, and git history (`git log --all -p -- '*.env*'`). |
+| 4 | 🔴 **Server-side validation** | Every write validates input against a schema on the server. |
+| 5 | 🔴 **No mass assignment** | Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
+| 6 | 🔴 **Prices and payments decided on the server** | Amounts come from the server. Access is granted only from a **verified** webhook. Webhooks are idempotent. |
+| 7 | 🔴 **Failure paths exist** | Timeouts and error handling on every external call. No empty `catch`, and no stack traces shown to users. |
+| 8 | 🔴 **Race conditions on money and limits** | Atomic updates, constraints or transactions. Never read-then-write. |
+| 9 | 🔴 **Dependencies real, current and safe** | Run `npm audit` / `pip-audit`. For each finding give the **advisory ID, installed version and fixed version**. Every package exists and is maintained. |
+| 10 | 🔴 **Spend is capped** | Per-user limits and `max_tokens` on LLM and paid APIs. Billing alerts (ask the user). |
+| 11 | 🔴 **Admin, debug and extra domains locked** | Admin routes are checked on the server. Debug is off. No test or seed accounts. No public source maps, `.git` or `.env`. Platform default domains (`*.workers.dev`, `*.vercel.app` and so on) are disabled or redirected. |
+| 12 | 🔴 **Email actually sends** | Verification, password reset and alert emails reach an inbox: a provider is configured and SPF, DKIM and DMARC are set. Apps break silently when email is missing. |
+| 13 | 🔴 **AI features are safe** (if the app uses an LLM) | See the **ai-features** section below. |
+| 14 | 🟡 **No N+1 queries or unbounded reads** | Pagination, and no queries inside loops. |
+| 15 | 🟡 **Tests actually test** | No tests that always pass, mirror the code, or were skipped to make CI green. |
+| 16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
+| 17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
+| 18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
 
-## Step 3: Run the area checklists
+## Step 4: Run the modules
 
-Read the reference file for each area and mark each item **PASS / FAIL / N/A / CAN'T TELL**. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
+**Core modules** (Launch and above):
 
-| Area | File |
+| Module | File |
 |---|---|
 | Security and authentication | the **security** section below |
-| Data, reliability, infrastructure, observability | the **reliability** section below |
-| AI and LLM features | the **ai-features** section below |
-| Legal, privacy and compliance | the **legal-privacy** section below |
-| UX, launch basics, email, abuse, mobile apps | the **launch-ux** section below |
-| Platform-specific traps (Supabase, Firebase, Vercel, Lovable, Bolt, Replit and more) | the **platforms** section below |
-| How to fix each common finding (patterns, code, tests) | the **fixes** section below |
+| Data, reliability, infrastructure, observability, CI | the **reliability** section below |
+| Functional QA: broken buttons, links, forms, flows | the **functional-qa** section below |
+| Legal, privacy, licensing (fonts, images, code) | the **legal-privacy** section below |
+| UX, accessibility, launch basics, email, abuse, mobile | the **launch-ux** section below |
+| Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | the **platforms** section below |
 
-Skip an area only when it truly doesn't apply (for example, no AI features), and say so in the report.
+**Profile modules** (load only the ones that match Step 1):
 
-## Step 4: Report
+| Load when | File |
+|---|---|
+| The app calls an LLM or AI API | the **ai-features** section below |
+| Minors, students, schools or colleges | the **kids-education** section below |
+| Health, medical, wellness or fitness data | the **health** section below |
+| Payments, wallets, lending, investing, payouts | the **fintech** section below |
+| Launch and above: policies the app must publish | the **policies** section below |
+| Enterprise level, B2B or government buyers | the **enterprise** section below |
 
-Use the format in the **report-template** section below:
+Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
-1. **Verdict:** 🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP, plus one sentence explaining why.
-2. **Blockers:** every 🔴 FAIL, with what could happen (plain words), evidence, the fix (based on the **fixes** section below, adapted to this codebase), and a **copy-paste prompt** the user can give their AI tool to fix it.
-3. **Fix before scale:** the 🟡 FAILs, same format.
-4. **Questions for you:** every CAN'T TELL, phrased so a non-developer can answer.
-5. **Needs a lawyer:** legal items that depend on the business, country, money, health or children. Say what to ask the lawyer, not what the law says.
-6. **What passed:** a short list with evidence, so the user knows it was checked.
+### Tools and fallbacks
 
-## Step 5: Fix (only after the user approves)
+Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say in the report which method you used.
+
+| Check | Fallback |
+|---|---|
+| License scan | Read the `license` field of each dependency from the lockfile or `node_modules/*/package.json` |
+| Secret scan | The grep patterns in blind spot #3, over files and `git log -p` |
+| Click-through QA | Static review: every `onClick`, `<a href>`, form `action` and route traced to a handler that exists (see the **functional-qa** section below) |
+| Lighthouse / axe | Manual review of the main pages against the **launch-ux** section below |
+| Build | List it under "Not checked", with the exact command for the user to run |
+
+**vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
+
+## Step 5: Report
+
+1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in the **report-template** section below.
+2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
+3. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+
+## Step 6: Fix (only after the user approves)
+
+After the report, offer: **"Fix the N safe items now? Other fixes need your decision first."** Then fix only what the user approves. Approval can be "fix safe items", "fix blockers 1 and 3", "fix everything", or similar. In a new session, read the latest report in `.vibe-check/reports/` before fixing.
+
+Follow the **fixes** section below: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
 
 ### Scope guard: fix the issue, keep the product
 
-- **Touch only what the finding needs.** Keep diffs as small as possible. Don't edit unrelated files, lines, styles or formatting. Leave the existing patterns, naming and folder structure alone, even if you'd do them differently.
-- **Legitimate users shouldn't notice the change.** A correct fix changes behaviour only for attackers, bad input or failure cases: user B can no longer see user A's data, and a timeout shows a friendly error instead of hanging. Pages, layouts, features and flows stay exactly as they were.
-- **Ask first when a fix is visible.** Some fixes necessarily add or change something users see or feel: a cookie consent banner, a "Delete account" button, a CAPTCHA, a rate-limit message, a login wall on a page that was public, a removed feature that can't be made safe. For these, explain the change and why it's needed, offer the least disruptive option, and wait for a yes.
-- **New UI matches the existing design.** Build any required new element (banner, button, error message) with the project's own components, styles, fonts, colours and tone. Never introduce a new UI library or a different look.
-- **No side quests.** Don't upgrade packages, migrate frameworks, restructure the database or "clean up" code unless a finding requires it. If you notice something else worth improving, list it under "Other suggestions (not changed)" instead of doing it.
-- **Keep data safe.** Never delete or rewrite users' existing data to make a fix work. Schema changes are additive migrations, tried in staging first.
-- **Report what changed.** After each fix, list the files changed and what users will (or won't) notice, so the user can review the change and revert it easily.
+- **Touch only what the finding needs.** Keep diffs as small as possible. Don't edit unrelated files, lines, styles or formatting. Leave existing patterns, naming and structure alone.
+- **Legitimate users shouldn't notice.** A correct fix changes behaviour only for attackers, bad input or failure cases. Pages, layouts, features and flows stay as they were.
+- **Ask before visible changes.** A consent screen, a "Delete account" button, a CAPTCHA, a rate-limit message, a login wall, or removing a feature all need an explanation, the least disruptive option, and the user's yes.
+- **New UI matches the existing design:** the project's own components, styles, fonts, colours and tone.
+- **No side quests.** No package upgrades beyond what a fix needs, no migrations, no refactors, no "clean up". Put other ideas under "Other suggestions (not changed)".
+- **Keep data safe.** Never delete or rewrite existing user data. Schema changes are additive migrations, tried in staging first.
+- **Report what changed:** the files changed and what users will (or won't) notice, after each fix.
+- Before writing a fix, read the official docs for the version actually installed. If a fix breaks something, reproduce the problem and read the full error before changing more code.
 
-Follow the **fixes** section below: prove the bug, apply the recipe for that finding adapted to the stack, and verify. If a fix needs something only the user can do (rotating a key in a dashboard, DNS, a legal call), give them exact steps.
-
-- Fix one issue per commit, Critical items first.
-- Before writing a fix, read the official docs for the version actually installed (check the lockfile). Don't rely on memory of older APIs.
-- If a fix breaks something, reproduce the problem and read the full error and stack trace before changing more code. Don't patch symptoms or hide errors with `try/catch`.
-- Add a test that would have caught each issue, so it can't come back.
-- Re-run the relevant checks after each fix and update the report.
-- Never call the audit complete while a 🔴 item is FAIL or an unresolved CAN'T TELL, unless the user explicitly accepts the risk. Record that acceptance in the report.
+Never call the audit complete while a 🔴 item is FAIL or an unresolved CAN'T TELL, unless the user explicitly accepts the risk. Record that acceptance in the report.
 
 ---
 
@@ -282,43 +311,48 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟢 **Semantic versioning** for APIs, packages and app releases.
 - [ ] 🟢 **Docs.** A README covering setup, environment variables and deployment, so someone else could run it.
 
-<a id="ai-features"></a>
+<a id="functional-qa"></a>
 
-## AI and LLM features
+## Functional QA: does everything actually work?
 
-Use this file only if the app calls an LLM or AI API (chatbots, generation, agents, RAG, AI image or voice). Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence.
+AI-built apps often ship buttons that do nothing, links to pages that don't exist, and forms that look like they submit but don't. Check that every interactive element leads somewhere real.
 
-### Keys and cost
+**Method, best first:**
+1. **Click-through (preferred):** run the app (`npm run dev`) or use staging, then use Playwright, a browser tool, or the vibe-check connector's `crawl_app`. Visit every route, click every button and link, and submit every form with valid and invalid data. On production, only follow links and open pages; never submit forms or create data.
+2. **Static review (fallback):** trace every `onClick`, `onSubmit`, `<a href>`, `<Link to>`, `router.push` and form `action` to a handler or route that exists and does something.
 
-- [ ] 🔴 **AI provider keys stay on the server.** No OpenAI, Anthropic, Gemini or Replicate key in client code or a public env var. The browser calls your backend, never the provider directly.
-- [ ] 🔴 **Per-user limits:** rate limits, daily or monthly quotas, `max_tokens` on every call, and a limit on input size (characters, file size, pages).
-- [ ] 🔴 **Spend cap and billing alert** set at the provider (ask the user).
-- [ ] 🔴 **Anonymous users can't run up the bill.** Unauthenticated AI endpoints get strict limits or CAPTCHA.
-- [ ] 🟡 **Calls are triggered deliberately:** not on every keystroke, render or retry loop. Debounce and cancel in-flight requests.
-- [ ] 🟡 **Streaming and long calls** have timeouts and handle user cancellation.
-- [ ] 🟢 **Cache** repeated identical prompts where that's safe.
+Record each broken item with the page, the element (its text or selector), what happened, and what was expected. Include a screenshot if you can take one.
 
-### Prompt injection and output handling
+### Navigation and links
+- [ ] 🔴 **No dead links:** every internal link and route resolves (no 404s). `href="#"` or `javascript:void(0)` appear only where a handler exists.
+- [ ] 🔴 **No dead buttons:** every button has a handler that does something visible, or is clearly disabled with a reason.
+- [ ] 🔴 **Main journeys work end to end:** signup → verify → onboarding → core action → result, plus login, logout and password reset.
+- [ ] 🟡 **External links work** and open safely (`rel="noopener"` on `target="_blank"`).
+- [ ] 🟡 **Back button and refresh** don't break state or re-submit forms.
+- [ ] 🟡 **Deep links** to every page work when opened directly, logged in and logged out (with a sensible redirect to login).
 
-- [ ] 🔴 **LLM output is treated as untrusted input.** It is never rendered as raw HTML (sanitize markdown output), never run as code or SQL, and never used as a URL, file path or shell argument without validation.
-- [ ] 🔴 **Prompt injection is assumed.** Text from users, uploaded documents, web pages, emails or RAG sources can contain instructions. The model's permissions must be safe even if it obeys them.
-- [ ] 🔴 **Tool and agent permissions are least-privilege.** Tools run with the *end user's* permissions (not admin or service-role). Destructive or costly actions (sending email, payments, deleting, posting) need explicit user confirmation.
-- [ ] 🔴 **No data leaks across users.** RAG retrieval and conversation history are filtered by the current user or tenant on the server, not by asking the model.
-- [ ] 🟡 **System prompts contain no secrets.** Assume users can extract the system prompt.
-- [ ] 🟡 **Structured output is validated** against a schema before use.
-- [ ] 🟡 **No exfiltration through rendered markdown.** Images and links in model output can't send data to attacker URLs (restrict image domains or strip external images).
+### Forms
+- [ ] 🔴 **Every form submits and saves**, and shows clear success feedback.
+- [ ] 🔴 **Validation errors appear** next to the field, in words. The form keeps the user's input after an error.
+- [ ] 🟡 **Double submit is prevented:** the button is disabled while a request is in flight.
+- [ ] 🟡 **Long, empty, unicode and emoji input** doesn't break the layout or the save.
+- [ ] 🟡 **File inputs** reject wrong types and sizes with a clear message.
 
-### Privacy, safety and honesty
+### States
+- [ ] 🔴 **Loading, empty and error states** exist for every screen that fetches data. No infinite spinners and no blank pages.
+- [ ] 🟡 **Placeholder content is gone:** no lorem ipsum, "TODO", sample users, dummy prices, or `example.com` links.
+- [ ] 🟡 **Permissions in the UI match the server:** users don't see buttons for actions they aren't allowed to do, and hidden buttons are still blocked on the server.
+- [ ] 🟡 **Feature flags and half-built features** are hidden from users.
 
-- [ ] 🔴 **The privacy policy names the AI providers** and says what data is sent to them. Check the provider's data-retention and training terms (opt out of training where possible).
-- [ ] 🔴 **No sensitive data sent unnecessarily:** health records, government IDs, passwords and payment data are stripped before prompts.
-- [ ] 🟡 **Content moderation** on user prompts and on outputs if the app is public or generates images, so it can't be used to produce harmful content under your brand.
-- [ ] 🟡 **AI disclosure.** Users know they're talking to AI. AI-generated content is labelled where laws or platforms require it (EU AI Act transparency rules, app store policies).
-- [ ] 🟡 **High-stakes outputs** (health, legal, finance, safety) carry disclaimers and a path to a human.
-- [ ] 🟡 **Hallucination handling.** Citations or sources where accuracy matters, and the UI doesn't present guesses as facts.
-- [ ] 🟡 **Logs of prompts and outputs** are access-controlled, have a retention limit, and are covered by deletion requests.
-- [ ] 🟢 **Evals.** A small set of test prompts (including jailbreak and injection attempts) run before changing models or prompts.
-- [ ] 🟢 **Fallback** when the provider is down or rate-limits you, so users see a clear message instead of a hang.
+### Errors and assets
+- [ ] 🔴 **No uncaught console errors** on the main pages.
+- [ ] 🟡 **No failed network requests** (4xx/5xx) during normal use.
+- [ ] 🟡 **No broken images, fonts or icons** (check for 404 assets).
+- [ ] 🟡 **Emails and notifications** link to working pages (verification, reset, invites).
+
+### Cross-device
+- [ ] 🔴 **Main journeys work on a phone** (375px wide) and in Safari (iOS) and Chrome.
+- [ ] 🟡 **Slow network** (throttle to "Fast 3G" or "Slow 4G"): no broken state, and timeouts show a message.
 
 <a id="legal-privacy"></a>
 
@@ -349,7 +383,9 @@ Use this file only if the app calls an LLM or AI API (chatbots, generation, agen
 
 - [ ] 🔴 **Every third-party API's terms checked:** commercial use allowed, caching and storage limits, attribution, rate limits, and whether you can resell or redistribute the data. Scraping targets' terms checked.
 - [ ] 🔴 **Open-source licenses scanned** (`npx license-checker --summary`, `pip-licenses`, FOSSA, Snyk). Flag GPL, AGPL, SSPL or "non-commercial" licenses in closed-source or SaaS code.
-- [ ] 🔴 **No unlicensed copyrighted assets:** images, fonts, icons, illustrations, music, video, logos, and stock photos without a license.
+- [ ] 🔴 **No unlicensed copyrighted assets:** images, icons, illustrations, music, video, logos, and stock photos without a license.
+- [ ] 🔴 **Fonts are licensed for the web.** Google Fonts and other OFL/Apache fonts are fine. A commercial font (Adobe, Monotype, foundry fonts) needs a **web/app license**: a desktop license doesn't cover `@font-face` or embedding in an app. Check every `@font-face`, `next/font` and font file in `public/`.
+- [ ] 🟡 **Asset register:** a list (e.g. `CREDITS.md` or `/licenses`) of every third-party image, icon set, font, illustration and audio file, with its source and license. Images AI tools pulled from the web without a source are a FAIL.
 - [ ] 🟡 **Attribution given** where licenses require it (CC-BY, MIT/BSD notices, OpenStreetMap, some icon sets).
 - [ ] 🟡 **UI kits, templates, themes and fonts** are licensed for this use (many paid kits forbid SaaS or resale use).
 - [ ] 🟡 **AI-generated content.** Check the AI provider's output terms. Generated images or text don't imitate real brands, trademarks, real people or copyrighted characters.
@@ -476,6 +512,16 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 - [ ] 🟡 Serverless function timeouts and regions are set, with spend management or limits on.
 - [ ] 🟡 Production source maps aren't publicly downloadable, or that's a deliberate decision.
 
+### Cloudflare (Workers, Pages, D1, R2)
+
+- [ ] 🔴 **Always Use HTTPS** is on, and the **minimum TLS version is 1.2** (SSL/TLS → Edge Certificates). Check live: `curl -I http://<domain>` should redirect, and `curl --tlsv1.1 --tls-max 1.1 https://<domain>` should fail.
+- [ ] 🔴 **`*.workers.dev` and `*.pages.dev` routes** are disabled for production Workers, or redirected to the real domain (they bypass custom-domain rules and may expose a personal account name).
+- [ ] 🔴 Secrets are set with `wrangler secret put` or the dashboard, not in `wrangler.toml` `[vars]`.
+- [ ] 🔴 R2 buckets with private data have no public access and no `r2.dev` URL. Files are served through signed URLs or the Worker.
+- [ ] 🟡 D1 has Time Travel/backups, and a restore has been tested. Migrations are done with `wrangler d1 migrations`.
+- [ ] 🟡 The deploy runs the tests first (CI, then `wrangler deploy`), not only deploy-on-push.
+- [ ] 🟡 Preview and dev Workers have their own bindings (DB, KV, R2), never production's.
+
 ### Next.js
 
 - [ ] 🔴 **Server Actions and Route Handlers each check auth and authorization themselves.** Middleware alone is not enough (and older versions had middleware bypass bugs, so keep Next.js patched).
@@ -520,6 +566,205 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 - [ ] 🟡 OS and images are updated regularly. Unattended security upgrades are on.
 - [ ] 🟡 Backups are stored off the server.
 
+<a id="ai-features"></a>
+
+## AI and LLM features
+
+Use this file only if the app calls an LLM or AI API (chatbots, generation, agents, RAG, AI image or voice). Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence.
+
+### Keys and cost
+
+- [ ] 🔴 **AI provider keys stay on the server.** No OpenAI, Anthropic, Gemini or Replicate key in client code or a public env var. The browser calls your backend, never the provider directly.
+- [ ] 🔴 **Per-user limits:** rate limits, daily or monthly quotas, `max_tokens` on every call, and a limit on input size (characters, file size, pages).
+- [ ] 🔴 **Spend cap and billing alert** set at the provider (ask the user).
+- [ ] 🔴 **Anonymous users can't run up the bill.** Unauthenticated AI endpoints get strict limits or CAPTCHA.
+- [ ] 🟡 **Calls are triggered deliberately:** not on every keystroke, render or retry loop. Debounce and cancel in-flight requests.
+- [ ] 🟡 **Streaming and long calls** have timeouts and handle user cancellation.
+- [ ] 🟢 **Cache** repeated identical prompts where that's safe.
+
+### Prompt injection and output handling
+
+- [ ] 🔴 **LLM output is treated as untrusted input.** It is never rendered as raw HTML (sanitize markdown output), never run as code or SQL, and never used as a URL, file path or shell argument without validation.
+- [ ] 🔴 **Prompt injection is assumed.** Text from users, uploaded documents, web pages, emails or RAG sources can contain instructions. The model's permissions must be safe even if it obeys them.
+- [ ] 🔴 **Tool and agent permissions are least-privilege.** Tools run with the *end user's* permissions (not admin or service-role). Destructive or costly actions (sending email, payments, deleting, posting) need explicit user confirmation.
+- [ ] 🔴 **No data leaks across users.** RAG retrieval and conversation history are filtered by the current user or tenant on the server, not by asking the model.
+- [ ] 🟡 **System prompts contain no secrets.** Assume users can extract the system prompt.
+- [ ] 🟡 **Structured output is validated** against a schema before use.
+- [ ] 🟡 **No exfiltration through rendered markdown.** Images and links in model output can't send data to attacker URLs (restrict image domains or strip external images).
+
+### Privacy, safety and honesty
+
+- [ ] 🔴 **The privacy policy names the AI providers** and says what data is sent to them. Check the provider's data-retention and training terms (opt out of training where possible).
+- [ ] 🔴 **No sensitive data sent unnecessarily:** health records, government IDs, passwords and payment data are stripped before prompts.
+- [ ] 🟡 **Content moderation** on user prompts and on outputs if the app is public or generates images, so it can't be used to produce harmful content under your brand.
+- [ ] 🟡 **AI disclosure.** Users know they're talking to AI. AI-generated content is labelled where laws or platforms require it (EU AI Act transparency rules, app store policies).
+- [ ] 🟡 **High-stakes outputs** (health, legal, finance, safety) carry disclaimers and a path to a human.
+- [ ] 🟡 **Hallucination handling.** Citations or sources where accuracy matters, and the UI doesn't present guesses as facts.
+- [ ] 🟡 **Logs of prompts and outputs** are access-controlled, have a retention limit, and are covered by deletion requests.
+- [ ] 🟢 **Evals.** A small set of test prompts (including jailbreak and injection attempts) run before changing models or prompts.
+- [ ] 🟢 **Fallback** when the provider is down or rate-limits you, so users see a clear message instead of a hang.
+
+<a id="kids-education"></a>
+
+## Children, students and education
+
+Load this file when anyone under 18 can use the app, or when it serves schools, colleges or students. Children's data carries the strictest obligations, and the biggest consequences if it leaks. Flag every legal item for a lawyer, and for the institution if a school, college or government body runs the program.
+
+**Laws to name, depending on where users are:** India DPDP Act (under 18 = child: verifiable parental consent, no tracking, no behavioural monitoring, no targeted ads). US COPPA (under 13), FERPA (school records), and state student-privacy laws. EU/UK GDPR (age of consent 13–16 by country) and the UK Age-Appropriate Design Code.
+
+### Age and consent
+- [ ] 🔴 **The age or school level is known.** The app can tell whether a user is a minor (date of birth, class or grade, or the institution says so).
+- [ ] 🔴 **Verifiable parental or guardian consent** before collecting a minor's personal data, where the law requires it. **A checkbox the child ticks is not verifiable consent.** The decision on the method belongs to the institution and its lawyer; flag it rather than inventing one.
+- [ ] 🔴 **Consent is recorded:** who consented, for which child, when, how, and which version of the notice.
+- [ ] 🟡 **Consent can be withdrawn**, and withdrawing it triggers deletion.
+- [ ] 🟡 **The notice for children and parents** uses plain language, in the users' languages.
+
+### Data minimization and retention
+- [ ] 🔴 **Only necessary data is collected.** No extra fields "for later". Every field in the data map has a purpose.
+- [ ] 🔴 **Retention limits exist and are enforced:** photos, documents and records of minors are deleted or anonymized on a schedule (e.g. X days after the event or term). **Keeping minors' data forever is a 🔴.**
+- [ ] 🔴 **Photos and media:** EXIF and GPS metadata is stripped unless needed and disclosed. Faces of minors aren't public. Access to media is logged.
+- [ ] 🟡 **Pseudonymization is described accurately:** hashed or coded IDs and phone numbers are described honestly (hashes of phone numbers can often be reversed by brute force; don't claim "cannot be reversed").
+
+### Tracking, ads and profiling
+- [ ] 🔴 **No third-party trackers, ad pixels or session replay** on pages minors use.
+- [ ] 🔴 **No targeted advertising or behavioural profiling** of minors.
+- [ ] 🟡 **Third-party embeds and fonts** (YouTube, Google Fonts, chat widgets) are disclosed. Self-host where possible.
+
+### Access and safety
+- [ ] 🔴 **Least-privilege staff access.** Teachers and staff see only their own students. Admin access is limited, logged and reviewed.
+- [ ] 🔴 **Students' personal details are never returned** by any public page, API, export or search.
+- [ ] 🟡 **No public profiles or open messaging** between adults and minors unless that's the product's purpose, and then with moderation and reporting.
+- [ ] 🟡 **Exports** (CSV, PDF) containing student data are restricted, logged and watermarked where possible.
+
+### Institutions and government programs
+- [ ] 🟡 **Roles are clear:** who is the data fiduciary or controller (school, district, department), and who is the processor (you). A written agreement exists or is planned.
+- [ ] 🟡 **Hosting and certification requirements asked about** (e.g. Indian government programs may need MeitY-empanelled hosting, a CERT-In-empanelled or STQC security audit, and GIGW website compliance). → ask the user.
+- [ ] 🟡 **A named grievance officer or contact** is in the privacy policy, with a response timeline.
+- [ ] 🟡 **Breach plan for student data:** who notifies the institution, parents and regulator, and how fast.
+
+<a id="health"></a>
+
+## Health, medical, wellness and fitness
+
+Load this file when the app collects health, medical, mental-health, fitness, fertility or biometric data, or gives health advice. Laws to flag for a lawyer: US HIPAA (if you work with covered entities) and state health-data laws (e.g. Washington's My Health My Data Act). EU/UK GDPR, where health data is a "special category" that needs explicit consent. India DPDP Act, plus telemedicine and Digital Health (ABDM) rules where relevant.
+
+- [ ] 🔴 **Explicit, separate consent** for health data, not bundled into the terms.
+- [ ] 🔴 **No health data sent to analytics, ad pixels, session replay or marketing tools** (including URL paths and event names that reveal conditions).
+- [ ] 🔴 **Encryption at rest and in transit.** Field-level encryption for diagnoses, notes and documents.
+- [ ] 🔴 **Strict access control** with audit logs on every read of health records.
+- [ ] 🔴 **Medical disclaimer** and an emergency path ("If this is an emergency, call …") wherever advice or AI answers appear.
+- [ ] 🔴 **AI features** don't diagnose or prescribe unless the product is approved for that. Output is labelled as AI, with a route to a human professional.
+- [ ] 🟡 **A BAA or DPA** with every vendor that touches health data (hosting, email, AI provider). Many default plans don't allow health data.
+- [ ] 🟡 **Retention and deletion** rules for health records, including backups and AI provider logs.
+- [ ] 🟡 **Notifications** (push, email, SMS) don't reveal health details on lock screens or in subject lines.
+- [ ] 🟡 **Regulatory status checked:** does the feature make the app a medical device or software as a medical device (CDSCO in India, FDA in the US, MDR in the EU)? → lawyer.
+
+<a id="fintech"></a>
+
+## Payments, wallets and financial features
+
+Load this file when the app takes payments, holds balances, pays out to users, lends, invests, or handles financial data. Also check the payments items in the **legal-privacy** section and the Stripe/Razorpay section of the **platforms** section.
+
+### Payments
+- [ ] 🔴 **Card data never touches your servers:** hosted checkout or elements only (keeps you out of PCI DSS scope). No card numbers in logs, DB or analytics.
+- [ ] 🔴 **Amounts, currency and tax** are calculated on the server.
+- [ ] 🔴 **Webhooks are verified and idempotent.** Entitlements are granted and revoked only from verified events (paid, refunded, disputed, cancelled, failed).
+- [ ] 🔴 **Test and live modes are separate.** Failure, refund, dispute and cancel flows were rehearsed in test mode.
+- [ ] 🟡 **Reconciliation:** a daily check that your records match the processor's (missed webhooks happen).
+- [ ] 🟡 **Invoices and receipts** meet local rules (e.g. GST invoices in India, VAT in the EU). → accountant.
+- [ ] 🟡 **Recurring payments** follow local mandate rules (e.g. RBI e-mandate and pre-debit notifications in India).
+
+### Money movement and balances
+- [ ] 🔴 **A ledger, not a balance column:** balances come from immutable, double-entry transactions. No `UPDATE balance = …` without a transaction record.
+- [ ] 🔴 **Atomic transfers,** with constraints that prevent negative balances and double spends (see the **fixes** section, race conditions).
+- [ ] 🔴 **Payouts** need verified identity and bank details, with limits, delays for new accounts, and manual review for unusual amounts.
+- [ ] 🟡 **Fraud controls:** velocity limits, device and IP signals, card-testing protection on checkout, alerts for spikes in refunds or disputes.
+
+### Regulation (flag for a lawyer; don't decide)
+- [ ] 🔴 **Licensing check:** holding customer funds, wallets, lending, investment advice, crypto, or cross-border transfers may need a licence or a regulated partner (RBI PA/PPI rules in India, money transmitter licences in the US, EMI in the EU). → lawyer.
+- [ ] 🟡 **KYC/AML** obligations if you onboard payees or hold funds.
+- [ ] 🟡 **Financial advice disclaimers,** and no guaranteed-return claims.
+- [ ] 🟡 **Data retention** for financial records follows the legal minimums (often 5–8 years), while other personal data is still minimized.
+
+<a id="policies"></a>
+
+## Policy pack: what the app must publish
+
+Check which documents exist, whether they're linked where users need them, and whether **each one matches the data map and features from Step 2**. A generic template that doesn't match the app is a FAIL. Drafting is allowed only on request and only from the real data map; mark drafts "DRAFT – needs legal review" and add them to the "Needs a lawyer" list.
+
+| Document | Needed when | Must include | Link it from |
+|---|---|---|---|
+| 🔴 **Privacy policy** | Always, if any personal data is collected | Each data type and its purpose, legal basis, processors and third parties (hosting, email, analytics, AI, fonts/CDNs), storage location and region, retention, user rights and how to use them, children's data (if any), a contact or grievance officer, an effective date | Footer, signup, every form that collects data |
+| 🔴 **Terms of service** | Always | Who can use it, acceptable use, accounts, payments (if any), IP, termination, disclaimers, liability limit, governing law, contact | Footer, signup |
+| 🔴 **Cookie notice and consent** | Non-essential cookies or trackers, with EU/UK users (and good practice everywhere) | Each cookie and tracker with its purpose and duration, plus a consent banner that blocks non-essential cookies until consent | Footer and the banner |
+| 🔴 **Refund and cancellation policy** | The app charges money | How to cancel, refund rules, trial terms, processing times | Pricing, checkout, footer |
+| 🔴 **Parental consent notice** | Minors (see the **kids-education** section) | What is collected about the child, why, retention, rights, how to withdraw consent | The consent flow |
+| 🟡 **Acceptable use policy** | User-generated content, uploads or messaging | Prohibited content and behaviour, enforcement, how to report | Terms, report flow |
+| 🟡 **Content and copyright takedown** | Users upload content | A contact for copyright and abuse reports, the process and timelines | Footer |
+| 🟡 **AI disclosure** | AI features | What's AI-generated, its limits, which providers, whether data is used for training | Near the AI feature, privacy policy |
+| 🟡 **Disclaimer** | Health, finance, legal, safety or fitness advice | "Not professional advice", plus when to see a professional | Near the advice |
+| 🟡 **Accessibility statement** | Public, government or EU-market apps | Standard targeted (WCAG 2.2 AA), known gaps, contact | Footer |
+| 🟡 **Data retention schedule** | Personal data is kept | How long each data type is kept and how it's deleted | Privacy policy, or internal |
+| 🟡 **Subprocessor list** | B2B customers | Every vendor that processes customer data, with its location | Trust or legal page |
+| 🟡 **Data processing agreement (DPA)** | B2B customers process personal data through you | Roles, security measures, subprocessors, breach notice, deletion | Available on request |
+| 🟡 **`security.txt` and a vulnerability disclosure policy** | Public apps | A contact for security reports (`/.well-known/security.txt`) | Footer, or the well-known path |
+| 🟡 **Incident response plan** | Personal data or paid users | Who does what, notification timelines (e.g. GDPR 72h, CERT-In 6h in India), contacts | Internal |
+| 🟢 **Status page and SLA** | Paid or B2B | Uptime target, credits if any, how incidents are communicated | Footer, contracts |
+
+### Checks
+- [ ] 🔴 Every required document exists, is reachable without logging in, and is linked where users need it.
+- [ ] 🔴 Each document matches the app as it is today, including recently added fields and features (compare against the data map).
+- [ ] 🔴 No overstated claims ("cannot be reversed", "fully anonymous", "bank-grade", "100% secure", "compliant" without proof).
+- [ ] 🟡 Each document has an effective date and a version history, and users are told about material changes.
+- [ ] 🟡 Documents are in the languages users use, and the translations match.
+- [ ] 🟡 Contact details work (the email inbox is monitored).
+
+<a id="enterprise"></a>
+
+## Enterprise and government readiness
+
+Load this file at the Enterprise level: when selling to companies or government, or handling regulated data. This is what security reviews, procurement teams and auditors ask for. Many items are documents and processes, not code: mark them CAN'T TELL and ask the user.
+
+### Identity and access
+- [ ] 🔴 **SSO** (SAML or OIDC) for customer orgs, with **SCIM** or just-in-time provisioning and deprovisioning.
+- [ ] 🔴 **Role-based access** with org-level admins. Customer admins can manage their own users.
+- [ ] 🔴 **MFA required** for your own admin and production access (cloud, GitHub, DB, domain registrar, email).
+- [ ] 🟡 **Access reviews** every quarter. Leavers are removed the same day. Shared accounts are avoided.
+- [ ] 🟡 **Break-glass** emergency access is documented and logged.
+
+### Audit and integrity
+- [ ] 🔴 **Audit logs** for security-relevant events (logins, permission changes, exports, deletions, admin actions), exportable to the customer.
+- [ ] 🟡 **Tamper evidence:** logs are append-only, or copied somewhere admins of the main system can't change them (a separate account, object lock, hash chaining). Be accurate about what "tamper-proof" means.
+- [ ] 🟡 **Change management:** PR review required, protected branches, deploys traceable to commits, separation of duties for production changes.
+
+### Data
+- [ ] 🔴 **Data residency** known and matching what customers or regulations require (e.g. India-only hosting for some government work).
+- [ ] 🔴 **Encryption** at rest and in transit, with key management documented.
+- [ ] 🟡 **Tenant isolation** proven by tests: no cross-tenant reads in APIs, search, exports, caches or AI features.
+- [ ] 🟡 **Customer data export and deletion** at contract end, with a timeline.
+- [ ] 🟡 **Backups:** encrypted and off-site, with documented RPO and RTO targets (how much data you could lose, how long recovery takes), and **restore tested** with a date recorded.
+
+### Security program
+- [ ] 🟡 **Threat model** for the main flows and data.
+- [ ] 🟡 **Third-party penetration test** within the last 12 months, with findings fixed. Government work may need a CERT-In-empanelled auditor or STQC.
+- [ ] 🟡 **Vulnerability management:** dependency scanning in CI, an SLA for patching criticals, `security.txt`.
+- [ ] 🟡 **SBOM** (software bill of materials) can be generated (e.g. `npx @cyclonedx/cyclonedx-npm`).
+- [ ] 🟡 **Secrets management:** a vault or platform secrets, rotation schedule, no shared credentials.
+- [ ] 🟡 **Incident response plan** with notification timelines, tested with a tabletop exercise.
+- [ ] 🟢 **SOC 2 Type II / ISO 27001 readiness.** Policies exist (access, change, incident, vendor, BCP). A compliance tool (Vanta, Drata, Sprinto) helps when a certification is needed.
+
+### Reliability and operations
+- [ ] 🟡 **SLOs and an SLA**, uptime monitoring, a public status page, and incident communication.
+- [ ] 🟡 **Disaster recovery and business continuity plan:** a cloud region failure, a lost account, a key person unavailable.
+- [ ] 🟡 **Bus factor and ownership:** at least two people can access and operate production. The domain, cloud, code and DB are owned by the company, not a personal account. No production on a personal-name domain.
+- [ ] 🟡 **Environments:** dev, staging and production are isolated, with no production data in lower environments (or it's masked).
+
+### Procurement and compliance documents
+- [ ] 🟡 **Security questionnaire answers** ready (CAIQ, SIG-lite, or the customer's own).
+- [ ] 🟡 **Trust page:** security overview, subprocessors, DPA, status, contact.
+- [ ] 🟡 **Accessibility conformance report** (VPAT or WCAG report). Government sites may need GIGW (India), Section 508 (US) or EN 301 549 (EU).
+- [ ] 🟡 **Insurance** (cyber, professional liability) if contracts require it. → ask the user.
+
 <a id="report-template"></a>
 
 ## Report template
@@ -529,7 +774,8 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 ````markdown
 ## vibe-check report: <app name>
 
-**Date:** <date> · **Mode:** Quick | Full | Static review · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**Date:** <date> · **Level:** Quick | Launch | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
+**Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
 ### Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
 
@@ -542,7 +788,7 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 #### 1. <Short title>
 - **What could happen:** <one plain sentence about the impact on the user or their customers>
 - **Where:** `path/to/file.ts:42` <and the evidence: snippet, command output or config value; secrets masked>
-- **Fix:** <the specific technical change>
+- **Fix:** <the specific technical change> · **Safe to auto-fix:** yes / no (needs your decision)
 - **Prompt to fix it:**
   > <A ready-to-paste instruction for an AI coding tool, specific to this codebase. Example: "In app/api/invoices/[id]/route.ts, only return the invoice if invoice.user_id equals the current session user's id; return 404 otherwise. Add a test proving user A cannot fetch user B's invoice.">
 
@@ -550,9 +796,9 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 ### 🟡 Fix before scale or paying users
 
-| # | Issue | Where | Fix |
-|---|---|---|---|
-| 1 | | | |
+| # | Issue | Where | Fix | Safe to auto-fix |
+|---|---|---|---|---|
+| 1 | | | | |
 
 ### ❓ Questions for you
 
@@ -577,13 +823,14 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 ### Not checked
 
-- <Areas skipped and why, e.g. "AI features: the app has none.">
+- <Areas or commands skipped, why, and the exact command for the user to run, e.g. "Build not run (shared folder in use): run `npm run build`".>
 ````
 
 ### Writing tips
 
 - Order blockers by severity: data leaks and account takeover first, then money loss, then legal, then outages.
 - One finding per real problem. Group repeats (for example, "12 routes are missing ownership checks", with all 12 listed).
+- For dependency findings, give the advisory ID, installed version and fixed version.
 - Never print a full secret. Show its first 4 characters and its location.
 - If something is fine, don't invent a problem to look thorough.
 

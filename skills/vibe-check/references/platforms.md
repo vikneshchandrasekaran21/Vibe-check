@@ -30,6 +30,16 @@ Check the sections for the stack you found in Step 1. These are the problems tha
 - [ ] 🟡 Serverless function timeouts and regions are set, with spend management or limits on.
 - [ ] 🟡 Production source maps aren't publicly downloadable, or that's a deliberate decision.
 
+## Cloudflare (Workers, Pages, D1, R2)
+
+- [ ] 🔴 **Always Use HTTPS** is on, and the **minimum TLS version is 1.2** (SSL/TLS → Edge Certificates). Check live: `curl -I http://<domain>` should redirect, and `curl --tlsv1.1 --tls-max 1.1 https://<domain>` should fail.
+- [ ] 🔴 **`*.workers.dev` and `*.pages.dev` routes** are disabled for production Workers, or redirected to the real domain (they bypass custom-domain rules and may expose a personal account name).
+- [ ] 🔴 Secrets are set with `wrangler secret put` or the dashboard, not in `wrangler.toml` `[vars]`.
+- [ ] 🔴 R2 buckets with private data have no public access and no `r2.dev` URL. Files are served through signed URLs or the Worker.
+- [ ] 🟡 D1 has Time Travel/backups, and a restore has been tested. Migrations are done with `wrangler d1 migrations`.
+- [ ] 🟡 The deploy runs the tests first (CI, then `wrangler deploy`), not only deploy-on-push.
+- [ ] 🟡 Preview and dev Workers have their own bindings (DB, KV, R2), never production's.
+
 ## Next.js
 
 - [ ] 🔴 **Server Actions and Route Handlers each check auth and authorization themselves.** Middleware alone is not enough (and older versions had middleware bypass bugs, so keep Next.js patched).

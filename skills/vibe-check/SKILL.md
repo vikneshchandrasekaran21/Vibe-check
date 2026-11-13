@@ -1,115 +1,144 @@
 ---
 name: vibe-check
-description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or when asked "is this ready to ship?", "vibe check", or "security audit".
+description: Pre-launch audit and fix guide for AI-built apps. Use before shipping, or for "vibe check", "is this ready to ship?", "security audit", or "fix the vibe-check issues".
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   homepage: "https://github.com/vikneshchandrasekaran21/vibe-check"
 ---
 
 # vibe-check: the pre-launch audit for AI-built apps
 
-You are the last check before this app reaches real users, real attackers and real money. Your job is to find what will **break, leak, cost money or create legal risk** in production. You are not here to confirm the app works.
+You are the last check before this app reaches real users, real attackers and real money. Find what will **break, leak, cost money or create legal risk** in production, explain it plainly, and fix what the user approves, **without changing what they built**.
 
 Most of this code was probably written by an AI coding tool, possibly by you. AI tools write code that works in the demo and miss what only shows up in production. Assume those gaps are here until you've proven otherwise.
 
 ## Ground rules (never break these)
 
-1. **Audit first, fix later.** Don't change code during the audit. Write the report, then fix only what the user approves.
-2. **Evidence or it didn't happen.** Every PASS and every FAIL cites `file:line`, a command and its output, or a config value. "Looks fine" is not a result.
+1. **Audit first, fix later.** Don't change code during the audit. Fix only what the user approves (Step 6).
+2. **Evidence or it didn't happen.** Every PASS and every FAIL cites `file:line`, a command and its output, a URL and its response, or a config value.
 3. **Never guess a PASS.** If you can't confirm something, mark it **CAN'T TELL** and turn it into a question for the user.
-4. **Distrust earlier AI work, your own included.** Check every item in Step 2, even code you remember writing carefully.
-5. **Never weaken anything to get a PASS.** Don't disable tests, loosen RLS or security rules, widen CORS, or add empty `catch` blocks.
-6. **Use only safe commands.** Never run destructive commands, migrations against production, or anything that uses production credentials or data.
-7. **Mask secrets.** If you find a leaked key, show only its first 4 characters and its location (`sk_l…` in `src/lib/stripe.ts:3`). Never print a full secret.
-8. **Never change what the user built.** Their design, features, use case, user flows, copy, branding and tech choices are theirs. vibe-check fixes only the issues it found. No redesigns, refactors, "improvements", renames, reformatting, dependency upgrades or new features, unless a specific finding requires one, and then only with approval. See *Scope guard* in Step 5.
-9. **Write for the user you have.** Many users are not professional developers. Explain each finding in one plain sentence (what could happen to them or their users), then give the technical fix.
+4. **Distrust earlier AI work, your own included.** Check the blind spots in Step 3, even in code you remember writing carefully.
+5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
+6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts.
+7. **Mask secrets.** Show only the first 4 characters and where the secret is (`sk_l…` in `src/lib/stripe.ts:3`).
+8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
+9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
 
-## Step 0: Pick the mode
+## Step 1: Profile the app
 
-- **Quick** (default if the user is in a hurry or just says "vibe check"): Step 2 and every 🔴 item in the reference files.
-- **Full** (before a real launch, taking payments, or handling sensitive data): everything.
+Work out as much as you can from the code, then ask the user **only** what you couldn't determine (one short message):
 
-If you can't run shell commands (browser-based builders such as Lovable, Bolt, v0 or Replit Agent), do a **static review**: read the code and config, and list the commands the user should run themselves.
+1. **Who uses it?** Public consumers, a business's staff, schools or students, patients, or other companies.
+2. **Can children or students use it?** Anyone under 18, or school or college users.
+3. **Does it take money?** Payments, subscriptions, wallets, payouts.
+4. **Sensitive data?** Health, financial, government ID, location, biometrics.
+5. **Where are users?** India, EU/UK, US, other. Is there a government or enterprise buyer?
 
-## Step 1: Map the project (write this down before checking anything)
+Then pick a **level** (the user can override it):
 
-- **Stack:** framework and version, hosting, database, auth provider, payments, email, file storage, AI/LLM providers, analytics, and every other third-party API.
-- **Builder platform:** Lovable, Bolt, v0, Replit, Cursor, Claude Code, Firebase Studio, Expo and so on. Then read `references/platforms.md` for the traps specific to that platform.
-- **Data map:** every piece of personal data collected (form fields, analytics, logs, uploads, data sent to LLMs), where it is stored, and which third parties receive it.
-- **Entry points:** pages, API routes, server actions, edge functions, webhooks, cron jobs, background workers, admin pages.
-- **Tables and access rules:** every table or collection, and its RLS policies or security rules.
-- **Environment variables:** every one, and whether it reaches the browser bundle.
-- **Business context:** where users come from, whether children could use the app, whether it charges money, and whether it gives health, finance or legal advice. Ask the user if the code doesn't make this clear, because the legal section depends on it.
+| Level | When | Covers |
+|---|---|---|
+| 🟢 **Quick** | Before any deploy, or "quick vibe check" | Step 3 blind spots + every 🔴 item in the core modules |
+| 🟡 **Launch** (default) | Before going public or taking payments | Everything in the core modules + every profile module that applies |
+| 🔵 **Enterprise** | Selling to companies or government, or regulated data | Launch + `enterprise.md` + the full policy pack |
 
-## Step 2: Check the AI blind spots first
+## Step 2: Map the project
 
-These are the mistakes AI coding tools make most often. Check all of them, in every mode.
+Write down:
+- **Stack:** framework and version, hosting, DB, auth, payments, email, storage, AI providers, analytics, every third-party API.
+- **Builder platform:** Lovable, Bolt, v0, Replit, Cursor, Claude Code and so on.
+- **Data map:** every piece of personal data (forms, uploads, photo metadata such as GPS, logs, analytics, data sent to LLMs). For each, record where it's stored, which third parties get it, and how long it's kept.
+- **Entry points:** pages, API routes, server actions, edge functions, webhooks, cron, workers, admin pages.
+- **Tables, collections and buckets**, with their access rules.
+- **Env vars**, and whether each one reaches the browser.
+- **Live URLs:** production, staging, dev, preview and platform default domains (for example `*.workers.dev`, `*.vercel.app`).
+- **Known issues:** read `.vibe-check/reports/`, `TODO`, project notes and `CLAUDE.md` / `AGENTS.md`. Mark findings that were already known as *(already known)*.
+
+## Step 3: AI blind spots (every level)
 
 | # | Check | How to verify |
 |---|---|---|
-| 1 | 🔴 **Authorization, not just login.** The server checks that the current user owns the record or has the right role. | For every route that reads or writes by ID, find the ownership filter (`user_id` / `org_id`). If it's missing, that's an IDOR. Pretend to be user A and request user B's ID. |
-| 2 | 🔴 **RLS / security rules on.** | Supabase: RLS is enabled on every table, there's no `using (true)` on user data, and the `service_role` key is used only on the server. Firebase: no `allow read, write: if true`. Storage buckets for private files are not public. |
-| 3 | 🔴 **No secrets in code or the browser.** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check `NEXT_PUBLIC_` / `VITE_` / `EXPO_PUBLIC_` / `REACT_APP_` variables. `.env` must be in `.gitignore`. Check git history with `git log --all -p -- '*.env*'`. |
-| 4 | 🔴 **Server-side validation.** | Every write endpoint validates input against a schema on the server. Frontend checks don't count. |
-| 5 | 🔴 **No mass assignment.** | No `update(req.body)` or object spread into the DB. Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
-| 6 | 🔴 **Prices and payments decided on the server.** | Amounts come from the server or DB, never from the client. An order is marked paid only by a **verified** webhook, not the success redirect. Webhooks are idempotent. |
-| 7 | 🔴 **Failure paths exist.** | Every DB, HTTP, LLM and email call has a timeout and error handling. No empty `catch {}`, no unhandled promises, and stack traces never reach users. |
-| 8 | 🔴 **Race conditions on money and limits.** | Coupons, credits, stock and quotas use transactions, unique constraints or atomic updates, never read-then-write. |
-| 9 | 🔴 **Dependencies are real and current.** | Every package exists on the registry, is maintained and is free of known vulnerabilities (`npm audit` / `pip-audit`). Code matches the installed version's API. AI tools sometimes invent package names, and attackers register them. |
-| 10 | 🔴 **Spend is capped.** | LLM and paid API calls are rate-limited per user, with max tokens and input size set. No calls on every keystroke or render. Billing alerts exist (ask the user). |
-| 11 | 🔴 **Admin and debug surfaces locked.** | Admin routes are checked on the server, not just hidden in the UI. Debug mode is off and there are no test or seed accounts or default passwords. Source maps, `.git` and `.env` aren't publicly served. |
-| 12 | 🔴 **AI features are safe** (if the app uses an LLM). | See `references/ai-features.md`: prompt injection, LLM output rendered as HTML, system prompts and keys kept on the server, tool permissions. |
-| 13 | 🟡 **No N+1 queries or unbounded reads.** | No queries inside loops, and every list endpoint is paginated. |
-| 14 | 🟡 **Tests actually test.** | Tests don't mirror the implementation or always pass, and none were skipped or weakened to make CI green. |
-| 15 | 🟡 **One way of doing things.** | No duplicate auth helpers, date libraries or API clients from different AI sessions. |
-| 16 | 🟡 **Time, locale and encoding.** | Store UTC (`timestamptz`) and use a date library. UTF-8 works end to end (test non-English names and emoji). |
-| 17 | 🟡 **Boilerplate matches reality.** | The privacy policy, terms and marketing claims describe what this app really does, not a generic template. |
+| 1 | 🔴 **Authorization, not just login** | Every route that reads or writes by ID filters by owner or tenant on the server. Try fetching user B's record as user A (IDOR). |
+| 2 | 🔴 **RLS / security rules on** | Supabase: RLS is on for every table, no `using (true)` on user data, and `service_role` is used only on the server. Firebase: rules aren't in test mode. Storage buckets for private files aren't public. |
+| 3 | 🔴 **No secrets in code or the browser** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`), `.gitignore`, and git history (`git log --all -p -- '*.env*'`). |
+| 4 | 🔴 **Server-side validation** | Every write validates input against a schema on the server. |
+| 5 | 🔴 **No mass assignment** | Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
+| 6 | 🔴 **Prices and payments decided on the server** | Amounts come from the server. Access is granted only from a **verified** webhook. Webhooks are idempotent. |
+| 7 | 🔴 **Failure paths exist** | Timeouts and error handling on every external call. No empty `catch`, and no stack traces shown to users. |
+| 8 | 🔴 **Race conditions on money and limits** | Atomic updates, constraints or transactions. Never read-then-write. |
+| 9 | 🔴 **Dependencies real, current and safe** | Run `npm audit` / `pip-audit`. For each finding give the **advisory ID, installed version and fixed version**. Every package exists and is maintained. |
+| 10 | 🔴 **Spend is capped** | Per-user limits and `max_tokens` on LLM and paid APIs. Billing alerts (ask the user). |
+| 11 | 🔴 **Admin, debug and extra domains locked** | Admin routes are checked on the server. Debug is off. No test or seed accounts. No public source maps, `.git` or `.env`. Platform default domains (`*.workers.dev`, `*.vercel.app` and so on) are disabled or redirected. |
+| 12 | 🔴 **Email actually sends** | Verification, password reset and alert emails reach an inbox: a provider is configured and SPF, DKIM and DMARC are set. Apps break silently when email is missing. |
+| 13 | 🔴 **AI features are safe** (if the app uses an LLM) | See `ai-features.md`. |
+| 14 | 🟡 **No N+1 queries or unbounded reads** | Pagination, and no queries inside loops. |
+| 15 | 🟡 **Tests actually test** | No tests that always pass, mirror the code, or were skipped to make CI green. |
+| 16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
+| 17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
+| 18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
 
-## Step 3: Run the area checklists
+## Step 4: Run the modules
 
-Read the reference file for each area and mark each item **PASS / FAIL / N/A / CAN'T TELL**. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
+**Core modules** (Launch and above):
 
-| Area | File |
+| Module | File |
 |---|---|
 | Security and authentication | `references/security.md` |
-| Data, reliability, infrastructure, observability | `references/reliability.md` |
-| AI and LLM features | `references/ai-features.md` |
-| Legal, privacy and compliance | `references/legal-privacy.md` |
-| UX, launch basics, email, abuse, mobile apps | `references/launch-ux.md` |
-| Platform-specific traps (Supabase, Firebase, Vercel, Lovable, Bolt, Replit and more) | `references/platforms.md` |
-| How to fix each common finding (patterns, code, tests) | `references/fixes.md` |
+| Data, reliability, infrastructure, observability, CI | `references/reliability.md` |
+| Functional QA: broken buttons, links, forms, flows | `references/functional-qa.md` |
+| Legal, privacy, licensing (fonts, images, code) | `references/legal-privacy.md` |
+| UX, accessibility, launch basics, email, abuse, mobile | `references/launch-ux.md` |
+| Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
 
-Skip an area only when it truly doesn't apply (for example, no AI features), and say so in the report.
+**Profile modules** (load only the ones that match Step 1):
 
-## Step 4: Report
+| Load when | File |
+|---|---|
+| The app calls an LLM or AI API | `references/ai-features.md` |
+| Minors, students, schools or colleges | `references/kids-education.md` |
+| Health, medical, wellness or fitness data | `references/health.md` |
+| Payments, wallets, lending, investing, payouts | `references/fintech.md` |
+| Launch and above: policies the app must publish | `references/policies.md` |
+| Enterprise level, B2B or government buyers | `references/enterprise.md` |
 
-Use the format in `references/report-template.md`:
+Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
-1. **Verdict:** 🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP, plus one sentence explaining why.
-2. **Blockers:** every 🔴 FAIL, with what could happen (plain words), evidence, the fix (based on `references/fixes.md`, adapted to this codebase), and a **copy-paste prompt** the user can give their AI tool to fix it.
-3. **Fix before scale:** the 🟡 FAILs, same format.
-4. **Questions for you:** every CAN'T TELL, phrased so a non-developer can answer.
-5. **Needs a lawyer:** legal items that depend on the business, country, money, health or children. Say what to ask the lawyer, not what the law says.
-6. **What passed:** a short list with evidence, so the user knows it was checked.
+### Tools and fallbacks
 
-## Step 5: Fix (only after the user approves)
+Use real tools where they're available: `npm audit` / `pip-audit`, gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say in the report which method you used.
+
+| Check | Fallback |
+|---|---|
+| License scan | Read the `license` field of each dependency from the lockfile or `node_modules/*/package.json` |
+| Secret scan | The grep patterns in blind spot #3, over files and `git log -p` |
+| Click-through QA | Static review: every `onClick`, `<a href>`, form `action` and route traced to a handler that exists (see `functional-qa.md`) |
+| Lighthouse / axe | Manual review of the main pages against `launch-ux.md` |
+| Build | List it under "Not checked", with the exact command for the user to run |
+
+**vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
+
+## Step 5: Report
+
+1. **Save the full report** to `.vibe-check/reports/YYYY-MM-DD.md` in the project, and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public. Use the format in `references/report-template.md`.
+2. **In the chat, give a summary:** the verdict, the score line, each 🔴 blocker with its plain-language impact and a **copy-paste fix prompt**, the top 🟡 items, the most important questions, and the path to the full report.
+3. **Mark which findings are "safe to auto-fix":** invisible to users, easy to undo, and no decision needed. Examples: adding CI, `noindex` on dev, security headers, a patch-version bump of a dependency, a missing timeout.
+
+## Step 6: Fix (only after the user approves)
+
+After the report, offer: **"Fix the N safe items now? Other fixes need your decision first."** Then fix only what the user approves. Approval can be "fix safe items", "fix blockers 1 and 3", "fix everything", or similar. In a new session, read the latest report in `.vibe-check/reports/` before fixing.
+
+Follow `references/fixes.md`: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
 
 ### Scope guard: fix the issue, keep the product
 
-- **Touch only what the finding needs.** Keep diffs as small as possible. Don't edit unrelated files, lines, styles or formatting. Leave the existing patterns, naming and folder structure alone, even if you'd do them differently.
-- **Legitimate users shouldn't notice the change.** A correct fix changes behaviour only for attackers, bad input or failure cases: user B can no longer see user A's data, and a timeout shows a friendly error instead of hanging. Pages, layouts, features and flows stay exactly as they were.
-- **Ask first when a fix is visible.** Some fixes necessarily add or change something users see or feel: a cookie consent banner, a "Delete account" button, a CAPTCHA, a rate-limit message, a login wall on a page that was public, a removed feature that can't be made safe. For these, explain the change and why it's needed, offer the least disruptive option, and wait for a yes.
-- **New UI matches the existing design.** Build any required new element (banner, button, error message) with the project's own components, styles, fonts, colours and tone. Never introduce a new UI library or a different look.
-- **No side quests.** Don't upgrade packages, migrate frameworks, restructure the database or "clean up" code unless a finding requires it. If you notice something else worth improving, list it under "Other suggestions (not changed)" instead of doing it.
-- **Keep data safe.** Never delete or rewrite users' existing data to make a fix work. Schema changes are additive migrations, tried in staging first.
-- **Report what changed.** After each fix, list the files changed and what users will (or won't) notice, so the user can review the change and revert it easily.
+- **Touch only what the finding needs.** Keep diffs as small as possible. Don't edit unrelated files, lines, styles or formatting. Leave existing patterns, naming and structure alone.
+- **Legitimate users shouldn't notice.** A correct fix changes behaviour only for attackers, bad input or failure cases. Pages, layouts, features and flows stay as they were.
+- **Ask before visible changes.** A consent screen, a "Delete account" button, a CAPTCHA, a rate-limit message, a login wall, or removing a feature all need an explanation, the least disruptive option, and the user's yes.
+- **New UI matches the existing design:** the project's own components, styles, fonts, colours and tone.
+- **No side quests.** No package upgrades beyond what a fix needs, no migrations, no refactors, no "clean up". Put other ideas under "Other suggestions (not changed)".
+- **Keep data safe.** Never delete or rewrite existing user data. Schema changes are additive migrations, tried in staging first.
+- **Report what changed:** the files changed and what users will (or won't) notice, after each fix.
+- Before writing a fix, read the official docs for the version actually installed. If a fix breaks something, reproduce the problem and read the full error before changing more code.
 
-Follow `references/fixes.md`: prove the bug, apply the recipe for that finding adapted to the stack, and verify. If a fix needs something only the user can do (rotating a key in a dashboard, DNS, a legal call), give them exact steps.
-
-- Fix one issue per commit, Critical items first.
-- Before writing a fix, read the official docs for the version actually installed (check the lockfile). Don't rely on memory of older APIs.
-- If a fix breaks something, reproduce the problem and read the full error and stack trace before changing more code. Don't patch symptoms or hide errors with `try/catch`.
-- Add a test that would have caught each issue, so it can't come back.
-- Re-run the relevant checks after each fix and update the report.
-- Never call the audit complete while a 🔴 item is FAIL or an unresolved CAN'T TELL, unless the user explicitly accepts the risk. Record that acceptance in the report.
+Never call the audit complete while a 🔴 item is FAIL or an unresolved CAN'T TELL, unless the user explicitly accepts the risk. Record that acceptance in the report.

@@ -25,7 +25,9 @@
 
 - [ ] 🔴 **Every third-party API's terms checked:** commercial use allowed, caching and storage limits, attribution, rate limits, and whether you can resell or redistribute the data. Scraping targets' terms checked.
 - [ ] 🔴 **Open-source licenses scanned** (`npx license-checker --summary`, `pip-licenses`, FOSSA, Snyk). Flag GPL, AGPL, SSPL or "non-commercial" licenses in closed-source or SaaS code.
-- [ ] 🔴 **No unlicensed copyrighted assets:** images, fonts, icons, illustrations, music, video, logos, and stock photos without a license.
+- [ ] 🔴 **No unlicensed copyrighted assets:** images, icons, illustrations, music, video, logos, and stock photos without a license.
+- [ ] 🔴 **Fonts are licensed for the web.** Google Fonts and other OFL/Apache fonts are fine. A commercial font (Adobe, Monotype, foundry fonts) needs a **web/app license**: a desktop license doesn't cover `@font-face` or embedding in an app. Check every `@font-face`, `next/font` and font file in `public/`.
+- [ ] 🟡 **Asset register:** a list (e.g. `CREDITS.md` or `/licenses`) of every third-party image, icon set, font, illustration and audio file, with its source and license. Images AI tools pulled from the web without a source are a FAIL.
 - [ ] 🟡 **Attribution given** where licenses require it (CC-BY, MIT/BSD notices, OpenStreetMap, some icon sets).
 - [ ] 🟡 **UI kits, templates, themes and fonts** are licensed for this use (many paid kits forbid SaaS or resale use).
 - [ ] 🟡 **AI-generated content.** Check the AI provider's output terms. Generated images or text don't imitate real brands, trademarks, real people or copyrighted characters.
