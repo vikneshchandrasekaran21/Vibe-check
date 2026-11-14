@@ -3,7 +3,7 @@ name: vibe-check
 description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.6.1"
+  version: "3.6.2"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -15,15 +15,17 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 
 ## Start here: say you're running
 
-The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name>` (the version is the `version:` line at the top of this file; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app.
+The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name>` (the version is the `version:` line at the top of this file; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app. **Say it before anything else, even before a question**; while the project isn't known yet, end it with `· choosing project`.
 
 **A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
 
-## Which project (before anything else)
+## Which project (right after the update check)
+
+**Steps 0a and 0 come first** (they need no project, and an update notice must reach the user before any question). Then:
 
 1. Run `python3 <skill-folder>/scripts/profile.py . --where` from the folder you were opened in. It prints the project's name, path and branch and whether there's app code here, and writes nothing. Without the script, look for `package.json`, `requirements.txt`, `composer.json`, `go.mod`, `supabase/` or code files, in this folder only.
 2. **Inside a project (app code found): review it straight away.** It's the folder you're in: name in the first line, path and branch in the report header.
-3. **Not inside a project** (no app code: a new chat with no folder, a home, Downloads or Desktop folder, an empty folder): **ask which project, as a choice**, before anything else: *I'll type the folder path (Recommended)* · *Check this folder anyway* · *Not sure where it is* (then say how to open its folder). Never guess.
+3. **Not inside a project** (no app code: a new chat with no folder, a home, Downloads or Desktop folder, an empty folder): **ask which project, as a choice**: up to 3 project folders your tool already shows you (open or recently used), then *I'll type the folder path* · *Not sure where it is* (then say how to open its folder). Never scan the disk for candidates, and never guess.
 4. **Never search outside the project folder to find an app**: not Downloads, Desktop, Documents, other projects or the whole disk. Look only where the user points.
 5. **One project per run.** Names or projects mentioned earlier in the chat, in memory or elsewhere are **never** a reason to switch project. If this chat already checked another project, say so in one line and reuse none of its findings, ledger or answers; each project's notes live in its own `.vibe-check/`.
 
@@ -31,9 +33,9 @@ The **first line of every vibe-check reply** is: `Running vibe-check v<version> 
 
 ```text
 vibe-check run
-- [ ] Project  profile.py --where: this folder, or the one the user named
 - [ ] Step 0a  Whole skill available (or checklists read from GitHub)
-- [ ] Step 0   Version checked
+- [ ] Step 0   Version checked (before any question)
+- [ ] Project  profile.py --where: this folder, or the one the user named
 - [ ] Step 1   profile.py run; remaining questions asked as choices
 - [ ] Step 2   inventory.py, sweep.py and versions.py run
 - [ ] Step 3   All 19 blind spots checked (references/blind-spots.md)
@@ -104,22 +106,18 @@ Never replace the audit with a design or screenshot review, whatever is missing.
 
 ## Step 0: Version check (a few seconds)
 
-Your version is the `version:` line at the top of this file. Find out whether a newer one is released, using the **first** method that works:
+Your version is the `version:` line at the top of this file. Check for a newer release with the **first** method that works, once:
 
-1. **The script:** `python3 <skill-folder>/scripts/version_check.py`. It reads the latest release number from GitHub, sends nothing about the user, gives up after 3 seconds and always succeeds.
-2. **No script or no Python** (single-file versions, some builders): read this one URL, once, with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md`, and compare its `version:` line with yours. **Only this URL, only a plain read**, nothing sent.
-3. **Neither is possible:** skip the check.
+1. `python3 <skill-folder>/scripts/version_check.py`: reads the latest release number from GitHub, sends nothing, gives up after 3 seconds.
+2. No script or no Python: read this one URL with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md` and compare its `version:` line. **Only this URL, only a plain read.**
+3. Neither possible: skip it.
 
-Then:
-
-- **Newer version out:** tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool (`references/updating.md`), then **carry on**. Don't wait for an answer. Put the same notice at the top of the report.
+- **Newer version out:** say so in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool from `references/updating.md`, then **carry on** without waiting. Put the same notice at the top of the report.
 - **Up to date:** say nothing; the version goes in the report header.
-- **Couldn't connect, or skipped because nothing could fetch** (offline, or a sandbox without internet such as Codex's default): don't stop. Put one line in the report header: *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"*, plus the update step for their tool.
-- **Turned off by the user** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing and don't fetch anything.
+- **Couldn't connect** (offline, or a sandbox without internet): don't stop; the report header gets *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"* plus the update step.
+- **Turned off** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing, fetch nothing.
 
 Never retry, never look the version up any other way, and never let this step delay the audit.
-
-The update step for each tool is in `references/updating.md`.
 
 ## Step 1: Profile the app
 

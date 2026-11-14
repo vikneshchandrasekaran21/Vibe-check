@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.6.2 (2026-11-14)
+
+**The update check comes first again.**
+- In v3.6.1, a new chat with no project folder asked "which project?" before the update check, so the version line and any update notice came late. Now the order is: the first line (`Running vibe-check v3.6.2 · Full check · choosing project`), Steps 0a and 0 (the update check), then *Which project*, then the audit.
+- "Which project?" may offer up to 3 project folders the tool already shows (open or recently used), plus *I'll type the folder path* and *Not sure where it is*. It never scans the disk for candidates.
+- The validator checks the order in the run checklist and both rules.
+
 ## v3.6.1 (2026-11-14)
 
 **Checks the project you're in, and never goes looking for another one.**

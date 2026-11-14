@@ -312,7 +312,12 @@ for _txt, _where in [(skill, "SKILL.md"), (tpl, "report-template.md")]:
 if "contains a full secret" not in skill: err("reporting.md must say --verify-report refuses a report with a full secret")
 if "def find_secrets" not in (SK / "scripts" / "coverage.py").read_text(): err("coverage.py must scan reports for full secrets (find_secrets)")
 # 25. v3.6.1 which project: review the folder you're in, ask only when there's no app code, never wander
-for _must in ["## Which project (before anything else)", "profile.py . --where", "review it straight away", "ask which project, as a choice",
+_ck = skill_main.split("## Run checklist", 1)[1] if "## Run checklist" in skill_main else ""
+if not ("- [ ] Step 0a" in _ck and "- [ ] Step 0 " in _ck and "- [ ] Project" in _ck and _ck.index("- [ ] Step 0a") < _ck.index("- [ ] Step 0 ") < _ck.index("- [ ] Project")):
+    err("SKILL.md run checklist: Steps 0a and 0 (update check) must come before Project")
+if "Say it before anything else, even before a question" not in skill_main: err("SKILL.md must say the first line comes before any question")
+if "Never scan the disk for candidates" not in skill_main: err("SKILL.md 'Which project' must forbid scanning the disk for candidates")
+for _must in ["## Which project (right after the update check)", "**Steps 0a and 0 come first**", "profile.py . --where", "review it straight away", "ask which project, as a choice",
               "Never search outside the project folder", "One project per run", "· <project name>`"]:
     if _must not in skill_main: err(f"SKILL.md 'Which project' is missing '{_must}'")
 if "def where(" not in (SK / "scripts" / "profile.py").read_text(): err("profile.py must have --where (which project is this?)")
