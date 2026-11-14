@@ -3,7 +3,7 @@ name: vibe-check
 description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.6.3"
+  version: "3.6.4"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -15,7 +15,7 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 
 ## Start here: say you're running
 
-The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name>` (the version is the `version:` line at the top of this file; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app. **Say it before anything else, even before a question**; while the project isn't known yet, end it with `· choosing project`.
+The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name> (<skill folder>)` (the version is the `version:` line at the top of this file, the skill folder is where this file is, e.g. `~/.claude/skills/vibe-check`; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app. **Say it before anything else, even before a question**; while the project isn't known yet, end it with `· choosing project`.
 
 **A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
 
@@ -34,7 +34,7 @@ The **first line of every vibe-check reply** is: `Running vibe-check v<version> 
 ```text
 vibe-check run
 - [ ] Step 0a  Whole skill available (or checklists read from GitHub)
-- [ ] Step 0   Version checked (before any question)
+- [ ] Step 0   Latest version confirmed (or updated first)
 - [ ] Project  profile.py --where: this folder, or the one the user named
 - [ ] Step 1   profile.py run; remaining questions asked as choices
 - [ ] Step 2   inventory.py, sweep.py and versions.py run
@@ -112,12 +112,12 @@ Your version is the `version:` line at the top of this file. Check for a newer r
 2. No script or no Python: read this one URL with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md` and compare its `version:` line. **Only this URL, only a plain read.**
 3. Neither possible: skip it.
 
-- **Newer version out:** in an interactive session, unless the script says `ASK: no`, **ask right away, as a choice**: *Update now (Recommended)* · *Continue this check on vY*. Then follow `references/updating.md` for what each choice does in their tool (nothing is installed before the user picks). Unattended runs, or `ASK: no`: one line, then **carry on**. Either way, the notice goes at the top of the report.
+- **Newer version out: the update is required.** vibe-check only runs on the latest version, so **don't start the audit.** Ask, as a choice: *Update now (Recommended)* · *Show me how to update*, and follow `references/updating.md` (it also covers unattended runs).
 - **Up to date:** say nothing; the version goes in the report header.
-- **Couldn't connect** (offline, or a sandbox without internet): don't stop; the report header gets *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"* plus the update step.
+- **Couldn't connect** (offline, or a sandbox without internet): the requirement can't be checked, so carry on; the report header gets *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"* plus the update step.
 - **Turned off** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing, fetch nothing.
 
-Never retry, look the version up another way, or let this step delay the audit.
+Never retry or look the version up another way; if the check can't finish in 3 seconds, carry on.
 
 ## Step 1: Profile the app
 

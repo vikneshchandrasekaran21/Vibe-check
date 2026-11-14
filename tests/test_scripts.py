@@ -491,35 +491,45 @@ def main() -> int:
     mine = re.search(r'version:\s*"([\d.]+)"', (ROOT / "skills/vibe-check/SKILL.md").read_text()).group(1)
     major = int(mine.split(".")[0])
     r = run("version_check.py", "--latest", f"{major + 1}.0.0")
-    check(r.returncode == 0 and r.stdout.startswith("UPDATE AVAILABLE") and "npx skills update" in r.stdout,
-          f"version_check: newer release not reported: {r.stdout!r}")
+    check(r.returncode == 0 and "UPDATE REQUIRED" in r.stdout and "HOW: " in r.stdout and "INSTALLED: v" in r.stdout,
+          f"version_check: newer release not reported as required: {r.stdout!r}")
     r = run("version_check.py", "--latest", mine)
-    check(r.stdout.startswith("UP TO DATE"), f"version_check: same version should be up to date: {r.stdout!r}")
+    check("UP TO DATE" in r.stdout, f"version_check: same version should be up to date: {r.stdout!r}")
     r = run("version_check.py", "--latest", "0.0.1")
-    check(r.stdout.startswith("UP TO DATE"), f"version_check: older release should be up to date: {r.stdout!r}")
+    check("UP TO DATE" in r.stdout, f"version_check: older release should be up to date: {r.stdout!r}")
     base = {k: v for k, v in os.environ.items() if "proxy" not in k.lower()}
     dead = dict(base, HTTPS_PROXY="http://127.0.0.1:9", https_proxy="http://127.0.0.1:9", NO_PROXY="", no_proxy="")
     r = run("version_check.py", env=dict(dead, VIBE_CHECK_NO_UPDATE_CHECK="1"))
-    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: turned off"), f"version_check: opt-out ignored: {r.stdout!r}")
+    check(r.returncode == 0 and "SKIPPED: turned off" in r.stdout, f"version_check: opt-out ignored: {r.stdout!r}")
     with tempfile.TemporaryDirectory() as tmp2:
         (Path(tmp2) / ".vibe-check").mkdir()
         (Path(tmp2) / ".vibe-check" / "config").write_text("footer: true\nupdate_check: false\n")
         r = run("version_check.py", cwd=Path(tmp2), env=dead)
-        check(r.stdout.startswith("SKIPPED: turned off (.vibe-check/config)"), f"version_check: config opt-out ignored: {r.stdout!r}")
-    # v3.6.3: after UPDATE AVAILABLE: ask (unless the user chose "later" for that version) and say how to update
+        check("SKIPPED: turned off (.vibe-check/config)" in r.stdout, f"version_check: config opt-out ignored: {r.stdout!r}")
+    # v3.6.4: every update is required; the copy's location and the right scope are printed; "later" no longer exists
     newer = f"{major + 1}.0.0"
     with tempfile.TemporaryDirectory() as tmp3:
-        r = run("version_check.py", "--latest", newer, cwd=Path(tmp3))
-        check("ASK: yes" in r.stdout and "HOW: " in r.stdout, f"version_check: should say to ask, and how to update: {r.stdout!r}")
         (Path(tmp3) / ".vibe-check").mkdir()
         (Path(tmp3) / ".vibe-check" / "config").write_text(f"update_declined: {newer}\n")
         r = run("version_check.py", "--latest", newer, cwd=Path(tmp3))
-        check("ASK: no" in r.stdout, f"version_check: 'later' for this version should not ask again: {r.stdout!r}")
-        r = run("version_check.py", "--latest", f"{major + 2}.0.0", cwd=Path(tmp3))
-        check("ASK: yes" in r.stdout, f"version_check: a newer release after 'later' should ask again: {r.stdout!r}")
+        check("UPDATE REQUIRED" in r.stdout, f"version_check: an old 'later' setting must not skip a required update: {r.stdout!r}")
+    how = re.search(r"^HOW: (.+)$", r.stdout, re.M)
+    check(how and how.group(1) in ("npx skills update -g", "npx skills update -p", "manual"), f"version_check: HOW must be -g, -p or manual: {r.stdout!r}")
+    check(re.search(r"^INSTALLED: v[\d.]+ at \S+", r.stdout, re.M) is not None, f"version_check: must say where this copy is installed: {r.stdout!r}")
+    # the update command matches where the running copy lives: global -g, project -p, anything else manual
+    import shutil as _sh
+    with tempfile.TemporaryDirectory() as fh_real:
+        fh = str(Path(fh_real) / "home-link")             # a symlinked home folder, like macOS /var -> /private/var
+        os.symlink(fh_real, fh)
+        for where, want in [(".claude/skills", "npx skills update -g"), ("proj/.agents/skills", "npx skills update -p"), ("Downloads", "manual")]:
+            dest = Path(fh) / where / "vibe-check"
+            _sh.copytree(ROOT / "skills" / "vibe-check", dest, ignore=_sh.ignore_patterns("__pycache__"))
+            rr = subprocess.run([sys.executable, str(dest / "scripts" / "version_check.py"), "--latest", newer], capture_output=True, text=True,
+                                env=dict(os.environ, HOME=fh))
+            check(f"HOW: {want}" in rr.stdout, f"version_check: a copy in ~/{where} should update with '{want}': {rr.stdout!r}")
     t0 = time.time()
     r = run("version_check.py", env=dead)
-    check(r.returncode == 0 and r.stdout.startswith("SKIPPED: couldn't reach") and "releases/latest" in r.stdout
+    check(r.returncode == 0 and "SKIPPED: couldn't reach" in r.stdout and "releases/latest" in r.stdout
           and time.time() - t0 < 15,
           f"version_check: offline should skip quietly and fast: {r.stdout!r} {r.stderr[-200:]!r}")
 

@@ -116,7 +116,7 @@ Then **open a new chat or session** in your app's folder and say: **"vibe check 
 
 **How to tell it's really running:** the first line of the reply is *"Running vibe-check v… · Full check"*, and it starts by reading your code, not your preview. If you get a design review of your screen instead, the skill didn't load: call it with `/vibe-check`.
 
-> **Updating:** `npx skills update` (or see [Updating](#-updating) for your tool). Already-open sessions keep the old version, so start a new one.
+> **Updating:** `npx skills update -g` (or see [Updating](#-updating) for your tool). vibe-check only runs on its latest version and asks you to update first. Already-open sessions keep the old version, so start a new one.
 >
 > **Tip:** use `npx skills add` instead of copying files by hand wherever your tool supports it. You get the helper scripts (deeper, counted checks) and one-command updates.
 
@@ -194,7 +194,8 @@ Installed skills don't update by themselves. **vibe-check tells you when a new v
 
 | You installed with | To update |
 |---|---|
-| `npx skills add` (Claude Code, Codex, Cursor, Replit and others) | `npx skills update` (in Replit, run it in the Shell) |
+| `npx skills add -g` (Claude Code, Codex, Cursor and others) | `npx skills update -g` |
+| Installed into a project (Replit) | `npx skills update -p` (in Replit, run it in the Shell) |
 | Lovable (imported from GitHub) | **Settings → Skills**: import again from `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
 | Replit (folder uploaded in Workspace settings) | Upload the new folder again |
 | The Claude app (zip) | Download `vibe-check.zip` from the [latest release](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest) and upload it again |

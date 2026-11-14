@@ -167,7 +167,7 @@ for must in ["VIBE_CHECK_NO_UPDATE_CHECK", "update_check", "timeout=TIMEOUT", "T
 for must in ["## Step 0: Version check", "scripts/version_check.py", "VIBE_CHECK_NO_UPDATE_CHECK", "carry on",
              "Never send the user's code or data anywhere", "Never retry", "curl -s --max-time 3",
              "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md",
-             "couldn't connect", "npx skills update", "Lovable", "Claude app", "adapters/", "dist/vibe-check.md"]:
+             "couldn't connect", "npx skills update -g", "Lovable", "Claude app", "adapters/", "dist/vibe-check.md"]:
     if must not in skill: err(f"SKILL.md is missing '{must}' (version check / privacy rule)")
 for must in ["v<installed>", "A newer vibe-check is out", "Update check:** couldn't connect here", "releases/latest", "update step for this tool"]:
     if must not in tpl: err(f"report-template.md is missing '{must}' (version line / update notice)")
@@ -318,19 +318,31 @@ if not ("- [ ] Step 0a" in _ck and "- [ ] Step 0 " in _ck and "- [ ] Project" in
 if "Say it before anything else, even before a question" not in skill_main: err("SKILL.md must say the first line comes before any question")
 if "Never scan the disk for candidates" not in skill_main: err("SKILL.md 'Which project' must forbid scanning the disk for candidates")
 for _must in ["## Which project (right after the update check)", "**Steps 0a and 0 come first**", "profile.py . --where", "review it straight away", "ask which project, as a choice",
-              "Never search outside the project folder", "One project per run", "· <project name>`"]:
+              "Never search outside the project folder", "One project per run", "· <project name> (<skill folder>)`"]:
     if _must not in skill_main: err(f"SKILL.md 'Which project' is missing '{_must}'")
 if "def where(" not in (SK / "scripts" / "profile.py").read_text(): err("profile.py must have --where (which project is this?)")
 if "<project name>" not in (REFS / "self-check.md").read_text(): err("self-check.md must check the first line names the project")
-# 26. v3.6.3 update choice: ask, run npx skills update only after the pick, remember "later"
+# 26. v3.6.4 every update is required; -g/-p, never bare; nothing installed without the user's pick
 _up = (REFS / "updating.md").read_text() if (REFS / "updating.md").exists() else ""
-for _must in ["Update now (Recommended)", "Continue this check on", "run exactly `npx skills update`", "never with `sudo`",
-              "update_declined:", "start a new session", "Never update in the middle of a check without the user's pick", "unattended"]:
+for _must in ["the update is required", "**Don't start the audit.**", "Update now (Recommended)", "Show me how to update", "run exactly that command",
+              "never with `sudo`", "always pass the scope", "Never install anything without the user's pick", "Unattended or scheduled runs",
+              "start a new session", "`npx skills update -g`", "`npx skills update -p`"]:
     if _must not in _up: err(f"updating.md is missing '{_must}'")
-if "**ask right away, as a choice**" not in skill_main or "`ASK: no`" not in skill_main: err("SKILL.md Step 0 must ask about updates as a choice (unless ASK: no)")
+if "Continue this check" in _up or "update_declined" in _up: err("updating.md: updates are required; there is no 'continue on the old version'")
+if "**Newer version out: the update is required.**" not in skill_main or "**don't start the audit.**" not in skill_main:
+    err("SKILL.md Step 0 must stop the audit when a newer version is out")
 _vc = (SK / "scripts" / "version_check.py").read_text()
-if "def declined(" not in _vc or "ASK: yes" not in _vc or "HOW: " not in _vc: err("version_check.py must print ASK and HOW after UPDATE AVAILABLE")
+for _must in ["UPDATE REQUIRED:", "INSTALLED: v", "npx skills update -g", "npx skills update -p", "def install_method("]:
+    if _must not in _vc: err(f"version_check.py is missing '{_must}'")
 if "subprocess" in _vc or "os.system" in _vc: err("version_check.py must never run the update itself (the agent runs it after the user's pick)")
+for _f in [SK / "SKILL.md", REFS / "updating.md", ROOT / "README.md", ROOT / "scripts" / "release.sh", SK / "scripts" / "version_check.py"]:
+    for _m in re.finditer(r"npx skills update(?! -[gp])(?!\s+\[)", _f.read_text()):
+        err(f"{_f.name}: bare `npx skills update` (it asks for a scope and can update the wrong copy); use -g or -p"); break
+_rel = (ROOT / "scripts" / "release.sh").read_text()
+if _rel.find("npx -y skills add") > _rel.find("gh release delete") or "set +e" not in _rel:
+    err("release.sh must install on this computer before the optional tidy-up, and the tidy-up must not fail the release")
+if "(<skill folder>)`" not in skill_main: err("SKILL.md first line must show the skill folder")
+
 # 24. v3.6 skill shape (Anthropic's skill-authoring guidance)
 _words = len(re.sub(r"^---\n.*?\n---\n", "", skill_main, flags=re.S).split())
 if _words > 4700: err(f"SKILL.md body is {_words} words; keep it under 4,700 and move detail into a workflow file")
@@ -505,7 +517,7 @@ for claim, real in [(r"(\d+) AI blind[- ]spot", len(nums)), (r"for (\d+) risky p
                     (r"(\d+) fix recipes", len(recipes))]:
     for m in re.finditer(claim, readme):
         if int(m.group(1)) != real: err(f"README.md says '{m.group(0)}' but the real number is {real}")
-for must in ["npx skills update", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit", "/vibe-check run the full audit", "Running vibe-check v",
+for must in ["npx skills update -g", "VIBE_CHECK_NO_UPDATE_CHECK", "## 🔄 Updating", "-a replit", "/vibe-check run the full audit", "Running vibe-check v",
              "https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check"]:
     if must not in readme: err(f"README.md is missing '{must}' (updating / version check)")
 if re.search(r"phone home|nothing (?:is )?sent anywhere", readme, re.I) and "version check" not in readme.lower():

@@ -31,16 +31,22 @@ NOTES=$(awk -v v="## v$V " 'index($0, v) == 1 {f=1; next} /^## v/ {f=0} f' CHANG
 gh release create "v$V" dist/vibe-check.zip --title "vibe-check v$V" --notes "$NOTES
 
 ---
-**How to update:** run \`npx skills update\`, then start a new session in your AI tool.
+**How to update:** run \`npx skills update -g\` (project installs such as Replit: \`npx skills update -p\`), then start a new session in your AI tool. vibe-check only runs on its latest version.
 Claude app: download \`vibe-check.zip\` below and upload it again where you added the skill.
 Other tools: copy the new file from \`adapters/\` (or \`dist/vibe-check.md\` for paste-in builders)."
 
+# install the new version on this Mac first, so a network blip in the tidy-up below can't leave you on the old one
+echo "== Installing v$V for Claude Code on this computer (global)"
+npx -y skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y >/dev/null || echo "!! Couldn't install here. Run: npx skills update -g"
+INSTALLED=$(grep -m1 'version:' ~/.claude/skills/vibe-check/SKILL.md 2>/dev/null | sed 's/.*"\(.*\)".*/\1/')
+if [ "$INSTALLED" = "$V" ]; then echo "== Installed: v$INSTALLED at ~/.claude/skills/vibe-check"; else echo "!! Installed copy is v${INSTALLED:-none}, expected v$V. Run: npx skills update -g"; fi
+
 # keep only the newest release page, so "latest" is always this one. Tags stay: older installs read
 # their checklists from their own version tag (SKILL.md Step 0a), so a tag must never be deleted.
-gh release list --json tagName -q '.[].tagName' | { grep -vx "v$V" || true; } | while read -r tag; do
-  gh release delete "$tag" --yes
-done
+# Optional tidy-up: a network error here must not fail the release.
+set +e
+OLD=$(gh release list --json tagName -q '.[].tagName' 2>/dev/null | grep -vx "v$V")
+for tag in $OLD; do gh release delete "$tag" --yes >/dev/null 2>&1 || echo "(couldn't delete old release $tag; harmless, try again later)"; done
+set -e
 
-npx -y skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y >/dev/null
-echo "== Done: v$V is on GitHub and installed here."
-grep -m1 'version:' ~/.claude/skills/vibe-check/SKILL.md || true
+echo "== Done: v$V is on GitHub and installed here. Start a new session to use it."

@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.6.4 (2026-11-14)
+
+**Every update is required, and updates reach the right copy.**
+- **vibe-check only runs on its latest version.** When a newer one is out, the audit doesn't start: you get *Update now (Recommended)* or *Show me how to update*. *Update now* runs the update only after you pick it, checks it worked, and asks you to start a new session (a session keeps the version it started with). Unattended runs don't audit; they leave the update step in `.vibe-check/summary.md`. With no internet, or with the check turned off, the requirement can't be checked and the audit carries on, saying so in the report.
+- **Fixed: updates could miss the installed copy.** Plain `npx skills update` asks which scope to update, and inside a project folder it can update only project skills, leaving the global copy old. Everything now says `npx skills update -g` (or `-p` for project installs such as Replit), and `version_check.py` prints the right one for the copy that's running.
+- **The first line shows which copy loaded:** `Running vibe-check v3.6.4 · Full check · art-club (~/.claude/skills/vibe-check)`, and `version_check.py` prints `INSTALLED: v… at …`, so a stale copy can't hide.
+- **`release.sh` installs the new version on your computer right after publishing**, and checks it, before the optional tidy-up of old release pages; a network error there no longer stops the release.
+- "Continue on the old version" (from v3.6.3) is gone, and the validator rejects any bare `npx skills update`.
+
 ## v3.6.3 (2026-11-14)
 
 **Update from inside the chat.**

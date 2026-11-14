@@ -12,11 +12,11 @@ or with a line `update_check: false` in .vibe-check/config in the project.
 Usage:  python3 version_check.py [--latest X.Y.Z]     (--latest skips the network, for tests)
 Prints one line and always exits 0:
   UP TO DATE: vibe-check v2.7.1
-  UPDATE AVAILABLE: vibe-check v2.8.0 (installed v2.7.1). Update: npx skills update, then start a new session.
+  UPDATE REQUIRED: vibe-check v2.8.0 is out (installed v2.7.1). vibe-check only runs on the latest version.
   SKIPPED: <reason>
-After UPDATE AVAILABLE, two more lines tell the agent what to do next:
-  ASK: yes | no (no = the user already chose "later" for this version: `update_declined: X.Y.Z` in .vibe-check/config)
-  HOW: npx skills update | manual (see references/updating.md for the user's tool)
+Every run also prints where this copy is installed, and after UPDATE REQUIRED how to update it:
+  INSTALLED: v2.7.1 at ~/.claude/skills/vibe-check
+  HOW: npx skills update -g | npx skills update -p | manual (see references/updating.md for the user's tool)
 Python 3.8+, standard library only.
 """
 from __future__ import annotations
@@ -32,7 +32,7 @@ LATEST_RELEASE_URL = "https://api.github.com/repos/vikneshchandrasekaran21/Vibe-
 RELEASES_PAGE = "https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"  # shown, never fetched
 FALLBACK_URL = "https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md"
 TIMEOUT = 3
-UPDATE_HOW = "Update: npx skills update (Claude app: download the new zip from the GitHub release), then start a new session."
+UPDATE_HOW = "vibe-check only runs on the latest version: update, then start a new session."
 
 
 def parse(v: str):
@@ -59,22 +59,26 @@ def disabled() -> str:
     return ""
 
 
-def declined() -> str:
-    """The version the user chose to update 'later' for, if any (never asked again for that version)."""
-    cfg = Path(".vibe-check") / "config"
-    try:
-        m = re.search(r"^\s*update_declined\s*:\s*v?(\d+\.\d+\.\d+)", cfg.read_text("utf-8"), re.M) if cfg.exists() else None
-    except OSError:
-        m = None
-    return m.group(1) if m else ""
+def skill_dir() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def shown(p: Path) -> str:
+    home = str(Path.home().resolve())   # resolve both sides: macOS temp and some home folders are symlinks
+    s = str(p.resolve())
+    return "~" + s[len(home):] if s.startswith(home) else s
 
 
 def install_method() -> str:
-    """'npx skills update' when the skill sits in a folder that `npx skills add` manages, else 'manual'."""
-    here = Path(__file__).resolve().parent.parent.as_posix()
+    """How to update this copy: global installs (in the home folder) need -g, project installs -p, others are manual."""
+    here = skill_dir().as_posix() + "/"
     managed = ("/.claude/skills/", "/.agents/skills/", "/.codex/skills/", "/.cursor/skills/", "/.gemini/skills/",
-               "/.config/opencode/skills/", "/.windsurf/skills/", "/.kiro/skills/")
-    return "npx skills update" if any(m in here + "/" for m in managed) else "manual"
+               "/.config/opencode/skills/", "/.config/agents/skills/", "/.windsurf/skills/", "/.kiro/skills/", "/.agent/skills/")
+    if not any(m in here for m in managed):
+        return "manual"
+    home = Path.home().resolve().as_posix() + "/"   # skill_dir() is resolved, so the home folder must be too
+    in_home_root = any(here.startswith(home + m.lstrip("/")) for m in managed)
+    return "npx skills update -g" if in_home_root else "npx skills update -p"
 
 
 def get(url: str) -> str:
@@ -98,6 +102,7 @@ def latest() -> str:
 
 def main() -> int:
     mine = installed()
+    print(f"INSTALLED: v{mine or '?'} at {shown(skill_dir())}")
     if not parse(mine):
         print("SKIPPED: installed version unknown")
         return 0
@@ -116,9 +121,7 @@ def main() -> int:
     if not parse(newest):
         print(f"SKIPPED: latest version unknown. Installed: vibe-check v{mine}")
     elif parse(newest) > parse(mine):
-        print(f"UPDATE AVAILABLE: vibe-check v{newest} (installed v{mine}). {UPDATE_HOW}")
-        print("ASK: no (the user chose to update later for this version; mention it in the report only)" if declined() == newest
-              else "ASK: yes (offer: Update now, or continue this check)")
+        print(f"UPDATE REQUIRED: vibe-check v{newest} is out (installed v{mine}). {UPDATE_HOW}")
         print(f"HOW: {install_method()}")
     else:
         print(f"UP TO DATE: vibe-check v{mine}")
