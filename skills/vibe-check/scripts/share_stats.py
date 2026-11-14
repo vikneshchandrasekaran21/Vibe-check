@@ -30,7 +30,7 @@ STATS_URL = ""
 TIMEOUT = 5
 SKILL = Path(__file__).resolve().parent.parent
 ALLOWED_KEYS = {"schema", "vibe_check_version", "level", "month", "ecosystems", "frameworks", "modules_run",
-                "counts", "failed_checks", "hunt", "sweep_hits", "versions"}
+                "counts", "failed_checks", "hunt", "sweep_hits", "versions", "score", "band"}
 
 
 def summary(ledger: Path) -> dict:
@@ -96,6 +96,13 @@ def summary(ledger: Path) -> dict:
         n = int(m.group(2) or m.group(1)) - int(m.group(1)) + 1
         vcount[m.group(3).lower()] += n
     out["versions"] = vcount
+    rj = ledger.parent / "results.json"   # written by coverage.py: only the number and the band name are shared
+    if rj.exists():
+        r = json.loads(rj.read_text("utf-8"))
+        if isinstance(r.get("score"), int) and 0 <= r["score"] <= 100:
+            out["score"] = r["score"]
+        if r.get("band") in {"Ready to scale", "Ready to launch", "Needs work", "Not safe for real users yet"}:
+            out["band"] = r["band"]
     assert set(out) <= ALLOWED_KEYS
     return out
 

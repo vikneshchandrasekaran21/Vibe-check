@@ -48,9 +48,10 @@ It works like a senior team in one command, covering what security, QA, legal an
 | | |
 |---|---|
 | 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 26 modules. It asks a few questions about your app and runs only the modules that apply |
-| 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
-| 🛠️ **Fixes** | A built-in **fix playbook** of 75 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
-| 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
+| 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), a **score out of 100** with a band (*Ready to scale · Ready to launch · Needs work · Not safe for real users yet*), a **totals table** (how many checks applied, passed, failed, and "checked 241 of 241") and a **scorecard per area**, all counted by a script, not written by the AI. Six symbols with one meaning each: ✅ passed · ❌ must fix · ⚠️ should fix · ❓ your answer · ➖ doesn't apply · 🔧 being fixed |
+| 🛠️ **Fixes** | A **fix plan** first (what it can fix safely, what needs your decision, what only you can do), then **one fix card per fix**: before, what changed, what was checked, how to undo. If a check fails after a change, **the change is undone automatically**. Fixes go on a new branch with one commit each (or checkpoints in Lovable, Replit and Bolt). Built on a playbook of 75 fix recipes: **every 🔴 check points to one** |
+| 💾 **History** | Every run is saved in `.vibe-check/` (kept out of git). The next run shows **what changed since last time**: fixed, new, and problems that **came back** after an AI tool undid a fix |
+| 🗳️ **Questions as choices** | Questions show as **tap-to-choose cards** in tools that have them (Claude Code, Cursor, Gemini CLI, VS Code Copilot…) and as quick numbered choices everywhere else. It never asks what your code already answers |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
 
 ## 🛡️ It won't change what you built
@@ -70,7 +71,7 @@ It also **never changes code during the audit**, **never marks something as pass
 ### 🎯 Built not to make things up
 - **Quote the proof:** every problem includes the exact code lines (re-read just before reporting) or the exact command output. No quote, no finding.
 - **Second look:** before reporting, the agent tries to prove each finding **wrong**. Is it handled in middleware or RLS? Is the code even used? Is that "secret" actually a public key? Findings that don't survive are dropped.
-- **Confidence labels:** ✅ Confirmed (reproduced or direct proof), 🔎 Likely (strong evidence), ❓ Needs checking (becomes a question for you, never a blocker).
+- **Confidence labels:** 🔬 Confirmed (reproduced or direct proof), 🔎 Likely (strong evidence), ❓ Needs checking (becomes a question for you, never a blocker).
 - **No facts from memory:** legal, policy and platform statements come only from the skill's own checklists or a source opened during the run.
 
 ### 🔍 Built not to skip anything
@@ -214,14 +215,16 @@ Just ask your agent:
 | *"vibe check this app"* · *"is this ready to ship?"* · *"audit my app"* | 🟡 **Full check** (default): every module that applies to your app |
 | *"enterprise vibe check"* | 🔵 **Enterprise:** the full check plus enterprise and government readiness and the full policy pack |
 | *"quick vibe check"* | 🟢 **Quick:** only the 19 AI blind spots and 🔴 blockers. For small, everyday deploys |
-| *"fix the safe items"* | Applies only the fixes that are invisible to users and easy to undo |
-| *"fix the vibe-check blockers"* · *"fix #1 and #3"* | Fixes only those issues, using the fix playbook and the scope guard |
+| *"fix"* · *"fix all"* · *"fix 2"* | Fixes the blockers, everything it safely can, or one item, each with a fix card |
+| *"explain 2"* | The full detail and evidence for one finding |
+| *"check again"* | Re-runs the audit and shows what changed since last time |
+| *"continue fixing"* · *"undo fix 2"* | Picks up where fixing stopped, or reverts one fix |
 
 ### How it works
 
 1. **Profile:** who uses the app, whether there are minors or students, money, sensitive data, regions. It works out what it can from the code and asks only what it can't.
 2. **Map:** stack, data map (including things like photo GPS), entry points, database rules, env vars, live and platform default domains, known issues.
-3. **Blind spots:** the 18 mistakes AI coding tools make most often.
+3. **Blind spots:** the 19 mistakes AI coding tools make most often.
 4. **Modules:** the core modules plus only the profile modules that apply. It uses real tools where available (audit, secret and licence scanners, Playwright, Lighthouse), and falls back to reading the code when they're missing.
 5. **Report:** saved to `.vibe-check/reports/` with a summary in chat. You get the verdict and score, blockers with a fix prompt, which items are safe to auto-fix, questions for you, a "needs a lawyer" list, what passed, a **coverage table** for every module, and what wasn't checked. Before replying, the agent runs a **self-check** so nothing is silently skipped.
 6. **Fix (only what you approve):** prove the bug, apply a proven pattern, add a test, re-check, one issue per commit. For things only you can do (dashboard settings, rotating keys, legal decisions), it gives you exact steps.
@@ -229,19 +232,38 @@ Just ask your agent:
 ### Example report
 
 ```text
-Verdict: 🔴 DO NOT SHIP
-Any logged-in user can read every other user's invoices, and the Stripe secret key
-is in the browser bundle. Fix these two before launch; the rest can follow.
+Running vibe-check v3.5.0 · Full check
 
-Score: 96 / 121 checks passed · 🔴 2 blockers · 🟡 9 to fix before scale · ❓ 5 questions
+🔴 DO NOT SHIP · Score 69/100 (capped: 2 blockers open) · Needs work
 
-🔴 1. Users can see each other's invoices
-   What could happen: anyone with an account can download every customer's invoices.
-   Where: app/api/invoices/[id]/route.ts:14 (query filters by id only)
-   Fix: scope the query to the logged-in user and return 404 otherwise.
-   Prompt to fix it: "In app/api/invoices/[id]/route.ts, only return the invoice if
-   invoice.userId equals the session user's id, else 404. Add a test proving user A
-   can't fetch user B's invoice. Don't change anything else."
+Checks                       Count
+Apply to this app              241   (412 ➖ don't apply)
+✅ Passed                      198
+❌ Must fix (blockers)           2
+⚠️ Should fix                   29
+❓ Need your answer             12
+Checked                 241 of 241   ✅ nothing skipped
+
+Area               Score            Passed   ❌   ⚠️   ❓
+Security           ███████░░░ 74    62/80     1   11    6
+Payments           █████████░ 92    11/12     —    1    —
+Privacy & legal    ██████░░░░ 63    30/44     —   10    4
+
+❌ Must fix before launch (2)
+ 1. Any logged-in user can open another user's invoices · app/api/invoices/[id]/route.ts:14
+ 2. The Stripe secret key is in the browser bundle · lib/stripe.ts:3
+
+You can say: "fix" · "explain 1" · "fix all" · "check again"
+```
+
+And each fix comes back as a card:
+
+```text
+🔧 Fix 1 of 2 · Users could open other users' invoices (❌ blocker · SEC-015)
+Before   Any logged-in user could read any invoice by changing the ID in the URL
+Changed  app/api/invoices/[id]/route.ts · only the owner gets the invoice now (+3 lines)
+Checked  ✅ Types  ✅ Tests: 14 passed  ✅ SEC-015 re-checked: passes
+Saved    Commit a1b2c3d · undo: say "undo fix 1"
 ```
 
 ### 🏁 Show your score
@@ -249,18 +271,18 @@ Score: 96 / 121 checks passed · 🔴 2 blockers · 🟡 9 to fix before scale �
 Every report ends with a one-line **score card**, made to screenshot and share:
 
 ```text
-vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
+vibe-check: 🟢 SHIP · Score 91/100 · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
 
-Start at 🔴? Most people do. Fix, re-run, and post your 🔴 → 🟢 with **#vibecheck**.
+Start at 🔴? Most people do. Fix, re-run, and post your before → after score with **#vibecheck**.
 
-If you reach 🟢 on a full check, add the badge to your README:
+Once there are no blockers, you can add your score badge to your README:
 
 ```markdown
-[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
+[![vibe-check score](https://img.shields.io/badge/vibe--check-91%2F100%20·%20Ready%20to%20scale-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
 ```
 
-[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20112%2F118-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
+[![vibe-check score](https://img.shields.io/badge/vibe--check-91%2F100%20·%20Ready%20to%20scale-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
 
 The report ends with a small "Checked with vibe-check" footer. Tell your agent *"no footer"* to remove it. It never adds anything to your app.
 
@@ -315,7 +337,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 
 **Everything in this repo is free, forever (MIT):**
 - ✅ All 19 blind spots, 600+ checks and 26 modules, at all three levels
-- ✅ The fix playbook, "fix safe items", the scope guard and report history
+- ✅ The fix playbook, fix plan and fix cards, the scope guard, and run-to-run history
 - ✅ Works in every tool listed above, with your own AI subscription
 - ✅ Uses free local tools when you have them (npm audit, gitleaks, Playwright, Lighthouse), with fallbacks when you don't
 

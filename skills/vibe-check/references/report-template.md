@@ -12,20 +12,49 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 **vibe-check:** v<installed> · **Skill files:** complete | checklists read from GitHub, scripts done by hand · **Date:** <date> · **Level:** Quick | Full | Enterprise · **Profile:** <users, minors?, payments?, sensitive data?, regions> · **Stack:** <framework, DB, auth, hosting, payments, AI>
 **Modules run:** <list> · **Method notes:** <e.g. "license scan via lockfile (scanner blocked)", "click-through via Playwright on staging">
 
-## Verdict: 🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP
+**How to read this:** ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs your answer · ➖ doesn't apply to this app · 🔧 being fixed. *(❗ appears only if something wasn't checked.)*
 
-<One or two sentences explaining why. Example: "Any logged-in user can read every other user's invoices, and the Stripe secret key is in the browser bundle. Fix these two before launch; the rest can follow.">
+## Result
 
-**Score:** <passed> / <applicable> checks passed · 🔴 <n> blockers · 🟡 <n> to fix before scale · ❓ <n> questions
+*Paste the `## Result` block exactly as `coverage.py` printed it: the verdict and score line, the "Since last check" line when there's an earlier run, the totals table and the area scorecard. Never type these numbers.*
 
-## ⚠️ Your answers vs your code
+**🔴 DO NOT SHIP · Score 69/100 (capped: 2 blockers open) · Needs work**
+
+Since last check (2026-11-02): Score 58 → 69 (+11) · ✅ 7 fixed · 🆕 1 new · ↩️ 0 came back · ❓ 2 answered
+
+| Checks | Count |
+|---|---|
+| In vibe-check | 653 |
+| ➖ Don't apply to this app | 412 |
+| **Apply to this app** | **241** |
+| ✅ Passed | 198 |
+| ❌ Must fix (blockers) | 2 |
+| ⚠️ Should fix | 29 |
+| ❓ Need your answer | 12 |
+| **Checked** | **241 of 241** · ✅ nothing skipped |
+
+| Area | Score | Passed | ❌ Must fix | ⚠️ Should fix | ❓ Your answer |
+|---|---|---|---|---|---|
+| AI blind spots | `████████░░` 84 | 16/19 | ❌ 1 | ⚠️ 1 | ❓ 1 |
+| Security | `███████░░░` 74 | 62/80 | ❌ 1 | ⚠️ 11 | ❓ 6 |
+| Payments | `█████████░` 92 | 11/12 | — | ⚠️ 1 | — |
+| Privacy & legal | `██████░░░░` 63 | 30/44 | — | ⚠️ 10 | ❓ 4 |
+| Reliability & ops | `████████░░` 81 | 39/46 | — | ⚠️ 6 | ❓ 1 |
+| Launch & UX | `█████████░` 95 | 40/40 | — | — | — |
+| AI features | ➖ doesn't apply | | | | |
+
+**Why:** <one or two plain sentences. Example: "Any logged-in user can read every other user's invoices, and the Stripe secret key is in the browser bundle. Fix these two before launch.">
+
+**Score and bands:** blocker checks count 3, should-fix checks 2, nice-to-have checks 1; checks that don't apply don't count, and a ❓ counts as not passed yet. While any ❌ blocker is open the score can't go above 69. 90–100 Ready to scale · 75–89 Ready to launch · 60–74 Needs work · 0–59 Not safe for real users yet.
+
+## 🔀 Your answers vs your code
 *Only when an answer and the code disagree (from `.vibe-check/profile.md`). The code wins: these modules ran anyway.*
 - You said **no payments**, but `lib/pricing.ts:2` links to a Razorpay checkout (`rzp.io/l/pro-plan`). Payment checks ran.
 - You said **no children**, but `app/signup/page.tsx:2` asks for a date of birth. The children's checks ran, and the legal question is under *Needs a lawyer*.
 
-## 🔴 Blockers: fix before launch
+## ❌ Blockers: must fix before launch
 
-### 1. <Short title> · ✅ Confirmed | 🔎 Likely
+### 1. <Short title> · 🔬 Confirmed | 🔎 Likely
 - **What could happen:** <one plain sentence about the impact on the user or their customers>
 - **Where:** `path/to/file.ts:42`
 - **Evidence:** <the exact proof, quoted; secrets masked>
@@ -42,11 +71,11 @@ Use this structure. Keep it skimmable. Plain words first, technical details seco
 
 <repeat>
 
-## 🟡 Fix before scale or paying users
+## ⚠️ Fix before scale or paying users
 
 | # | Issue | Confidence | Where + evidence | Fix | Safe to auto-fix |
 |---|---|---|---|---|---|
-| 1 | | ✅ / 🔎 | `file:line`, quoted line or command output | | |
+| 1 | | 🔬 / 🔎 | `file:line`, quoted line or command output | | |
 
 ## ❓ Questions for you
 
@@ -75,7 +104,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 
 *Pasted from `coverage.py` (counted from the ledger, not estimated). Ledger: `.vibe-check/reports/YYYY-MM-DD-ledger.md`.*
 
-| Module | Status | Checks | ✅ Pass | ❌ Fail | ➖ N/A | ❓ Can't tell | Not done |
+| Module | Status | Checks | ✅ Pass | Failed | ➖ N/A | ❓ Can't tell | ❗ Not done |
 |---|---|---|---|---|---|---|---|
 | blind-spots | ✅ | 18 | 15 | 2 | 1 | 0 | 0 |
 | security | ✅ | 64 | | | | | |
@@ -93,7 +122,7 @@ Things that can't be checked from the code. Answer these and I'll update the rep
 | <each profile module> | ✅ / ➖ | | | | | | |
 | **Total** | | | | | | | |
 
-**Why ◐ or ❌, and the method per module:**
+**Why ◐ or ❗, and the method per module:**
 - devops ◐: <e.g. "backups, MFA and billing alerts are dashboard settings: see questions">
 - functional-qa ◐: <e.g. "static review of every handler; no browser run: `npx playwright test` to complete">
 - <profile module> ➖: <reason, e.g. "no health data">
@@ -168,16 +197,124 @@ Before each launch or big release; after adding payments, sign-in, uploads, AI f
 ## 🏁 Score card
 
 ```text
-vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
+vibe-check: 🟢 SHIP · Score 91/100 · 112/118 checks · 0 blockers · Full check · 13 Nov 2026
 ```
 
-*The numbers come from `coverage.py`'s score line: passed / applicable checks, and 🔴 FAILs as blockers.*
+*Pasted from the `Score card:` line `coverage.py` printed.*
 
-<only if 🟢: the badge snippet and the ⭐ line, see below>
+<only when there are no blockers: the badge snippet; only for 🟢: the ⭐ line, see below>
 
 ---
 <sub>Checked with vibe-check · github.com/vikneshchandrasekaran21/Vibe-check</sub>
 ````
+
+## The six symbols (everywhere: report, chat, fixes)
+
+| Symbol | Means | Never use it for |
+|---|---|---|
+| ✅ | Passed, or fixed and verified | Confidence, "done reading", or anything that failed |
+| ❌ | Must fix before launch (a 🔴 check that failed) | A should-fix item or a gap |
+| ⚠️ | Fix before you scale (a 🟡 or 🟢 check that failed) | Warnings about the run itself |
+| ❓ | Needs the user's answer or a check only they can do | Something you could have checked |
+| ➖ | Doesn't apply to this app | Something you skipped |
+| 🔧 | Being fixed right now | — |
+
+❗ appears only when something wasn't checked (a gap). Confidence labels are words, never ✅: **🔬 Confirmed**, **🔎 Likely**. Severity colours (🔴 🟡 🟢) belong to the verdict and the checklists, not to individual results.
+
+## While it runs (progress)
+
+Post short progress lines as each step finishes, ticking them off, one line per step, never paragraphs:
+
+```text
+Running vibe-check v3.5.0 · Full check
+
+✅ Read your project · 214 files · Next.js + Supabase + Razorpay
+✅ Matched your answers to your code · 🔀 1 difference: payments found
+✅ Scanned for risky code · 23 hits to review
+🔧 Checking security · 41 of 83
+```
+
+In tools with a to-do or task list, use it for the same steps instead.
+
+## In the chat (the one-screen summary)
+
+The chat shows the summary; the full report stays in the file. Save the same text as `.vibe-check/summary.md`.
+
+```text
+Running vibe-check v3.5.0 · Full check
+
+🔴 DO NOT SHIP · Score 69/100 (capped: 2 blockers open) · Needs work
+Since last check (2 Nov): Score 58 → 69 (+11) · ✅ 7 fixed · 🆕 1 new · ↩️ 0 came back
+
+<the totals table and the area scorecard, pasted from coverage.py>
+
+❌ Must fix before launch (2)
+ 1. Any logged-in user can open another user's invoices · app/api/invoices/[id]/route.ts:12
+ 2. Your Supabase "order_summary" view shows every order to everyone · supabase/migrations/002_views.sql:1
+
+⚠️ Fix before you scale (29): top 3
+ 1. No rate limit on password reset · app/api/reset/route.ts:4
+ …
+❓ Questions for you (12): asked next, as choices
+✅ 198 checks passed · ➖ 412 don't apply to this app
+
+Full report: .vibe-check/reports/2026-11-14.md
+```
+
+Each problem is **one plain sentence plus its file**. Details come on request ("explain 2"). Then ask the ❓ questions (see *Asking the user* in SKILL.md), then end with the next-step choice and the phrases:
+
+*You can say: "fix" · "fix all" · "fix 2" · "explain 2" · "check again" · "continue fixing" · "undo fix 2"*
+
+## Fix plan (before anything changes)
+
+```text
+Here's the plan. Nothing changes until you say go.
+
+🤖 I can fix these safely (7) ............ one OK for all
+   Add security headers · Turn off production source maps · …
+🧑 Needs your decision (3) ................ asked one at a time, as choices
+   Invoices: who should see an invoice?
+🖥️ Only you can do these (4) .............. exact steps for each
+   Turn on Supabase backups: Dashboard → Database → Backups
+⚖️ Needs a lawyer (1) ..................... listed in the report
+
+Where the changes go: a new branch, vibe-check/fixes-2026-11-14 (your main branch is untouched).
+```
+
+## Fix card (one per fix)
+
+```text
+🔧 Fix 2 of 7 · Users could open other users' invoices (❌ blocker · SEC-015)
+
+Before   Any logged-in user could read any invoice by changing the ID in the URL
+Changed  app/api/invoices/[id]/route.ts · only the owner gets the invoice now (+3 lines)
+Checked  ✅ Types  ✅ Tests: 14 passed  ✅ SEC-015 re-checked: passes  ✅ User B now gets "not found"
+Saved    Commit a1b2c3d · undo: say "undo fix 2"
+Users    Nothing changes for real users
+```
+
+When a check after the change fails, the change is undone first, then:
+
+```text
+❌ Fix 4 of 7 · not applied: your code is back as it was
+Why      The checkout test failed after the change (checkout.test.ts:31 expects the old price field)
+Choice   Update the test too, or leave this one for you?
+```
+
+## Finish line
+
+```text
+Done: 6 of 7 fixed · 1 needs you
+
+Score 69 → 86 · Needs work → Ready to launch
+✅ 6 fixed and verified   ❌ 1 not applied (fix 4)   ❓ 4 steps only you can do
+
+Your fixes are on the branch vibe-check/fixes-2026-11-14, one commit per fix.
+To keep them: merge that branch (or say "merge it" and I'll show you how).
+Say "check again" to re-audit everything.
+```
+
+The score here comes from re-running `coverage.py` after the ledger rows were updated, never from adding up fixes in your head.
 
 ## Writing tips
 
@@ -185,7 +322,7 @@ vibe-check: 🟢 SHIP · 112/118 checks · 0 blockers · Full check · 13 Nov 20
 - One finding per real problem. Group repeats (for example, "12 routes are missing ownership checks", with all 12 listed).
 - For dependency findings, give the advisory ID, installed version and fixed version.
 - Never print a full secret.
-- Only ✅ Confirmed and 🔎 Likely findings go in Blockers or Fix before scale. ❓ items are questions.
+- Only 🔬 Confirmed and 🔎 Likely findings go in Blockers or Fix before scale. ❓ items are questions.
 - Legal and policy statements cite the skill module or a URL opened in this run, never general memory. Show its first 4 characters and its location.
 - If something is fine, don't invent a problem to look thorough.
 
@@ -196,20 +333,20 @@ These go at the very end of the saved report **and** the chat summary.
 ### Score card (always)
 One line, in a `text` code block, so it screenshots cleanly:
 
-`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · <passed>/<applicable> checks · <n> blockers · <Quick check|Full check|Enterprise check> · <D Mon YYYY>`
+`vibe-check: <🟢 SHIP | 🟡 SHIP AFTER FIXES | 🔴 DO NOT SHIP> · Score <n>/100 · <passed>/<applicable> checks · <n> blockers · <Quick check|Full check|Enterprise check> · <D Mon YYYY>`
 
 - `passed / applicable` counts only items marked PASS out of items that weren't N/A. CAN'T TELL counts as not passed.
 - **Never include** findings, secrets, private URLs, file paths, or the app name, unless the user asks for the app name. The card is meant to be shared publicly.
-- If the score improved since the last report in `.vibe-check/reports/`, add the change: `· was 🔴 71/118`. Before-and-after posts are the most shared.
+- If there's an earlier run, add the change from the *Since last check* line: `· was 58`. Before-and-after posts are the most shared.
 
-### Badge (only for 🟢 SHIP on a Full or Enterprise check)
+### Badge (only when there are no blockers, on a Full or Enterprise check)
 Offer this snippet for the user's README. **Don't add it yourself** unless the user says yes (scope guard):
 
 ```markdown
-[![vibe-checked](https://img.shields.io/badge/vibe--checked-%E2%9C%85%20SHIP%20<passed>%2F<applicable>-brightgreen)](https://github.com/vikneshchandrasekaran21/Vibe-check)
+[![vibe-check score](https://img.shields.io/badge/vibe--check-<score>%2F100%20·%20<band>-<color>)](https://github.com/vikneshchandrasekaran21/Vibe-check)
 ```
 
-Replace `<passed>` and `<applicable>` with the numbers (`%2F` is the slash).
+Replace `<score>`, `<band>` (spaces as `%20`) and `<color>`: `brightgreen` for Ready to scale, `green` for Ready to launch, `yellow` for Needs work. `%2F` is the slash. Add the date in the alt text if they want it.
 
 ### Star request (only for 🟢, once)
 One line, after the badge: *"If vibe-check helped, a ⭐ on https://github.com/vikneshchandrasekaran21/Vibe-check helps others find it."* Don't repeat it in the same session, and never show it for 🟡 or 🔴.

@@ -9,7 +9,7 @@ so the numbers in the report come from a count, not from memory.
 
 Ledger rows (markdown table, one per check):
   | SEC-001 | PASS | src/lib/auth.ts:12 uses Supabase Auth |
-  | SEC-030 | FAIL ✅ Confirmed | app/notes/[id]/page.tsx:41 dangerouslySetInnerHTML on user text |
+  | SEC-030 | FAIL 🔬 Confirmed | app/notes/[id]/page.tsx:41 dangerouslySetInnerHTML on user text |
   | SEC-047 | CAN'T TELL | token generation lives in an external service; asked the user |
   | HLT-* | N/A | no health data (whole profile module) |
   | PLT-011..PLT-015 | N/A | not on Firebase |
@@ -18,13 +18,15 @@ Ledger rows (markdown table, one per check):
   | H-005 | FINDING SEC-022 | live Stripe key in src/lib/stripe.ts |
   | V-003 | OUTDATED | PHP 8.3.35 < 8.3.36 security release: https://www.php.net/releases/ (opened 2026-11-14) |
   | V-010..V-014 | CURRENT | npm audit --omit=dev: 0 vulnerabilities |
-Results: PASS, FAIL (+ ✅ Confirmed or 🔎 Likely), N/A, CAN'T TELL. Ranges and * are allowed for N/A only.
+Results: PASS, FAIL (+ 🔬 Confirmed or 🔎 Likely), N/A, CAN'T TELL. Ranges and * are allowed for N/A only.
 Core modules can't be N/A as a whole.
 
 Usage:
   python3 coverage.py [LEDGER] [--level quick|full|enterprise] [--remaining]
     LEDGER       default .vibe-check/ledger.md (inventory.json and sweep.json are read from the same folder)
     --remaining  list what is left to check (use it to resume a long run)
+    --save       after a complete count, keep this run in .vibe-check/history/ so the next run can compare
+  Every count also writes .vibe-check/results.json (score, band, totals, areas, every check's status).
 Exit code 0 = complete, 1 = gaps found. Python 3.8+, standard library only.
 """
 from __future__ import annotations
@@ -47,6 +49,166 @@ CHECKABLE = re.compile(r"\w\.\w|/|`|:\d|https?:|\b(?:dashboard|config|setting|he
                        r"user confirmed|command|grep|npm|pnpm|yarn|pip|curl|git|gh|lighthouse|axe|playwright|policy|"
                        r"migration|env|DNS|SPF|DKIM|DMARC|CLI)\b", re.I)
 ID_RX = re.compile(r"^([A-Z0-9]+)-(\d{2,3})$")
+
+# ---- score, bands and areas (v3.5). The score is counted here, never written by the AI. ----
+WEIGHT = {"🔴": 3, "🟡": 2, "🟢": 1}
+CAP_WITH_BLOCKERS = 69          # while any blocker (🔴 FAIL) is open, the score can't go above this
+BANDS = [(90, "Ready to scale"), (75, "Ready to launch"), (60, "Needs work"), (0, "Not safe for real users yet")]
+AREAS = [  # every checklist module belongs to exactly one area (validate.py checks this)
+    ("AI blind spots", ["blind-spots"]),
+    ("Security", ["security", "platforms", "supply-chain", "vulnerabilities", "cloud-infra", "desktop-extensions", "hunt", "live-tests"]),
+    ("AI features", ["ai-features", "ai-agents"]),
+    ("Payments", ["fintech"]),
+    ("Privacy & legal", ["legal-privacy", "lawsuits", "policies", "kids-education", "health", "community"]),
+    ("Reliability & ops", ["reliability", "devops", "maintainability", "enterprise"]),
+    ("Launch & UX", ["functional-qa", "launch-ux", "mobile", "i18n"]),
+]
+# the six status symbols: one meaning each, everywhere
+SYMBOLS = {"PASS": "✅", "BLOCKER": "❌", "SHOULD": "⚠️", "ASK": "❓", "NA": "➖", "FIXING": "🔧"}
+
+
+def band_of(score: int) -> str:
+    return next(name for low, name in BANDS if score >= low)
+
+
+def bar(score: int) -> str:
+    n = max(0, min(10, round(score / 10)))
+    return "█" * n + "░" * (10 - n)
+
+
+def status_of(cid, results, checks):
+    """One of PASS, BLOCKER, SHOULD, ASK, NA, TODO for a check."""
+    if cid not in results:
+        return "TODO"
+    r = results[cid][0]
+    if r == "PASS":
+        return "PASS"
+    if r == "N/A":
+        return "NA"
+    if r == "CAN'T TELL":
+        return "ASK"
+    return "BLOCKER" if checks[cid][1] == "🔴" else "SHOULD"
+
+
+def score_of(ids, results, checks):
+    total = earned = 0
+    for c in ids:
+        st = status_of(c, results, checks)
+        if st == "NA":
+            continue
+        w = WEIGHT[checks[c][1]]
+        total += w
+        if st == "PASS":
+            earned += w
+    return (round(100 * earned / total) if total else 100), total
+
+
+def skill_version() -> str:
+    m = re.search(r'^\s*version:\s*"([^"]+)"', (SKILL / "SKILL.md").read_text("utf-8"), re.M)
+    return m.group(1) if m else "?"
+
+
+def compute_result(required, results, checks, level, date):
+    counts = {k: 0 for k in ("PASS", "BLOCKER", "SHOULD", "ASK", "NA", "TODO")}
+    for c in required:
+        counts[status_of(c, results, checks)] += 1
+    raw, _ = score_of(required, results, checks)
+    capped = counts["BLOCKER"] > 0 and raw > CAP_WITH_BLOCKERS
+    score = min(raw, CAP_WITH_BLOCKERS) if counts["BLOCKER"] else raw
+    unresolved = sum(1 for c in required if status_of(c, results, checks) in ("ASK", "TODO") and checks[c][1] == "🔴")
+    if counts["BLOCKER"]:
+        verdict = "🔴 DO NOT SHIP"
+    elif unresolved or score < 75:
+        verdict = "🟡 SHIP AFTER FIXES"
+    else:
+        verdict = "🟢 SHIP"
+    applicable = len(required) - counts["NA"]
+    areas = []
+    for name, mods in AREAS:
+        ids = [c for c in required if checks[c][0] in mods]
+        if not ids:
+            continue
+        st = [status_of(c, results, checks) for c in ids]
+        app = sum(1 for s in st if s != "NA")
+        if not app:
+            areas.append({"area": name, "applies": False})
+            continue
+        sc, _ = score_of(ids, results, checks)
+        areas.append({"area": name, "applies": True, "score": sc, "passed": st.count("PASS"), "applicable": app,
+                      "blockers": st.count("BLOCKER"), "should": st.count("SHOULD"), "ask": st.count("ASK"), "todo": st.count("TODO")})
+    return {
+        "vibe_check_version": skill_version(), "date": date, "level": level, "verdict": verdict,
+        "score": score, "raw_score": raw, "capped": capped, "band": band_of(score),
+        "totals": {"in_vibe_check": len(checks), "at_this_level": len(required), "dont_apply": counts["NA"],
+                   "apply": applicable, "passed": counts["PASS"], "blockers": counts["BLOCKER"], "should_fix": counts["SHOULD"],
+                   "need_answer": counts["ASK"], "not_done": counts["TODO"], "checked": applicable - counts["TODO"]},
+        "areas": areas,
+        "blockers": [{"id": c, "name": checks[c][2]} for c in required if status_of(c, results, checks) == "BLOCKER"],
+        "checks": {c: status_of(c, results, checks) for c in required},
+    }
+
+
+def compare_with_history(res, hist_dir: Path):
+    """What changed since the newest saved run: fixed, new, came back, answered."""
+    files = sorted(hist_dir.glob("*.json")) if hist_dir.exists() else []
+    if not files:
+        return None
+    runs = []
+    for f in files:
+        try:
+            runs.append(json.loads(f.read_text("utf-8")))
+        except (ValueError, OSError):
+            continue
+    if not runs:
+        return None
+    prev = runs[-1]
+    pc, now = prev.get("checks", {}), res["checks"]
+    bad = ("BLOCKER", "SHOULD")
+    ever_bad = {c for r in runs[:-1] for c, s in r.get("checks", {}).items() if s in bad}
+    fixed = [c for c, s in now.items() if s == "PASS" and pc.get(c) in bad]
+    came_back = [c for c, s in now.items() if s in bad and pc.get(c) == "PASS" and c in ever_bad]
+    new = [c for c, s in now.items() if s in bad and pc.get(c) not in bad and c not in came_back]
+    answered = [c for c, s in now.items() if pc.get(c) == "ASK" and s != "ASK"]
+    return {"since": prev.get("date", files[-1].stem), "score_before": prev.get("score"), "score_now": res["score"],
+            "band_before": prev.get("band"), "fixed": fixed, "new": new, "came_back": came_back, "answered": answered}
+
+
+def print_result(res, diff):
+    t = res["totals"]
+    cap = f" (capped: {t['blockers']} blocker{'s' if t['blockers'] != 1 else ''} open)" if res["capped"] else ""
+    print("## Result (counted by coverage.py: paste this, never type these numbers)\n")
+    print(f"**{res['verdict']} · Score {res['score']}/100{cap} · {res['band']}**\n")
+    if diff:
+        d = res["score"] - (diff["score_before"] or 0)
+        print(f"Since last check ({diff['since']}): Score {diff['score_before']} → {res['score']} ({'+' if d >= 0 else ''}{d}) · "
+              f"✅ {len(diff['fixed'])} fixed · 🆕 {len(diff['new'])} new · ↩️ {len(diff['came_back'])} came back · "
+              f"❓ {len(diff['answered'])} answered\n")
+        if diff["came_back"]:
+            print(f"↩️ Came back (were fixed before): {', '.join(diff['came_back'])}\n")
+    print("| Checks | Count |\n|---|---|")
+    print(f"| In vibe-check | {t['in_vibe_check']} |")
+    if t["at_this_level"] != t["in_vibe_check"]:
+        print(f"| In this {res['level'].title()} check | {t['at_this_level']} |")
+    print(f"| ➖ Don't apply to this app | {t['dont_apply']} |")
+    print(f"| **Apply to this app** | **{t['apply']}** |")
+    print(f"| ✅ Passed | {t['passed']} |")
+    print(f"| ❌ Must fix (blockers) | {t['blockers']} |")
+    print(f"| ⚠️ Should fix | {t['should_fix']} |")
+    print(f"| ❓ Need your answer | {t['need_answer']} |")
+    if t["not_done"]:
+        print(f"| ❗ Not checked yet | {t['not_done']} |")
+    tail = "✅ nothing skipped" if not t["not_done"] else f"❗ {t['not_done']} not checked"
+    print(f"| **Checked** | **{t['checked']} of {t['apply']}** · {tail} |\n")
+    print("| Area | Score | Passed | ❌ Must fix | ⚠️ Should fix | ❓ Your answer |\n|---|---|---|---|---|---|")
+    for a in res["areas"]:
+        if not a["applies"]:
+            print(f"| {a['area']} | ➖ doesn't apply | | | | |")
+            continue
+        dash = lambda n, s: f"{s} {n}" if n else "—"
+        print(f"| {a['area']} | `{bar(a['score'])}` {a['score']} | {a['passed']}/{a['applicable']} | {dash(a['blockers'], '❌')} | "
+              f"{dash(a['should'], '⚠️')} | {dash(a['ask'], '❓')} |")
+    print()
+
 
 
 def load_checklist():
@@ -184,6 +346,7 @@ def main() -> int:
     remaining_only = "--remaining" in argv
     want_sample = "--sample" in argv
     want_fix_plan = "--fix-plan" in argv
+    want_save = "--save" in argv
     report_path = None
     if "--verify-report" in argv:
         i = argv.index("--verify-report"); report_path = Path(argv[i + 1]); del argv[i:i + 2]
@@ -273,12 +436,12 @@ def main() -> int:
             pass_evidence.setdefault(ev.lower(), []).append(key)
         conf = ""
         if r == "FAIL":
-            if "confirmed" in res.lower() or "✅" in res:
+            if "confirmed" in res.lower() or "✅" in res or "🔬" in res:
                 conf = "Confirmed"
             elif "likely" in res.lower() or "🔎" in res:
                 conf = "Likely"
             else:
-                errors.append(f"{key}: FAIL needs a confidence label (✅ Confirmed or 🔎 Likely); unsure items are CAN'T TELL")
+                errors.append(f"{key}: FAIL needs a confidence label (🔬 Confirmed or 🔎 Likely); unsure items are CAN'T TELL")
         for cid in ids:
             if cid in results and results[cid][0] != r:
                 errors.append(f"{cid}: two different results ({results[cid][0]} and {r})")
@@ -536,12 +699,19 @@ def main() -> int:
         miss = len(ids) - sum(cnt.values())
         for k in tot:
             tot[k] += cnt[k]
-        status = "➖" if cnt["N/A"] == len(ids) else ("❌" if miss == len(ids) else ("◐" if miss or cnt["CAN'T TELL"] else "✅"))
+        status = "➖" if cnt["N/A"] == len(ids) else ("❗" if miss == len(ids) else ("◐" if miss or cnt["CAN'T TELL"] else "✅"))
         rows.append((mod, status, len(ids), cnt, miss))
     applicable = tot["PASS"] + tot["FAIL"] + tot["CAN'T TELL"] + len(missing)
 
+    run_date = seed_m.group(1).strip() if seed_m else ""
+    res = compute_result(required, results, checks, level, run_date)
+    hist_dir = ledger_path.parent / "history"
+    diff = compare_with_history(res, hist_dir)
+    res["since_last"] = diff
+    print_result(res, diff)
+    (ledger_path.parent / "results.json").write_text(json.dumps(res, indent=1, ensure_ascii=False) + "\n")
     print(f"## Coverage (counted by coverage.py · level: {level})\n")
-    print("| Module | Status | Checks | ✅ Pass | ❌ Fail | ➖ N/A | ❓ Can't tell | Not done |")
+    print("| Module | Status | Checks | ✅ Pass | Failed | ➖ N/A | ❓ Can't tell | ❗ Not done |")
     print("|---|---|---|---|---|---|---|---|")
     for mod, status, n, cnt, miss in rows:
         print("| %s | %s | %d | %d | %d | %d | %d | %d |" % (mod, status, n, cnt["PASS"], cnt["FAIL"], cnt["N/A"], cnt[CT], miss))
@@ -579,7 +749,8 @@ def main() -> int:
                     tally["part"] += 1
             print(f"| {title} | {tally['ok']} | {tally['fail']} | {tally['part']} | {tally['na']} | {', '.join(failed) or '-'} |")
         print("\n◐ = some mapped checks couldn't be confirmed, weren't done, or need a human specialist (see references/standards.md).")
-    print(f"\nScore line: {tot['PASS']}/{applicable} checks passed · {blockers} blockers · {unresolved} unresolved 🔴 can't-tell")
+    print(f"\nScore card: vibe-check: {res['verdict']} · Score {res['score']}/100 · {res['totals']['passed']}/{res['totals']['apply']} checks · "
+          f"{res['totals']['blockers']} blockers · {level.title()} check · {run_date or 'date'}")
 
     if report_path is not None:
         rep_text = report_path.read_text("utf-8") if report_path.exists() else ""
@@ -597,12 +768,23 @@ def main() -> int:
                 got = [int(x) for x in m.groups()]
                 if got != real:
                     errors.append(f"REPORT: coverage row for {mod} says {got}, the ledger says {real}")
-            sc = re.search(r"vibe-check:\s*\S+[^·\n]*·\s*(\d+)\s*/\s*(\d+)\s*checks\s*·\s*(\d+)\s*blockers", rep_text)
+            T = res["totals"]
+            sc = re.search(r"vibe-check:\s*\S+[^·\n]*·\s*Score\s*(\d+)\s*/\s*100\s*·\s*(\d+)\s*/\s*(\d+)\s*checks\s*·\s*(\d+)\s*blockers", rep_text)
             if not sc:
-                errors.append("REPORT: no score card line ('vibe-check: … · passed/applicable checks · N blockers')")
-            elif [int(x) for x in sc.groups()] != [tot["PASS"], applicable, blockers]:
-                errors.append(f"REPORT: the score card says {sc.group(1)}/{sc.group(2)} checks and {sc.group(3)} blockers; "
-                              f"the ledger says {tot['PASS']}/{applicable} and {blockers}")
+                errors.append("REPORT: no score card line ('vibe-check: … · Score N/100 · passed/applicable checks · N blockers')")
+            elif [int(x) for x in sc.groups()] != [res["score"], T["passed"], T["apply"], T["blockers"]]:
+                errors.append(f"REPORT: the score card says Score {sc.group(1)}, {sc.group(2)}/{sc.group(3)} checks and {sc.group(4)} blockers; "
+                              f"the ledger says Score {res['score']}, {T['passed']}/{T['apply']} and {T['blockers']}")
+            hs = re.search(r"Score\s*(\d+)\s*/\s*100", rep_text)
+            if hs and int(hs.group(1)) != res["score"]:
+                errors.append(f"REPORT: the first score in the report is {hs.group(1)}/100; the ledger says {res['score']}/100")
+            ck = re.search(r"Checked\**\s*\|\s*\**(\d+)\s*of\s*(\d+)", rep_text)
+            if not ck:
+                errors.append("REPORT: no totals table ('| **Checked** | **N of M** |' pasted from coverage.py)")
+            elif [int(x) for x in ck.groups()] != [T["checked"], T["apply"]]:
+                errors.append(f"REPORT: totals say checked {ck.group(1)} of {ck.group(2)}; the ledger says {T['checked']} of {T['apply']}")
+            if diff and "Since last check" not in rep_text:
+                errors.append("REPORT: there is an earlier run in .vibe-check/history/, so the report needs the 'Since last check' line")
             if not errors:
                 print(f"\nREPORT VERIFIED: {report_path} matches the ledger ({seen_rows} coverage rows and the score card).")
 
@@ -614,6 +796,15 @@ def main() -> int:
     for e in errors:
         print("GAP:", e)
     print("\nCOMPLETE: every required check has a result." if not errors else f"\nINCOMPLETE: {len(errors)} gap(s). Fix them before writing the report.")
+    if want_save:
+        if errors:
+            print("not saved to history: the count isn't complete")
+        else:
+            hist_dir.mkdir(exist_ok=True)
+            from datetime import datetime
+            name = datetime.now().strftime("%Y-%m-%d-%H%M%S-%f") + ".json"
+            (hist_dir / name).write_text(json.dumps(res, indent=1, ensure_ascii=False) + "\n")
+            print(f"saved to history: {hist_dir / name} (the next run compares with it)")
     return 0 if not errors else 1
 
 

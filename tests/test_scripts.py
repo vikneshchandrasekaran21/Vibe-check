@@ -238,7 +238,11 @@ def main() -> int:
             check(any(e["label"] == label and e["where"].startswith(where) for e in evid), f"profile: missed '{label}' in {where}")
         r = run("coverage.py", str(ledger(out, full + inv_rows + hit_rows)))
         check(r.returncode == 0, f"coverage: complete ledger should pass:\n{r.stdout[-800:]}")
-        check(f"{len(ids)}/{len(ids)} checks passed" in r.stdout, "coverage: score line is wrong")
+        check(f"{len(ids)}/{len(ids)} checks" in r.stdout and "Score 100/100" in r.stdout and "🟢 SHIP" in r.stdout
+              and "Ready to scale" in r.stdout, f"coverage: score card for an all-pass ledger is wrong:\n{r.stdout[:900]}")
+        res_all = json.loads((out / "results.json").read_text())
+        check(res_all["score"] == 100 and res_all["totals"]["checked"] == res_all["totals"]["apply"] == len(ids),
+              f"results.json: wrong totals {res_all['totals']}")
 
         # coverage: each sloppy ledger must fail
         bad = {
@@ -282,9 +286,21 @@ def main() -> int:
         check(r.returncode == 0 and "1 new, not in any checklist" in r.stdout, f"coverage: a proven new hunt finding should count:\n{r.stdout[-500:]}")
 
         # FAIL with a confidence label and CAN'T TELL are accepted; quick level needs fewer checks
-        ok_rows = [full[0].replace("PASS", "FAIL ✅ Confirmed"), full[1].replace("PASS", "CAN'T TELL")] + full[2:] + inv_rows + hit_rows
+        ok_rows = [full[0].replace("PASS", "FAIL 🔬 Confirmed"), full[1].replace("PASS", "CAN'T TELL")] + full[2:] + inv_rows + hit_rows
         r = run("coverage.py", str(ledger(out, ok_rows)))
         check(r.returncode == 0 and "1 blockers" in r.stdout, f"coverage: labelled FAIL should pass and count as a blocker:\n{r.stdout[-400:]}")
+        # v3.5: one open blocker caps the score at 69, the verdict is DO NOT SHIP, and the totals add up
+        rj = json.loads((out / "results.json").read_text()); T = rj["totals"]
+        check(rj["score"] == 69 and rj["capped"] and rj["raw_score"] > 69 and rj["verdict"] == "🔴 DO NOT SHIP" and rj["band"] == "Needs work",
+              f"score: one blocker should cap at 69 / DO NOT SHIP / Needs work, got {rj['score']} {rj['verdict']} {rj['band']}")
+        check("(capped: 1 blocker open)" in r.stdout, "score: the cap must be said out loud")
+        check(T["passed"] + T["blockers"] + T["should_fix"] + T["need_answer"] + T["not_done"] == T["apply"]
+              and T["apply"] + T["dont_apply"] == T["at_this_level"] and T["blockers"] == 1 and T["need_answer"] == 1,
+              f"totals: don't add up {T}")
+        area_sum = sum(a.get("applicable", 0) for a in rj["areas"])
+        check(area_sum == T["apply"], f"scorecard: area rows add up to {area_sum}, totals say {T['apply']}")
+        check("| Security |" in r.stdout and "| AI blind spots |" in r.stdout and "█" in r.stdout, "scorecard: area table missing")
+        check("BS-01" in [b["id"] for b in rj["blockers"]], "results.json: the blocker isn't listed")
         # BS-01 (authorization) failing must show up against the standards it maps to
         check("| OWASP Top 10:2025 |" in r.stdout and "A01:2025" in r.stdout and "CWE-862" in r.stdout and "V8" in r.stdout,
               f"coverage: a failed check should mark its standards items as failed:\n{r.stdout[-900:]}")
@@ -297,7 +313,7 @@ def main() -> int:
         for name, row in ev_bad.items():
             r = run("coverage.py", str(ledger(out, [row] + full[1:] + inv_rows + hit_rows)))
             check(r.returncode == 1 and "GAP:" in r.stdout and "BS-01" in r.stdout, f"coverage: should reject evidence that {name}")
-        real_quote = "| BS-01 | FAIL ✅ Confirmed | app/notes/[id]/page.tsx:2 renders `dangerouslySetInnerHTML={{ __html: note.body }}` |"
+        real_quote = "| BS-01 | FAIL 🔬 Confirmed | app/notes/[id]/page.tsx:2 renders `dangerouslySetInnerHTML={{ __html: note.body }}` |"
         r = run("coverage.py", str(ledger(out, [real_quote] + full[1:] + inv_rows + hit_rows)))
         check(r.returncode == 0, f"coverage: a correct quote should be accepted:\n{r.stdout[-600:]}")
 
@@ -317,15 +333,25 @@ def main() -> int:
 
         # v3.1: report receipt (numbers in the report must match the ledger)
         r = run("coverage.py", str(ledger(out, ok_rows)))
-        table = r.stdout[r.stdout.index("| Module |"):r.stdout.index("**Total**")]
-        sl = re.search(r"Score line: (\d+)/(\d+) checks passed · (\d+) blockers", r.stdout).groups()
+        top = r.stdout[r.stdout.index("## Result"):r.stdout.index("**Total**")]
+        card = re.search(r"Score card: (vibe-check: .+)", r.stdout).group(1)
+        sl = re.search(r"· (\d+)/(\d+) checks · (\d+) blockers", card).groups()
         report = out / "report.md"
-        report.write_text(f"# report\n\n{table}\n```text\nvibe-check: 🔴 DO NOT SHIP · {sl[0]}/{sl[1]} checks · {sl[2]} blockers · Full check · 14 Nov 2026\n```\n")
+        report.write_text(f"# report\n\n{top}\n```text\n{card}\n```\n")
         r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
         check(r.returncode == 0 and "REPORT VERIFIED" in r.stdout, f"coverage: a report pasted from coverage.py should verify:\n{r.stdout[-500:]}")
         report.write_text(report.read_text().replace(f"{sl[0]}/{sl[1]} checks", f"{int(sl[0]) + 5}/{sl[1]} checks"))
         r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
         check(r.returncode == 1 and "REPORT:" in r.stdout, "coverage: a report with typed numbers should be rejected")
+        good_report = f"# report\n\n{top}\n```text\n{card}\n```\n"
+        ckm = re.search(r"\*\*Checked\*\* \| \*\*(\d+) of (\d+)\*\*", good_report)
+        report.write_text(good_report.replace(ckm.group(0), f"**Checked** | **{int(ckm.group(1)) - 3} of {ckm.group(2)}**"))
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "totals say checked" in r.stdout, "coverage: a report with a typed 'Checked N of M' should be rejected")
+        sc_now = re.search(r"Score (\d+)/100", good_report).group(1)
+        report.write_text(good_report.replace("Score " + sc_now + "/100", "Score 88/100", 1))
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "REPORT:" in r.stdout, "coverage: a report with a typed score should be rejected")
 
         # v3.1: fix plan keeps statuses between runs
         r = run("coverage.py", str(out / "ledger.md"), "--fix-plan")
@@ -335,6 +361,48 @@ def main() -> int:
         (out / "fix-plan.md").write_text(plan.replace("| BS-01 | 🔴 |", "| BS-01 | 🔴 |", 1).replace("| TODO |", "| DONE |", 1))
         run("coverage.py", str(out / "ledger.md"), "--fix-plan")
         check("| DONE |" in (out / "fix-plan.md").read_text(), "fix plan: regenerating lost the DONE status")
+
+        # v3.5: the score maths, pinned (blocker 3, should-fix 2, nice-to-have 1; N/A left out; cap 69 with a blocker open)
+        import importlib.util as ilu
+        spec = ilu.spec_from_file_location("cov", SCRIPTS / "coverage.py"); cov = ilu.module_from_spec(spec); spec.loader.exec_module(cov)
+        ck = {"A-001": ("m", "🔴", "a"), "B-001": ("m", "🟡", "b"), "C-001": ("m", "🟢", "c"), "D-001": ("m", "🔴", "d")}
+        rs = {"A-001": ("PASS", "", ""), "B-001": ("FAIL", "", "Likely"), "C-001": ("PASS", "", ""), "D-001": ("N/A", "", "")}
+        check(cov.score_of(list(ck), rs, ck) == (67, 6), f"score maths: expected (67, 6), got {cov.score_of(list(ck), rs, ck)}")
+        rs2 = dict(rs, **{"A-001": ("FAIL", "", "Confirmed"), "B-001": ("PASS", "", "")})
+        check(cov.score_of(list(ck), rs2, ck) == (50, 6), f"score maths: expected (50, 6), got {cov.score_of(list(ck), rs2, ck)}")
+        big = {f"X-{i:03d}": ("m", "🟢", "x") for i in range(1, 99)}; big["Y-001"] = ("m", "🔴", "y")
+        rb = {k: ("PASS", "", "") for k in big}; rb["Y-001"] = ("FAIL", "", "Confirmed")
+        rj_ = cov.compute_result(list(big), rb, big, "full", "d")
+        check(rj_["raw_score"] == 97 and rj_["score"] == 69 and rj_["capped"], f"score cap: expected raw 97 capped to 69, got {rj_['raw_score']}/{rj_['score']}")
+        check([cov.band_of(s) for s in (100, 90, 89, 75, 74, 60, 59, 0)] == ["Ready to scale"] * 2 + ["Ready to launch"] * 2 + ["Needs work"] * 2 + ["Not safe for real users yet"] * 2,
+              "score bands: thresholds are wrong")
+
+        # v3.5: history: --save, then compare: fixed, came back, and the report must say "Since last check"
+        import shutil
+        shutil.rmtree(out / "history", ignore_errors=True)
+        r = run("coverage.py", str(ledger(out, ok_rows)), "--save")
+        check("saved to history" in r.stdout, f"history: --save didn't save:\n{r.stdout[-300:]}")
+        fixed_rows = [full[0], full[1].replace("PASS", "CAN'T TELL")] + full[2:] + inv_rows + hit_rows
+        r = run("coverage.py", str(ledger(out, fixed_rows)), "--save")
+        check("✅ 1 fixed" in r.stdout and "↩️ 0 came back" in r.stdout and "Score 69 →" in r.stdout,
+              f"history: BS-01 fixed should show '✅ 1 fixed':\n{r.stdout[:700]}")
+        import time; time.sleep(1.1)
+        r = run("coverage.py", str(ledger(out, ok_rows)))
+        check("↩️ 1 came back" in r.stdout and "BS-01" in r.stdout.split("Came back")[1][:80] if "Came back" in r.stdout else False,
+              f"history: BS-01 failing again should show as came back:\n{r.stdout[:700]}")
+        r = run("coverage.py", str(ledger(out, ok_rows)))
+        top = r.stdout[r.stdout.index("## Result"):r.stdout.index("**Total**")]
+        card = re.search(r"Score card: (vibe-check: .+)", r.stdout).group(1)
+        with_since = f"# report\n\n{top}\n```text\n{card}\n```\n"
+        check("Since last check" in with_since, "history: the Result block should carry the 'Since last check' line")
+        report.write_text(with_since)
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 0 and "REPORT VERIFIED" in r.stdout, f"history: a report with 'Since last check' should verify:\n{r.stdout[-400:]}")
+        report.write_text("\n".join(l for l in with_since.splitlines() if "Since last check" not in l))
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "needs the 'Since last check' line" in r.stdout,
+              "history: a report without 'Since last check' should be rejected once history exists")
+        shutil.rmtree(out / "history")
 
         # v3.1: helpers can write ledger parts in .vibe-check/ledger.d/
         sec = [x for x in good if x.startswith("| SEC-")]
@@ -352,7 +420,7 @@ def main() -> int:
         r = run("share_stats.py", str(out / "ledger.md"))
         js = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
         allowed = {"schema", "vibe_check_version", "level", "month", "ecosystems", "frameworks", "modules_run", "counts",
-                   "failed_checks", "hunt", "sweep_hits", "versions"}
+                   "failed_checks", "hunt", "sweep_hits", "versions", "score", "band"}
         check(set(js) <= allowed, f"share_stats: unexpected keys {set(js) - allowed}")
         check("BS-01" in js["failed_checks"]["red"] and js["counts"]["fail"] == 1, f"share_stats: wrong counts {js['counts']}")
         leaked = [s for s in ("app/", "lib/", "page.tsx", "rzp.io", "handles it", "pricing", str(app)) if s in r.stdout]

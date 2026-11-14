@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.5.0 (2026-11-14)
+
+**Results anyone can read, questions as choices, and fixes you can follow.**
+- **Six symbols, one meaning each, everywhere:** ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs your answer · ➖ doesn't apply · 🔧 being fixed (❗ only for something that wasn't checked). The confidence label is now **🔬 Confirmed** (it used to reuse ✅ on failures). The validator enforces the meanings.
+- **Score out of 100 and a band, counted by `coverage.py`:** blocker checks count 3, should-fix 2, nice-to-have 1; checks that don't apply are left out. **While any blocker is open the score can't go above 69**, and the verdict stays 🔴 DO NOT SHIP. Bands: Ready to scale (90+), Ready to launch (75+), Needs work (60+), Not safe for real users yet.
+- **Totals table and area scorecard:** how many checks are in vibe-check, how many apply, passed, must fix, should fix, need your answer, and "Checked N of M · nothing skipped", then one row per area (Security, Payments, Privacy & legal…). The rows add up, and `--verify-report` rejects a report whose score or totals don't match the ledger.
+- **Since last check:** `coverage.py --save` keeps each run in `.vibe-check/history/`; the next run shows the score change, ✅ fixed, 🆕 new, ↩️ **came back** (fixed before, broken again) and ❓ answered. `.vibe-check/results.json` holds every number.
+- **A one-screen chat summary** (also saved as `.vibe-check/summary.md`) instead of a wall of text, with live progress lines while it runs, and phrases to say next: "fix", "fix all", "fix 2", "explain 2", "check again", "continue fixing", "undo fix 2".
+- **Questions as choices:** the agent must use its question tool when it has one (Claude Code `AskUserQuestion`, Cursor `AskQuestion`, Gemini CLI `ask_user`, VS Code Copilot `askQuestions`, Codex `request_user_input`), and otherwise asks numbered choices you answer like `1, 3`. At most 4 questions a round, 2–4 options, the recommended one first, "Not sure" always allowed, answers saved in `.vibe-check/answers.md` and never asked twice.
+- **A new fix flow:** a fix plan grouped into *I can fix safely · Needs your decision · Only you can do · Needs a lawyer*; fixes on a new branch with one commit each in code tools, or checkpoints and backup copies in app builders (Lovable, Replit, Bolt, v0); a **fix card** per fix (before, changed, checked, saved, how to undo); **automatic undo when a check fails after a change**; "undo fix N"; and a finish line with the score before and after and how to keep the fixes. Every fix is logged in `.vibe-check/fix-log.md`.
+- **Score badge** for your README once there are no blockers, and the score and band added to the opt-in anonymous stats.
+- The lite version gets the same symbols, totals, numbered choices and fix cards.
+
 ## v3.4.1 (2026-11-14)
 
 **New look on GitHub.**

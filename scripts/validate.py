@@ -114,8 +114,8 @@ if nums != list(range(1, len(nums) + 1)): err(f"SKILL.md: blind spots not number
 
 # 7. report template + self-check
 tpl = (REFS / "report-template.md").read_text()
-for sec in ["Verdict", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it",
-            "Evidence:", "Ruled out:", "✅ Confirmed", "🔎 Likely", "Needs checking", "Confidence",
+for sec in ["## Result", "Blockers", "Fix before scale", "Questions for you", "Needs a lawyer", "What passed", "Coverage", "Not checked", "Score card", "Safe to auto-fix", "Prompt to fix it",
+            "Evidence:", "Ruled out:", "🔬 Confirmed", "🔎 Likely", "Needs checking", "Confidence",
             "coverage.py", "Inventory", "Sweep", "Tools run", "Not done"]:
     if sec not in tpl: err(f"report-template.md: missing '{sec}'")
 for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "re-check", ".vibe-check/",
@@ -270,6 +270,41 @@ _nrec = len(re.findall(r"^### ", (REFS / "fixes.md").read_text(), re.M)) if (REF
 if _r and int(_r.group(1)) != _nrec: err(f"README fix-recipes badge says {_r.group(1)} but the real number is {_nrec}")
 if "assets/banner.svg" in _readme and not (ROOT / "assets" / "banner.svg").exists(): err("README shows assets/banner.svg but the file is missing")
 
+# 23. v3.5 results, questions and fixes: one meaning per symbol, counted numbers, choices, safe fixes
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location("_cov", SK / "scripts" / "coverage.py"); _cov = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_cov)
+_mods_with_checks = {f.stem for f in REFS.glob("*.md") if re.search(r"^- \[ \] (?:🔴|🟡|🟢) [A-Z0-9]+-\d{3} ", f.read_text(), re.M)} | {"blind-spots"}
+_in_areas = [m for _, ms in _cov.AREAS for m in ms]
+for _m in sorted(_mods_with_checks):
+    if _in_areas.count(_m) != 1: err(f"coverage.py AREAS: module '{_m}' must be in exactly one area (found {_in_areas.count(_m)})")
+for _m in sorted(set(_in_areas) - _mods_with_checks): err(f"coverage.py AREAS: '{_m}' isn't a checklist module")
+if _cov.CAP_WITH_BLOCKERS != 69: err(f"coverage.py: the blocker cap is {_cov.CAP_WITH_BLOCKERS}, the documented cap is 69")
+for _txt, _where in [(skill, "SKILL.md"), (tpl, "report-template.md")]:
+    if f"above {_cov.CAP_WITH_BLOCKERS}" not in _txt: err(f"{_where}: must state the score can't go above {_cov.CAP_WITH_BLOCKERS} while a blocker is open")
+    for _low, _name in _cov.BANDS:
+        if _name not in _txt: err(f"{_where}: band '{_name}' (from coverage.py) is missing")
+_bands_txt = "90–100 **Ready to scale** · 75–89 **Ready to launch** · 60–74 **Needs work** · 0–59 **Not safe for real users yet**"
+if _bands_txt not in skill: err("SKILL.md: the band ranges must read exactly: " + _bands_txt)
+if [b[0] for b in _cov.BANDS] != [90, 75, 60, 0]: err(f"coverage.py BANDS thresholds changed: {_cov.BANDS}")
+for _sym, _meaning in [("✅", "Passed"), ("❌", "Must fix before launch"), ("⚠️", "Fix before you scale"), ("❓", "Needs the user's answer"),
+                       ("➖", "Doesn't apply"), ("🔧", "Being fixed")]:
+    if not re.search(r"^\| %s \| %s" % (re.escape(_sym), re.escape(_meaning)), tpl, re.M):
+        err(f"report-template.md: the six-symbol table must define {_sym} as '{_meaning}'")
+for _must in ["**How to read this:**", "## Result", "Since last check", "**Checked**", "| Area | Score |", "## While it runs", "## In the chat",
+              "## Fix plan", "## Fix card", "## Finish line", "Score <n>/100", "not applied: your code is back as it was"]:
+    if _must not in tpl: err(f"report-template.md: missing '{_must}'")
+for _f in [SK / "SKILL.md", REFS / "report-template.md", ROOT / "README.md"]:
+    if _f.exists() and "✅ Confirmed" in _f.read_text(): err(f"{_f.name}: '✅ Confirmed' reuses ✅ (passed) for a failure; use '🔬 Confirmed'")
+for _must in ["AskUserQuestion", "AskQuestion", "ask_user", "askQuestions", "request_user_input", "you must use it", "at most **4 questions per round**",
+              "**2 to 4 options**", "**recommended option first**", "**Not sure**", "Reply like:", ".vibe-check/answers.md", "Never ask what the code already answers"]:
+    if _must not in skill: err(f"SKILL.md 'Asking the user' is missing '{_must}'")
+for _must in ["vibe-check/fixes-YYYY-MM-DD", "**One commit per fix**", "Never push, merge or force", "**no branch.**", ".vibe-check/backup/",
+              "undo it first", ".vibe-check/fix-log.md", "\"undo fix N\"", "coverage.py --fix-plan", "`--save`", "how to keep them", "Unsaved changes"]:
+    if _must not in skill: err(f"SKILL.md Step 6 is missing '{_must}'")
+_phrases = '"fix" · "fix all" · "fix 2" · "explain 2" · "check again" · "continue fixing" · "undo fix 2"'
+for _txt, _where in [(skill, "SKILL.md"), (tpl, "report-template.md")]:
+    if _phrases not in _txt: err(f"{_where}: the list of things the user can say is missing or changed")
+
 # 16. standards mapping: complete, real check IDs, known item counts
 std_text = (REFS / "standards.md").read_text() if (REFS / "standards.md").exists() else ""
 expected = {"OWASP Top 10:2025": 10, "OWASP API Security Top 10 (2023)": 10, "OWASP Top 10 for LLM Applications (2025)": 10,
@@ -309,7 +344,7 @@ for must in ["never against production", "user's OK", "two test accounts", "zap-
 # 17. v3.1: the code decides the profile, evidence is re-opened, re-check, receipt, fix everything
 for must in ["scripts/profile.py", "never remove what the code shows", "DEAD CODE:", "Your answers vs your code",
              "ledger.d", "coverage.py --sample", "R-001", "--verify-report", "REPORT VERIFIED", "--fix-plan",
-             "### Fix everything", "fresh helper that didn't do the audit", "DRAFT: needs legal review"]:
+             "### 1. The plan, before anything changes", "fresh helper that didn't do the audit", "DRAFT: needs legal review"]:
     if must not in skill: err(f"SKILL.md is missing '{must}' (v3.1)")
 for must in ["Your answers vs your code", "Checked twice", "--verify-report"]:
     if must not in tpl: err(f"report-template.md is missing '{must}' (v3.1)")
