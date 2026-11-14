@@ -14,8 +14,9 @@ Prints one line and always exits 0:
   UP TO DATE: vibe-check v2.7.1
   UPDATE REQUIRED: vibe-check v2.8.0 is out (installed v2.7.1). vibe-check only runs on the latest version.
   SKIPPED: <reason>
-Every run also prints where this copy is installed, and after UPDATE REQUIRED how to update it:
+Every run also prints where this copy is installed and the first line to say, and after UPDATE REQUIRED how to update:
   INSTALLED: v2.7.1 at ~/.claude/skills/vibe-check
+  SAY FIRST: Running vibe-check v2.7.1 · <Quick|Full|Enterprise> check · <project> (~/.claude/skills/vibe-check)
   HOW: npx skills update -g | npx skills update -p | manual (see references/updating.md for the user's tool)
 Python 3.8+, standard library only.
 """
@@ -103,6 +104,7 @@ def latest() -> str:
 def main() -> int:
     mine = installed()
     print(f"INSTALLED: v{mine or '?'} at {shown(skill_dir())}")
+    print(f"SAY FIRST: Running vibe-check v{mine or '?'} · <Quick|Full|Enterprise> check · <project, or 'choosing project'> ({shown(skill_dir())})")
     if not parse(mine):
         print("SKIPPED: installed version unknown")
         return 0

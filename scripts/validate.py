@@ -320,7 +320,9 @@ if "Never scan the disk for candidates" not in skill_main: err("SKILL.md 'Which 
 for _must in ["## Which project (right after the update check)", "**Steps 0a and 0 come first**", "profile.py . --where", "review it straight away", "ask which project, as a choice",
               "Never search outside the project folder", "One project per run", "· <project name> (<skill folder>)`"]:
     if _must not in skill_main: err(f"SKILL.md 'Which project' is missing '{_must}'")
-if "def where(" not in (SK / "scripts" / "profile.py").read_text(): err("profile.py must have --where (which project is this?)")
+_pf = (SK / "scripts" / "profile.py").read_text()
+if "def where(" not in _pf: err("profile.py must have --where (which project is this?)")
+if "return 3" in _pf: err("profile.py --where must exit 0 (tools show other exit codes as 'Failed'); report APP CODE: yes/no instead")
 if "<project name>" not in (REFS / "self-check.md").read_text(): err("self-check.md must check the first line names the project")
 # 26. v3.6.4 every update is required; -g/-p, never bare; nothing installed without the user's pick
 _up = (REFS / "updating.md").read_text() if (REFS / "updating.md").exists() else ""
@@ -332,7 +334,7 @@ if "Continue this check" in _up or "update_declined" in _up: err("updating.md: u
 if "**Newer version out: the update is required.**" not in skill_main or "**don't start the audit.**" not in skill_main:
     err("SKILL.md Step 0 must stop the audit when a newer version is out")
 _vc = (SK / "scripts" / "version_check.py").read_text()
-for _must in ["UPDATE REQUIRED:", "INSTALLED: v", "npx skills update -g", "npx skills update -p", "def install_method("]:
+for _must in ["UPDATE REQUIRED:", "INSTALLED: v", "SAY FIRST: Running vibe-check v", "npx skills update -g", "npx skills update -p", "def install_method("]:
     if _must not in _vc: err(f"version_check.py is missing '{_must}'")
 if "subprocess" in _vc or "os.system" in _vc: err("version_check.py must never run the update itself (the agent runs it after the user's pick)")
 for _f in [SK / "SKILL.md", REFS / "updating.md", ROOT / "README.md", ROOT / "scripts" / "release.sh", SK / "scripts" / "version_check.py"]:

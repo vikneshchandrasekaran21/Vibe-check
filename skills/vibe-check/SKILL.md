@@ -3,7 +3,7 @@ name: vibe-check
 description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.6.4"
+  version: "3.6.5"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -15,7 +15,7 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 
 ## Start here: say you're running
 
-The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name> (<skill folder>)` (the version is the `version:` line at the top of this file, the skill folder is where this file is, e.g. `~/.claude/skills/vibe-check`; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app. **Say it before anything else, even before a question**; while the project isn't known yet, end it with `· choosing project`.
+The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name> (<skill folder>)` (the version is the `version:` line at the top of this file, the skill folder is where this file is, e.g. `~/.claude/skills/vibe-check`; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app. **Say it before anything else, even before a question** (`version_check.py` prints it ready as `SAY FIRST:`); while the project isn't known, use `· choosing project`.
 
 **A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
 

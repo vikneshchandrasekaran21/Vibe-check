@@ -8,8 +8,9 @@ Rule: an answer can ADD to the profile but never REMOVE what the code shows. cov
 refuses to let a profile module be N/A as a whole when this script found evidence for it.
 
 Usage:  python3 profile.py [PROJECT_DIR] [--out .vibe-check]
-        python3 profile.py [PROJECT_DIR] --where   which project is this, and does it hold app code? (writes nothing;
-                                                   exit 0 = a project with app code, 3 = no app code here: ask the user)
+        python3 profile.py [PROJECT_DIR] --where   which project is this, and does it hold app code? Writes nothing and
+                                                   always exits 0 (tools show other codes as "Failed"); read the
+                                                   "APP CODE: yes" or "APP CODE: no" line instead
 Writes: <out>/profile.md and <out>/profile.json
 Read-only and offline. Python 3.8+, standard library only.
 """
@@ -139,12 +140,13 @@ def where(root: Path) -> int:
     info = {"project": root.name, "path": str(root), "git_root": str(git_root) if git_root else None, "branch": branch,
             "has_app_code": has_code, "markers": found, "looks_like_a_personal_folder": home_like}
     print(json.dumps(info, indent=1))
+    print("APP CODE: " + ("yes" if has_code else "no"))
     if has_code:
         print(f"Project: {root.name} · {root}" + (f" · branch {branch}" if branch else "") + f" · app code found ({', '.join(found[:5]) or 'code files'})")
         return 0
     print(f"No app code in {root}" + (" (this looks like a personal folder, not a project)" if home_like else "") +
           ". Ask the user which project folder to check; don't search other folders.")
-    return 3
+    return 0
 
 
 def main() -> int:

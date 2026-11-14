@@ -378,19 +378,20 @@ def main() -> int:
         # v3.6.1: which project: the folder you're in if it has app code; otherwise ask (exit 3), never look elsewhere
         r = run("profile.py", str(app), "--where")
         w = json.loads(r.stdout[r.stdout.index("{"):r.stdout.index("}") + 1])
-        check(r.returncode == 0 and w["has_app_code"] and w["project"] == app.name and "package.json" in w["markers"],
+        check(r.returncode == 0 and "APP CODE: yes" in r.stdout and w["has_app_code"] and w["project"] == app.name and "package.json" in w["markers"],
               f"--where: the test app should be a project with app code:\n{r.stdout[-400:]}")
         with tempfile.TemporaryDirectory() as td:
             empty = Path(td) / "empty"; empty.mkdir()
             r = run("profile.py", str(empty), "--where")
-            check(r.returncode == 3 and "Ask the user which project" in r.stdout, "--where: an empty folder should ask which project")
+            check(r.returncode == 0 and "APP CODE: no" in r.stdout and "Ask the user which project" in r.stdout,
+                  "--where: an empty folder should ask which project, and exit 0 (tools show other codes as Failed)")
             docs = Path(td) / "pitch"; docs.mkdir()
             for n in ("deck.pdf", "notes.pdf", "LegalCare-pitch.pptx"): (docs / n).write_text("x")
             r = run("profile.py", str(docs), "--where")
-            check(r.returncode == 3, "--where: a folder of PDFs and decks isn't an app")
+            check(r.returncode == 0 and "APP CODE: no" in r.stdout, "--where: a folder of PDFs and decks isn't an app")
             dl = Path(td) / "Downloads"; dl.mkdir(); (dl / "package.json").write_text("{}")
             r = run("profile.py", str(dl), "--where")
-            check(r.returncode == 3 and "personal folder" in r.stdout, "--where: Downloads isn't a project, even with a stray package.json")
+            check(r.returncode == 0 and "APP CODE: no" in r.stdout and "personal folder" in r.stdout, "--where: Downloads isn't a project, even with a stray package.json")
             check(not (empty / ".vibe-check").exists() and not (docs / ".vibe-check").exists(), "--where must write nothing")
 
         # v3.5: the score maths, pinned (blocker 3, should-fix 2, nice-to-have 1; N/A left out; cap 69 with a blocker open)
@@ -516,6 +517,8 @@ def main() -> int:
     how = re.search(r"^HOW: (.+)$", r.stdout, re.M)
     check(how and how.group(1) in ("npx skills update -g", "npx skills update -p", "manual"), f"version_check: HOW must be -g, -p or manual: {r.stdout!r}")
     check(re.search(r"^INSTALLED: v[\d.]+ at \S+", r.stdout, re.M) is not None, f"version_check: must say where this copy is installed: {r.stdout!r}")
+    check(re.search(r"^SAY FIRST: Running vibe-check v[\d.]+ · .+ check · .+ \(.+\)$", r.stdout, re.M) is not None,
+          f"version_check: must print the first line ready to say: {r.stdout!r}")
     # the update command matches where the running copy lives: global -g, project -p, anything else manual
     import shutil as _sh
     with tempfile.TemporaryDirectory() as fh_real:

@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.6.5 (2026-11-14)
+
+**No false "Failed", and the first line is never skipped.**
+- `profile.py --where` always exits 0 and prints `APP CODE: yes` or `APP CODE: no`. Before, "no app code here" exited 3, which the Claude app showed as a red **Failed** step even though nothing went wrong.
+- `version_check.py` prints the first line ready to copy (`SAY FIRST: Running vibe-check v3.6.5 · <level> check · <project> (~/.claude/skills/vibe-check)`), so the agent has no excuse to skip it.
+
 ## v3.6.4 (2026-11-14)
 
 **Every update is required, and updates reach the right copy.**
