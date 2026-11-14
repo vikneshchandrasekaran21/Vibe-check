@@ -22,7 +22,7 @@ Go through this list and fix anything missing **before** sending the report:
 - [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
 - [ ] No secrets are printed in full. The score card contains no private details.
 - [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
-- [ ] The reply starts with `Running vibe-check v<version> · <level> check`. The report header shows the skill-files result (Step 0a), the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
+- [ ] The reply starts with `Running vibe-check v<version> · <level> check · <project name>`, the project is the folder you were opened in (or the one the user named), and nothing from another project was reused. The report header shows the skill-files result (Step 0a), the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
 - [ ] The chat shows the one-screen summary (saved as `.vibe-check/summary.md`) with the Result block pasted from `coverage.py`, the six symbols used only for their meanings, and the questions asked as choices (with the question tool when there is one).
 - [ ] `coverage.py --save` stored this run in `.vibe-check/history/`.
 - [ ] The reply ends with the next-step choice and the phrases the user can say.

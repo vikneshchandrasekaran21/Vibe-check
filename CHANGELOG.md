@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.6.1 (2026-11-14)
+
+**Checks the project you're in, and never goes looking for another one.**
+- **New first step, *Which project*:** `profile.py --where` reports the folder's name, path, git branch and whether it holds app code, and writes nothing. **Inside a project, the review starts straight away.** With no app code (a new chat with no folder, a home, Downloads or Desktop folder, an empty folder) vibe-check **asks which project, as a choice**, before doing anything.
+- **Never searches outside the project folder** (Downloads, Desktop, Documents, other projects) to find an app. A run once wandered into Downloads looking for a project mentioned elsewhere; now names in the chat, memory or other folders are never a reason to switch project.
+- **One project per run:** if the same chat already checked a different project, it says so and reuses nothing from it.
+- The first line now names the project: `Running vibe-check v3.6.1 · Full check · art-club`.
+- Tests: a real project is found; an empty folder, a folder of PDFs and decks, and Downloads with a stray `package.json` all ask instead; `--where` writes nothing.
+
 ## v3.6.0 (2026-11-14)
 
 **Leaner and stricter, following Anthropic's guide to writing skills.** No checks were added or removed; the agent follows the existing ones more reliably.

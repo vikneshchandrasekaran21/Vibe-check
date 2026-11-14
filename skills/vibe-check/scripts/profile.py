@@ -8,6 +8,8 @@ Rule: an answer can ADD to the profile but never REMOVE what the code shows. cov
 refuses to let a profile module be N/A as a whole when this script found evidence for it.
 
 Usage:  python3 profile.py [PROJECT_DIR] [--out .vibe-check]
+        python3 profile.py [PROJECT_DIR] --where   which project is this, and does it hold app code? (writes nothing;
+                                                   exit 0 = a project with app code, 3 = no app code here: ask the user)
 Writes: <out>/profile.md and <out>/profile.json
 Read-only and offline. Python 3.8+, standard library only.
 """
@@ -106,8 +108,50 @@ def walk(root: Path):
             yield rel, p
 
 
+MARKERS = ["package.json", "requirements.txt", "pyproject.toml", "Pipfile", "Gemfile", "composer.json", "go.mod", "Cargo.toml",
+           "pubspec.yaml", "pom.xml", "build.gradle", "build.gradle.kts", "deno.json", "bun.lockb", "app.json", "index.html",
+           "manage.py", "wp-config.php", "Dockerfile", "supabase", "firebase.json", "vercel.json", "netlify.toml", "wrangler.toml",
+           "src", "app", "pages", "lib", "server", "api"]
+NOT_PROJECTS = {"downloads", "desktop", "documents", "pictures", "movies", "music", "library", "applications"}
+
+
+def where(root: Path) -> int:
+    """Say which project this is. Read-only, writes nothing, never looks outside ROOT."""
+    git_root, branch = None, None
+    for d in [root] + list(root.parents):
+        head = d / ".git" / "HEAD"
+        if head.is_file():
+            git_root = d
+            ref = head.read_text("utf-8", errors="replace").strip()
+            branch = ref.split("refs/heads/", 1)[1] if "refs/heads/" in ref else ref[:12]
+            break
+    found = [m for m in MARKERS if (root / m).exists()]
+    code_files = 0
+    for n, (rel, p) in enumerate(walk(root)):
+        if n > 3000 or code_files >= 3:
+            break
+        if p.suffix.lower() in (".js", ".jsx", ".ts", ".tsx", ".py", ".rb", ".php", ".go", ".java", ".kt", ".swift", ".dart",
+                                ".cs", ".rs", ".vue", ".svelte", ".astro", ".html"):
+            code_files += 1
+    strong = [m for m in found if m not in ("src", "app", "pages", "lib", "server", "api", "index.html")]
+    home_like = root == Path.home() or root.name.lower() in NOT_PROJECTS or root == Path(root.anchor)
+    has_code = not home_like and (bool(strong) or code_files >= 3)
+    info = {"project": root.name, "path": str(root), "git_root": str(git_root) if git_root else None, "branch": branch,
+            "has_app_code": has_code, "markers": found, "looks_like_a_personal_folder": home_like}
+    print(json.dumps(info, indent=1))
+    if has_code:
+        print(f"Project: {root.name} · {root}" + (f" · branch {branch}" if branch else "") + f" · app code found ({', '.join(found[:5]) or 'code files'})")
+        return 0
+    print(f"No app code in {root}" + (" (this looks like a personal folder, not a project)" if home_like else "") +
+          ". Ask the user which project folder to check; don't search other folders.")
+    return 3
+
+
 def main() -> int:
     argv = sys.argv[1:]
+    if "--where" in argv:
+        argv.remove("--where")
+        return where(Path(argv[0] if argv else ".").resolve())
     out_arg = None
     if "--out" in argv:
         i = argv.index("--out"); out_arg = argv[i + 1]; del argv[i:i + 2]

@@ -311,6 +311,12 @@ for _txt, _where in [(skill, "SKILL.md"), (tpl, "report-template.md")]:
 
 if "contains a full secret" not in skill: err("reporting.md must say --verify-report refuses a report with a full secret")
 if "def find_secrets" not in (SK / "scripts" / "coverage.py").read_text(): err("coverage.py must scan reports for full secrets (find_secrets)")
+# 25. v3.6.1 which project: review the folder you're in, ask only when there's no app code, never wander
+for _must in ["## Which project (before anything else)", "profile.py . --where", "review it straight away", "ask which project, as a choice",
+              "Never search outside the project folder", "One project per run", "· <project name>`"]:
+    if _must not in skill_main: err(f"SKILL.md 'Which project' is missing '{_must}'")
+if "def where(" not in (SK / "scripts" / "profile.py").read_text(): err("profile.py must have --where (which project is this?)")
+if "<project name>" not in (REFS / "self-check.md").read_text(): err("self-check.md must check the first line names the project")
 # 24. v3.6 skill shape (Anthropic's skill-authoring guidance)
 _words = len(re.sub(r"^---\n.*?\n---\n", "", skill_main, flags=re.S).split())
 if _words > 4700: err(f"SKILL.md body is {_words} words; keep it under 4,700 and move detail into a workflow file")
@@ -336,7 +342,7 @@ _d = re.search(r"^description:\s*(.+)$", skill_main, re.M)
 if _d and not re.match(r"^(Audits|Checks|Reviews|Finds)\b", _d.group(1)): err("SKILL.md description must start in the third person (e.g. 'Audits …')")
 if _d and "Use for" not in _d.group(1): err("SKILL.md description must say when to use it ('Use for …')")
 # run checklist
-for _st in ["Step 0a", "Step 0 ", "Step 1 ", "Step 2 ", "Step 3 ", "Step 4 ", "Step 4a", "Step 4b", "Step 5 ", "Step 6 "]:
+for _st in ["Project ", "Step 0a", "Step 0 ", "Step 1 ", "Step 2 ", "Step 3 ", "Step 4 ", "Step 4a", "Step 4b", "Step 5 ", "Step 6 "]:
     _blk = skill_main.split("## Run checklist", 1)[1].split("```", 2)[1] if "## Run checklist" in skill_main else ""
     if f"- [ ] {_st}" not in _blk: err(f"SKILL.md run checklist is missing '{_st.strip()}'")
 # helper brief

@@ -375,6 +375,24 @@ def main() -> int:
         run("coverage.py", str(out / "ledger.md"), "--fix-plan")
         check("| DONE |" in (out / "fix-plan.md").read_text(), "fix plan: regenerating lost the DONE status")
 
+        # v3.6.1: which project: the folder you're in if it has app code; otherwise ask (exit 3), never look elsewhere
+        r = run("profile.py", str(app), "--where")
+        w = json.loads(r.stdout[r.stdout.index("{"):r.stdout.index("}") + 1])
+        check(r.returncode == 0 and w["has_app_code"] and w["project"] == app.name and "package.json" in w["markers"],
+              f"--where: the test app should be a project with app code:\n{r.stdout[-400:]}")
+        with tempfile.TemporaryDirectory() as td:
+            empty = Path(td) / "empty"; empty.mkdir()
+            r = run("profile.py", str(empty), "--where")
+            check(r.returncode == 3 and "Ask the user which project" in r.stdout, "--where: an empty folder should ask which project")
+            docs = Path(td) / "pitch"; docs.mkdir()
+            for n in ("deck.pdf", "notes.pdf", "LegalCare-pitch.pptx"): (docs / n).write_text("x")
+            r = run("profile.py", str(docs), "--where")
+            check(r.returncode == 3, "--where: a folder of PDFs and decks isn't an app")
+            dl = Path(td) / "Downloads"; dl.mkdir(); (dl / "package.json").write_text("{}")
+            r = run("profile.py", str(dl), "--where")
+            check(r.returncode == 3 and "personal folder" in r.stdout, "--where: Downloads isn't a project, even with a stray package.json")
+            check(not (empty / ".vibe-check").exists() and not (docs / ".vibe-check").exists(), "--where must write nothing")
+
         # v3.5: the score maths, pinned (blocker 3, should-fix 2, nice-to-have 1; N/A left out; cap 69 with a blocker open)
         import importlib.util as ilu
         spec = ilu.spec_from_file_location("cov", SCRIPTS / "coverage.py"); cov = ilu.module_from_spec(spec); spec.loader.exec_module(cov)

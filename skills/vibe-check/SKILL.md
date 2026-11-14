@@ -3,7 +3,7 @@ name: vibe-check
 description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.6.0"
+  version: "3.6.1"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -15,14 +15,23 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 
 ## Start here: say you're running
 
-The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check` (the version is the `version:` line at the top of this file). It shows the user the skill really loaded.
+The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check · <project name>` (the version is the `version:` line at the top of this file; the project comes from *Which project*, below). It shows the user the skill really loaded, and on which app.
 
 **A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
+
+## Which project (before anything else)
+
+1. Run `python3 <skill-folder>/scripts/profile.py . --where` from the folder you were opened in. It prints the project's name, path and branch and whether there's app code here, and writes nothing. Without the script, look for `package.json`, `requirements.txt`, `composer.json`, `go.mod`, `supabase/` or code files, in this folder only.
+2. **Inside a project (app code found): review it straight away.** It's the folder you're in: name in the first line, path and branch in the report header.
+3. **Not inside a project** (no app code: a new chat with no folder, a home, Downloads or Desktop folder, an empty folder): **ask which project, as a choice**, before anything else: *I'll type the folder path (Recommended)* · *Check this folder anyway* · *Not sure where it is* (then say how to open its folder). Never guess.
+4. **Never search outside the project folder to find an app**: not Downloads, Desktop, Documents, other projects or the whole disk. Look only where the user points.
+5. **One project per run.** Names or projects mentioned earlier in the chat, in memory or elsewhere are **never** a reason to switch project. If this chat already checked another project, say so in one line and reuse none of its findings, ledger or answers; each project's notes live in its own `.vibe-check/`.
 
 ## Run checklist: copy it into your reply and tick it off
 
 ```text
 vibe-check run
+- [ ] Project  profile.py --where: this folder, or the one the user named
 - [ ] Step 0a  Whole skill available (or checklists read from GitHub)
 - [ ] Step 0   Version checked
 - [ ] Step 1   profile.py run; remaining questions asked as choices
@@ -36,7 +45,7 @@ vibe-check run
 - [ ] Step 6   Fixes only after approval, following references/fixing.md
 ```
 
-In tools with a task or to-do list, put the same steps there. Never tick a step you didn't finish; an unticked step is reported under *Not checked*.
+Never tick a step you didn't finish; unticked steps go under *Not checked*. A tool's own task list can hold them instead.
 
 ## How results look: six symbols, one meaning each
 
@@ -63,7 +72,7 @@ Whenever you ask the user something (the profile in Step 1, the ❓ questions af
   ```
 - **Every answer changes the result straight away:** update the ledger row, re-run `coverage.py`, and say what moved (*"Backups: never restored → ⚠️ OPS-027 · Score 71 → 69"*). "Not sure" keeps the check ❓ and adds it to *Only you can check*.
 - **Save the answers** in `.vibe-check/answers.md` (question, answer, date) and reuse them next time: never ask the same thing twice unless the code has changed what the answer should be.
-- Group long lists by topic, most important first. Questions about the most serious checks come first.
+- Group long lists by topic; questions about the most serious checks come first.
 
 ## Ground rules (never break these)
 
@@ -163,7 +172,7 @@ Then write down:
 
 ## Step 3: AI blind spots (every level)
 
-**Read `references/blind-spots.md` now and check all 19**, at every level (Quick included), even in code you remember writing carefully. Each has an ID (`BS-01`…) and a ledger row like any other check.
+**Read `references/blind-spots.md` now and check all 19** at every level, even in code you remember writing carefully. Each gets a ledger row (`BS-01`…).
 
 ## Step 4: Run the modules (one at a time, into the ledger)
 
