@@ -9,16 +9,16 @@ Sources (checked 2026-11-14): OWASP Top 10:2025 (top10.owasp.org), OWASP API Sec
 ## OWASP Top 10:2025
 | ID | Name | vibe-check checks |
 |---|---|---|
-| A01:2025 | Broken Access Control | BS-01, BS-02, SEC-014, SEC-015, SEC-016, SEC-017, SEC-019, SEC-020, SEC-034, SEC-059, SEC-075, SEC-076, PLT-004, PLT-011, HUNT-004, LIVE-002, LIVE-003, LIVE-004 |
+| A01:2025 | Broken Access Control | BS-01, BS-02, SEC-014, SEC-015, SEC-016, SEC-017, SEC-019, SEC-020, SEC-034, SEC-059, SEC-075, SEC-076, PLT-004, PLT-011, HUNT-004, LIVE-002, LIVE-003, LIVE-004, SEC-084, SEC-087 |
 | A02:2025 | Security Misconfiguration | BS-11, SEC-037, SEC-046, SEC-061, SEC-079, SEC-080, PLT-043, PLT-044, OPS-041, VUL-012 |
 | A03:2025 | Software Supply Chain Failures | BS-09, BS-19, SEC-048, SEC-049, SUP-001, SUP-002, SUP-003, SUP-006, SUP-007, SUP-008, SUP-014, VUL-005, VUL-006, VUL-007, VUL-008, VUL-013 |
-| A04:2025 | Cryptographic Failures | SEC-040, SEC-041, SEC-042, SEC-043, SEC-044, SEC-045, SEC-047, SEC-072 |
+| A04:2025 | Cryptographic Failures | SEC-040, SEC-041, SEC-042, SEC-043, SEC-044, SEC-045, SEC-047, SEC-072, SEC-089, SEC-090 |
 | A05:2025 | Injection | BS-04, SEC-027, SEC-028, SEC-029, SEC-030, SEC-031, SEC-065, SEC-066, SEC-068, AIF-009 |
 | A06:2025 | Insecure Design | BS-06, BS-08, HUNT-001, HUNT-002, HUNT-003, HUNT-005, SEC-053, SEC-071, REL-044 |
-| A07:2025 | Authentication Failures | SEC-001, SEC-002, SEC-004, SEC-005, SEC-006, SEC-007, SEC-009, SEC-010, SEC-011, SEC-056, SEC-071, SEC-073 |
+| A07:2025 | Authentication Failures | SEC-001, SEC-002, SEC-004, SEC-005, SEC-006, SEC-007, SEC-009, SEC-010, SEC-011, SEC-056, SEC-071, SEC-073, SEC-086, SEC-088, SEC-089 |
 | A08:2025 | Software or Data Integrity Failures | BS-05, SEC-018, SEC-038, PLT-038, REL-006, SUP-007, SUP-013, SUP-015 |
-| A09:2025 | Security Logging & Alerting Failures | SEC-021, OPS-014, OPS-019, OPS-020, OPS-023, AGT-011 |
-| A10:2025 | Mishandling of Exceptional Conditions | BS-07, REL-002, REL-003, REL-049, QA-022, LIVE-007 |
+| A09:2025 | Security Logging & Alerting Failures | SEC-021, OPS-014, OPS-019, OPS-020, OPS-023, AGT-011, SEC-091 |
+| A10:2025 | Mishandling of Exceptional Conditions | BS-07, REL-002, REL-003, REL-049, QA-022, LIVE-007, SEC-085 |
 
 ## OWASP API Security Top 10 (2023)
 | ID | Name | vibe-check checks |
@@ -102,7 +102,7 @@ Sources (checked 2026-11-14): OWASP Top 10:2025 (top10.owasp.org), OWASP API Sec
 | CWE-121 | Stack-based Buffer Overflow | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
 | CWE-502 | Deserialization of Untrusted Data | SEC-038 |
 | CWE-122 | Heap-based Buffer Overflow | VUL-003, VUL-005, Human: memory-safety testing (fuzzing, sanitizers) of the app's own native code |
-| CWE-863 | Incorrect Authorization | SEC-016, SEC-075 |
+| CWE-863 | Incorrect Authorization | SEC-016, SEC-075, SEC-084 |
 | CWE-20 | Improper Input Validation | BS-04, SEC-027 |
 | CWE-284 | Improper Access Control | SEC-014, SEC-019 |
 | CWE-200 | Exposure of Sensitive Information | SEC-055, SEC-061, SEC-079 |

@@ -204,6 +204,34 @@
   ```regex
   [​‌‍‎‏‪-‮⁦-⁩]
   ```
+- **VIEW-NO-INVOKER** → `SEC-084`: SQL view without security_invoker (runs as its owner and skips row-level security) (case-insensitive)
+  ```regex
+  create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?[\w."]+(?![^\n]*security_invoker)
+  ```
+- **SECURITY-DEFINER** → `SEC-084`: SECURITY DEFINER function (runs with its owner's rights: check who can call it) (case-insensitive)
+  ```regex
+  \bsecurity\s+definer\b
+  ```
+- **FAIL-OPEN** → `SEC-085`: Error handler that allows the request (check fails open)
+  ```regex
+  catch\s*(?:\([^)]*\))?\s*\{\s*(?:return\s+(?:true|next\(\))|next\(\))\s*;?\s*\}|except[^:\n]*:\s*return\s+True\b
+  ```
+- **SAML-LIB** → `SEC-086`: SAML library in use (check it's patched against signature wrapping)
+  ```regex
+  ["'](?:ruby-saml|samlify|@node-saml/[\w-]+|passport-saml|python3-saml|onelogin/php-saml|xml-crypto)["']|\bgem\s+["']ruby-saml["']
+  ```
+- **XFF-TRUST** → `SEC-087`: Client IP read from a header the client can set (case-insensitive)
+  ```regex
+  x-forwarded-for|x-real-ip|HTTP_X_FORWARDED_FOR|HTTP_X_REAL_IP|["']trust proxy["']\s*,\s*true
+  ```
+- **WEAK-CIPHER** → `SEC-090`: Unauthenticated or deprecated encryption mode (ECB/CBC, createCipher) (case-insensitive)
+  ```regex
+  aes-\d+-(?:ecb|cbc)\b|AES\.MODE_(?:ECB|CBC)\b|AES/(?:ECB|CBC)/|Cipher\.getInstance\(\s*["']AES["']\s*\)|\bcrypto\.createCipher\s*\(
+  ```
+- **JWT-ALG-MIX** → `SEC-004`: JWT verify accepts both HMAC and RSA/EC algorithms (algorithm confusion)
+  ```regex
+  algorithms["']?\s*[:=]\s*\[[^\]\n]*HS\d{3}[^\]\n]*(?:RS|ES|PS)\d{3}|algorithms["']?\s*[:=]\s*\[[^\]\n]*(?:RS|ES|PS)\d{3}[^\]\n]*HS\d{3}
+  ```
 - **TODO-SECURITY** → `BS-04`: TODO / FIXME about security (case-insensitive)
   ```regex
   (?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)

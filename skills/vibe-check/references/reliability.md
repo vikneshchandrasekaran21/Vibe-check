@@ -11,7 +11,7 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🔴 REL-003 **Timeouts** on every outbound HTTP, DB and LLM call, and on serverless functions.
 - [ ] 🔴 REL-004 **Idempotency.** Payment, order and signup endpoints and webhook handlers can safely run twice (idempotency keys, unique constraints, upserts).
 - [ ] 🟡 REL-005 **Retries with exponential backoff and jitter**, with a maximum. Retry only safe or idempotent operations.
-- [ ] 🟡 REL-006 **Webhooks.** Signature verified, 200 returned fast, work done in a background job, duplicate and out-of-order events handled, and a replay path exists.
+- [ ] 🟡 REL-006 **Webhooks.** Signature verified, 200 returned fast, work done in a background job, duplicate and out-of-order events handled, and a replay path exists. The signed timestamp is checked (events older than about 5 minutes are rejected) and event IDs are stored, so a captured webhook can't be sent again by an attacker.
 - [ ] 🟡 REL-007 **API versioning** (`/v1/` or a header) if mobile apps or third parties call the API.
 - [ ] 🟡 REL-008 **API documentation** (OpenAPI or a README) for any public or partner API.
 - [ ] 🟢 REL-009 **Circuit breakers or fallbacks** for flaky dependencies.
@@ -48,7 +48,7 @@ Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch
 - [ ] 🟡 REL-031 **Memory leaks.** Listeners, intervals, subscriptions and DB connections are cleaned up.
 - [ ] 🟡 REL-032 **Concurrency.** Shared counters and limits are updated atomically.
 - [ ] 🟢 REL-033 **Load balancing**, reverse proxy (Nginx, Caddy, Cloudflare) and API gateway when the architecture needs them.
-- [ ] 🟢 REL-034 **Horizontal vs vertical scaling.** Know which your setup supports and where it stops.
+- [ ] 🟢 REL-034 **Horizontal vs vertical scaling.** Know which your setup supports and where it stops. Sharding or partitioning only when a measured limit shows one database can't keep up; indexes, pooling, caching and a read replica come first.
 - [ ] 🟢 REL-035 **Profiling** before optimizing.
 
 ## Testing and process

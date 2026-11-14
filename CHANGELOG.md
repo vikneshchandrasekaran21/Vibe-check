@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.4.0 (2026-11-14)
+
+**Checked against the popular "security checks for vibe-coded apps" lists.** About 140 items from nine lists were mapped to vibe-check checks; almost all were already covered. These were missing or only partly covered, and are now added:
+- **8 new checks:** SEC-084 🔴 views and `SECURITY DEFINER` functions that skip row-level security (Supabase's most common silent leak), SEC-085 🔴 checks that fail open, SEC-086 🔴 SAML signature wrapping (2025 ruby-saml and samlify bypasses), SEC-087 spoofed client IP headers, SEC-088 2FA and OTP code replay, SEC-089 bcrypt's 72-byte limit (the 2024 Okta long-username bypass), SEC-090 unauthenticated encryption (padding oracles), SEC-091 security alerts that reach a person.
+- **Stronger checks:** SEC-004 JWT algorithm confusion and untrusted `kid`/`jku` headers; SEC-011 nOAuth (users matched by `sub` + `iss`, never the email claim); SEC-003 sensitive data in browser storage; REL-006 webhook replay (timestamp window and stored event IDs); VUL-008 HTTP/2 Rapid Reset and MadeYouReset; REL-034 sharding only after measured need.
+- **7 new sweep patterns:** `VIEW-NO-INVOKER`, `SECURITY-DEFINER`, `FAIL-OPEN`, `SAML-LIB`, `XFF-TRUST`, `WEAK-CIPHER`, `JWT-ALG-MIX`, each planted in the test bench with a safe version that must not match. The sweep now also reads `Gemfile`, `Pipfile`, `Procfile` and `Caddyfile`.
+- **6 new fix recipes** (75 in all) and the standards map updated (OWASP A01, A04, A07, A09, A10:2025).
+
 ## v3.3.0 (2026-11-14)
 
 **Can't be steered by the code it audits; lighter to paste; opt-in usage stats.**

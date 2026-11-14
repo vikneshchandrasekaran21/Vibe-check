@@ -46,7 +46,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 |---|---|
 | 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 26 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
-| 🛠️ **Fixes** | A built-in **fix playbook** of 69 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
+| 🛠️ **Fixes** | A built-in **fix playbook** of 75 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
 
@@ -79,7 +79,7 @@ An AI can't promise it found every bug, but vibe-check makes sure **every check 
 - **"Fix everything" works through the whole list:** a fix plan that survives new sessions, one decision per item, each fix re-checked by its own check ID, and a before-and-after score.
 - **It lists every version the app runs.** `versions.py` finds the runtime, frameworks, CMS and plugins, Docker images and key packages with exact versions. Each one is checked against today's security releases, end-of-life dates and the actively-exploited list, with the source linked. Never from memory.
 - **It lists the whole app first.** `inventory.py` lists every page, API route, function, webhook, form, button, env var, table, bucket, upload, payment, email and AI call. The report shows counts like *API routes checked: 47/47*.
-- **It reads every file.** `sweep.py` searches every file, and the git history, for 53 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
+- **It reads every file.** `sweep.py` searches every file, and the git history, for 60 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
 - **One module at a time, saved as it goes,** so a long audit on a big app resumes where it stopped instead of getting shallower.
 - **The project's own tools run,** with every result recorded: package audit, type-check, lint, tests and build, including any tool that wasn't installed.
 - **A test bench** of planted bugs checks the scripts on every change.
@@ -375,7 +375,7 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
     ├── live-tests.md         profile: tests against the running app on local or staging (two accounts, roles, logged out, ZAP, nuclei)
     ├── i18n.md               profile: languages, regions, formats
-    ├── fixes.md              fix playbook: 69 recipes, each listing the checks it covers (every 🔴 check has one)
+    ├── fixes.md              fix playbook: 75 recipes, each listing the checks it covers (every 🔴 check has one)
     ├── report-template.md    report format
     ├── standards.md          OWASP Top 10:2025, API, LLM, Mobile, ASVS 5.0 chapters and CWE Top 25, mapped to vibe-check checks
     └── sweep-patterns.md     the sweep patterns, for doing it by hand  [generated]

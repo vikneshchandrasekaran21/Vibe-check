@@ -118,6 +118,20 @@ PATTERNS = [
      r"""ignore\s+(?:all\s+|any\s+)?(?:previous|prior|above|earlier)\s+instructions|(?:AI|LLM|GPT|Claude|Copilot|Cursor|assistant|agent|auditor|reviewer)s?\s*(?:reviewers?|auditors?|agents?)?\s*[:,]\s*(?:please\s+)?(?:ignore|skip|do not|don't|never|mark|treat|consider|report)\b|\bmark\s+(?:this|it|the\s+\w+)\s+(?:as\s+)?(?:pass|passed|safe|secure|reviewed)\b|\bdo\s+not\s+(?:report|flag|mention)\s+(?:this|these|any)\b|\bnew\s+system\s+prompt\b|<\s*/?\s*system\s*>""", re.I, "code"),
     ("HIDDEN-UNICODE", "SEC-083", "Invisible or direction-changing Unicode characters",
      "[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\u2066-\u2069]", 0, "code"),
+    ("VIEW-NO-INVOKER", "SEC-084", "SQL view without security_invoker (runs as its owner and skips row-level security)",
+     r"""create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?[\w."]+(?![^\n]*security_invoker)""", re.I, "code"),
+    ("SECURITY-DEFINER", "SEC-084", "SECURITY DEFINER function (runs with its owner's rights: check who can call it)",
+     r"\bsecurity\s+definer\b", re.I, "code"),
+    ("FAIL-OPEN", "SEC-085", "Error handler that allows the request (check fails open)",
+     r"""catch\s*(?:\([^)]*\))?\s*\{\s*(?:return\s+(?:true|next\(\))|next\(\))\s*;?\s*\}|except[^:\n]*:\s*return\s+True\b""", 0, "code"),
+    ("SAML-LIB", "SEC-086", "SAML library in use (check it's patched against signature wrapping)",
+     r"""["'](?:ruby-saml|samlify|@node-saml/[\w-]+|passport-saml|python3-saml|onelogin/php-saml|xml-crypto)["']|\bgem\s+["']ruby-saml["']""", 0, "code"),
+    ("XFF-TRUST", "SEC-087", "Client IP read from a header the client can set",
+     r"""x-forwarded-for|x-real-ip|HTTP_X_FORWARDED_FOR|HTTP_X_REAL_IP|["']trust proxy["']\s*,\s*true""", re.I, "code"),
+    ("WEAK-CIPHER", "SEC-090", "Unauthenticated or deprecated encryption mode (ECB/CBC, createCipher)",
+     r"""aes-\d+-(?:ecb|cbc)\b|AES\.MODE_(?:ECB|CBC)\b|AES/(?:ECB|CBC)/|Cipher\.getInstance\(\s*["']AES["']\s*\)|\bcrypto\.createCipher\s*\(""", re.I, "code"),
+    ("JWT-ALG-MIX", "SEC-004", "JWT verify accepts both HMAC and RSA/EC algorithms (algorithm confusion)",
+     r"""algorithms["']?\s*[:=]\s*\[[^\]\n]*HS\d{3}[^\]\n]*(?:RS|ES|PS)\d{3}|algorithms["']?\s*[:=]\s*\[[^\]\n]*(?:RS|ES|PS)\d{3}[^\]\n]*HS\d{3}""", 0, "code"),
     ("TODO-SECURITY", "BS-04", "TODO / FIXME about security",
      r"(?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)", re.I, "code"),
 ]
@@ -147,7 +161,7 @@ def files(root: Path):
             p = Path(dirpath) / fn
             if fn in SKIP_FILES or fn.endswith((".min.js", ".min.css", ".map")):
                 continue
-            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess", "Containerfile", ".cursorrules", ".windsurfrules", ".clinerules", ".roorules", ".goosehints") or fn.startswith("Dockerfile.")):
+            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess", "Containerfile", "Gemfile", "Pipfile", "Procfile", "Caddyfile", ".cursorrules", ".windsurfrules", ".clinerules", ".roorules", ".goosehints") or fn.startswith("Dockerfile.")):
                 continue
             try:
                 if p.stat().st_size > MAX_BYTES:

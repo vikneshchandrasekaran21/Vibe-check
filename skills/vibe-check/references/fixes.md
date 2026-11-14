@@ -464,3 +464,39 @@ Each recipe: **Safe fix** (the approach), **Trap** (how AI fixes usually go wron
 **Safe fix:** delete the AI-directed text and strip invisible and bidirectional Unicode characters (show them with `grep -nP '[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]'`), then find out how it got there: a copied snippet, a dependency, a contributor or a compromised tool. Rules files for AI tools are reviewed like code.
 **Trap:** "fixing" it by adding a counter-instruction, or deleting the visible text while the invisible characters stay.
 **Verify:** the sweep shows no `AI-INSTRUCTION` or `HIDDEN-UNICODE` hits; `git log -p` on the file shows who added it.
+
+### Views and database functions that skip row-level security
+**Covers:** SEC-084
+**Safe fix:** `alter view <name> set (security_invoker = on);` for each view the API can reach (Postgres 15+), move materialized views out of exposed schemas, revoke `execute` on `SECURITY DEFINER` functions from `anon` and `authenticated` (or rewrite them as `SECURITY INVOKER`), add `set search_path = ''` to the ones that must stay, and move policy checks off `user_metadata` to `app_metadata` or a table users can't write.
+**Trap:** turning RLS off on the underlying table "because the view needs it", or granting `select` on `auth.users` to make a view work.
+**Verify:** Supabase Security Advisor shows no `security_definer_view`, `auth_users_exposed` or exposed `SECURITY DEFINER` lints, and a signed-in test user querying the view gets only their own rows.
+
+### Checks that fail open
+**Covers:** SEC-085
+**Safe fix:** make every guard return "deny" on error: the `catch` refuses the request, a missing secret stops the app at startup instead of skipping verification, a rate limiter that can't reach its store refuses expensive or auth routes, and unknown roles get no access. Log the failure and alert.
+**Trap:** swallowing the error to "keep the site up", which is exactly the hole.
+**Verify:** with the secret unset, the store stopped or the lookup forced to throw, the protected request is refused (4xx/5xx), never served.
+
+### SAML single sign-on
+**Covers:** SEC-086
+**Safe fix:** update the SAML library to its latest release (ruby-saml 1.18.0+ or 1.12.4+, samlify 2.10.0+, the current node-saml or python3-saml), require signed assertions, read only the assertion the library returns as verified, check audience, recipient, `NotOnOrAfter` and `InResponseTo`, and store assertion IDs to refuse reuse.
+**Trap:** parsing the XML a second time yourself to read the user's email; that reopens signature wrapping.
+**Verify:** the library version is patched against the advisories, and a response with an extra unsigned assertion, a changed audience or a replayed ID is refused in a test.
+
+### Client IP, one-time codes and password hashing limits
+**Covers:** SEC-087, SEC-088, SEC-089
+**Safe fix:** read the client IP only from the platform's verified source or with a fixed trusted-proxy count; mark each OTP and 2FA code used in the same database write that accepts it; cap password length (for example 64 characters) or use Argon2id; never bcrypt a joined string.
+**Trap:** trusting the left-most `X-Forwarded-For` value, or a TOTP check that's "valid for 30 seconds" and therefore accepts the same code several times.
+**Verify:** a request with a fake `X-Forwarded-For` still hits the rate limit; sending the same valid code twice fails the second time; two passwords that differ only after byte 72 don't both work.
+
+### Authenticated encryption
+**Covers:** SEC-090
+**Safe fix:** replace ECB or CBC code with AES-256-GCM or libsodium `secretbox`, a fresh random nonce per message, and a key from the secret store; re-encrypt stored data in a migration.
+**Trap:** keeping CBC and adding a home-made checksum.
+**Verify:** the sweep shows no `WEAK-CIPHER` hits, and changing one byte of a ciphertext makes decryption fail with the same generic error.
+
+### Security alerts
+**Covers:** SEC-091
+**Safe fix:** send the security events listed in the check to the same alert channel as production errors, with thresholds (for example 20 failed logins a minute) and a named person who gets them.
+**Trap:** a dashboard nobody opens.
+**Verify:** a test burst of failed logins produces an alert within minutes.
