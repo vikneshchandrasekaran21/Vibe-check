@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.6.3 (2026-11-14)
+
+**Update from inside the chat.**
+- When a newer vibe-check is out, it now asks right away, as a choice: **Update now (Recommended)** or **Continue this check on the current version**.
+- **Update now:** in tools that can run commands and installs made with `npx skills add`, it runs exactly `npx skills update` (never with `sudo`), and only after you pick it. Then it tells you the truth: this chat still has the old version loaded, so start a new session to use the new one. In the Claude app, Lovable, Replit and builders it shows that tool's one update step. If the update fails, you get the error and the manual step.
+- **Continue** is remembered for that version (`update_declined:` in `.vibe-check/config`), so you're not asked again until the next release.
+- Unattended or scheduled runs never ask; they note the update in the report, as before.
+- `version_check.py` now prints `ASK: yes/no` and `HOW: npx skills update/manual` after `UPDATE AVAILABLE`, and still never runs anything itself.
+
 ## v3.6.2 (2026-11-14)
 
 **The update check comes first again.**

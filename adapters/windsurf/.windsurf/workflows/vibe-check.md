@@ -48,7 +48,7 @@ Never tick a step you didn't finish; unticked steps go under *Not checked*. A to
 
 ## How results look: six symbols, one meaning each
 
-Use these everywhere (progress lines, the chat summary, the report, fix cards) and never for anything else: ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs the user's answer · ➖ doesn't apply to this app · 🔧 being fixed now. ❗ only marks something that wasn't checked. Confidence is a word (**🔬 Confirmed**, **🔎 Likely**), never ✅. The exact formats (progress lines, the one-screen chat summary, the fix plan, fix cards and the finish line) are in the **report-template** section below; follow them.
+Use these everywhere (progress lines, the chat summary, the report, fix cards) and never for anything else: ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs the user's answer · ➖ doesn't apply to this app · 🔧 being fixed now. ❗ only marks something that wasn't checked. Confidence is a word (**🔬 Confirmed**, **🔎 Likely**), never ✅. The exact formats (progress lines, chat summary, fix plan, fix cards, finish line) are in the **report-template** section below.
 
 **Numbers are counted, never written.** The verdict, the score out of 100, the band, the totals table, the area scorecard and the *Since last check* line all come from `coverage.py`; paste them. The score weights blocker checks 3, should-fix checks 2 and nice-to-have checks 1, leaves out checks that don't apply, and **can't go above 69 while any blocker is open**. Bands: 90–100 **Ready to scale** · 75–89 **Ready to launch** · 60–74 **Needs work** · 0–59 **Not safe for real users yet**.
 
@@ -109,12 +109,12 @@ Your version is the `version:` line at the top of this file. Check for a newer r
 2. No script or no Python: read this one URL with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md` and compare its `version:` line. **Only this URL, only a plain read.**
 3. Neither possible: skip it.
 
-- **Newer version out:** say so in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool from the **updating** section below, then **carry on** without waiting. Put the same notice at the top of the report.
+- **Newer version out:** in an interactive session, unless the script says `ASK: no`, **ask right away, as a choice**: *Update now (Recommended)* · *Continue this check on vY*. Then follow the **updating** section below for what each choice does in their tool (nothing is installed before the user picks). Unattended runs, or `ASK: no`: one line, then **carry on**. Either way, the notice goes at the top of the report.
 - **Up to date:** say nothing; the version goes in the report header.
 - **Couldn't connect** (offline, or a sandbox without internet): don't stop; the report header gets *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"* plus the update step.
 - **Turned off** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing, fetch nothing.
 
-Never retry, never look the version up any other way, and never let this step delay the audit.
+Never retry, look the version up another way, or let this step delay the audit.
 
 ## Step 1: Profile the app
 
@@ -1866,7 +1866,7 @@ vibe-check: 🟢 SHIP · Score 91/100 · 112/118 checks · 0 blockers · Full ch
 Post short progress lines as each step finishes, ticking them off, one line per step, never paragraphs:
 
 ```text
-Running vibe-check v3.6.2 · Full check · art-club
+Running vibe-check v3.6.3 · Full check · art-club
 
 ✅ Read your project · 214 files · Next.js + Supabase + Razorpay
 ✅ Matched your answers to your code · 🔀 1 difference: payments found
@@ -1881,7 +1881,7 @@ In tools with a to-do or task list, use it for the same steps instead.
 The chat shows the summary; the full report stays in the file. Save the same text as `.vibe-check/summary.md`.
 
 ```text
-Running vibe-check v3.6.2 · Full check · art-club
+Running vibe-check v3.6.3 · Full check · art-club
 
 🔴 DO NOT SHIP · Score 69/100 (capped: 2 blockers open) · Needs work
 Since last check (2 Nov): Score 58 → 69 (+11) · ✅ 7 fixed · 🆕 1 new · ↩️ 0 came back
@@ -3043,7 +3043,30 @@ Sources (checked 2026-11-14): OWASP Top 10:2025 (top10.owasp.org), OWASP API Sec
 
 ## Updating vibe-check, per tool
 
-Use this when Step 0 finds a newer version, or the update check couldn't connect. Give the user the one step for their tool.
+Use this when Step 0 finds a newer version, or the update check couldn't connect.
+
+### When a newer version is out: ask, as a choice
+
+```text
+⬆️ vibe-check v3.7.0 is out (you're on v3.6.3).
+○ Update now (Recommended): I run `npx skills update`, then you start a new session
+○ Continue this check on v3.6.3 and update later
+```
+
+Use the question tool if you have one (see *Asking the user* in SKILL.md). Don't ask in unattended or scheduled runs, or when `version_check.py` printed `ASK: no`: then give the one-line notice and carry on.
+
+### If the user picks "Update now"
+
+- **`HOW: npx skills update`** and you can run commands: run exactly `npx skills update` (nothing else, never with `sudo`). If it succeeds, say: *"Updated to vX. This chat still has vY loaded; start a new session and say 'vibe check this app' to use vX."* Then ask, as a choice: *Start a new session now (Recommended)* · *Finish this check on vY first*. If it fails, show the error in one line and give the manual step from the table below.
+- **`HOW: manual`**, or you can't run commands: give the one step for their tool from the table below, then the same choice.
+- Never update in the middle of a check without the user's pick, and never claim the new version is running in this chat: a session keeps the version it started with.
+
+### If the user picks "Continue"
+
+Add `update_declined: <new version>` to `.vibe-check/config` (create it if needed; `.vibe-check/` is gitignored) so they aren't asked again for that version, carry on, and keep the notice at the top of the report. A newer release after that is asked about again.
+
+### The update step for each tool
+
 
 | Where vibe-check runs | Update step |
 |---|---|

@@ -14,6 +14,9 @@ Prints one line and always exits 0:
   UP TO DATE: vibe-check v2.7.1
   UPDATE AVAILABLE: vibe-check v2.8.0 (installed v2.7.1). Update: npx skills update, then start a new session.
   SKIPPED: <reason>
+After UPDATE AVAILABLE, two more lines tell the agent what to do next:
+  ASK: yes | no (no = the user already chose "later" for this version: `update_declined: X.Y.Z` in .vibe-check/config)
+  HOW: npx skills update | manual (see references/updating.md for the user's tool)
 Python 3.8+, standard library only.
 """
 from __future__ import annotations
@@ -56,6 +59,24 @@ def disabled() -> str:
     return ""
 
 
+def declined() -> str:
+    """The version the user chose to update 'later' for, if any (never asked again for that version)."""
+    cfg = Path(".vibe-check") / "config"
+    try:
+        m = re.search(r"^\s*update_declined\s*:\s*v?(\d+\.\d+\.\d+)", cfg.read_text("utf-8"), re.M) if cfg.exists() else None
+    except OSError:
+        m = None
+    return m.group(1) if m else ""
+
+
+def install_method() -> str:
+    """'npx skills update' when the skill sits in a folder that `npx skills add` manages, else 'manual'."""
+    here = Path(__file__).resolve().parent.parent.as_posix()
+    managed = ("/.claude/skills/", "/.agents/skills/", "/.codex/skills/", "/.cursor/skills/", "/.gemini/skills/",
+               "/.config/opencode/skills/", "/.windsurf/skills/", "/.kiro/skills/")
+    return "npx skills update" if any(m in here + "/" for m in managed) else "manual"
+
+
 def get(url: str) -> str:
     # A plain GET with no cookies, no body and no identifying headers beyond a generic User-Agent.
     req = urllib.request.Request(url, headers={"User-Agent": "vibe-check-version-check",
@@ -96,6 +117,9 @@ def main() -> int:
         print(f"SKIPPED: latest version unknown. Installed: vibe-check v{mine}")
     elif parse(newest) > parse(mine):
         print(f"UPDATE AVAILABLE: vibe-check v{newest} (installed v{mine}). {UPDATE_HOW}")
+        print("ASK: no (the user chose to update later for this version; mention it in the report only)" if declined() == newest
+              else "ASK: yes (offer: Update now, or continue this check)")
+        print(f"HOW: {install_method()}")
     else:
         print(f"UP TO DATE: vibe-check v{mine}")
     return 0

@@ -506,6 +506,17 @@ def main() -> int:
         (Path(tmp2) / ".vibe-check" / "config").write_text("footer: true\nupdate_check: false\n")
         r = run("version_check.py", cwd=Path(tmp2), env=dead)
         check(r.stdout.startswith("SKIPPED: turned off (.vibe-check/config)"), f"version_check: config opt-out ignored: {r.stdout!r}")
+    # v3.6.3: after UPDATE AVAILABLE: ask (unless the user chose "later" for that version) and say how to update
+    newer = f"{major + 1}.0.0"
+    with tempfile.TemporaryDirectory() as tmp3:
+        r = run("version_check.py", "--latest", newer, cwd=Path(tmp3))
+        check("ASK: yes" in r.stdout and "HOW: " in r.stdout, f"version_check: should say to ask, and how to update: {r.stdout!r}")
+        (Path(tmp3) / ".vibe-check").mkdir()
+        (Path(tmp3) / ".vibe-check" / "config").write_text(f"update_declined: {newer}\n")
+        r = run("version_check.py", "--latest", newer, cwd=Path(tmp3))
+        check("ASK: no" in r.stdout, f"version_check: 'later' for this version should not ask again: {r.stdout!r}")
+        r = run("version_check.py", "--latest", f"{major + 2}.0.0", cwd=Path(tmp3))
+        check("ASK: yes" in r.stdout, f"version_check: a newer release after 'later' should ask again: {r.stdout!r}")
     t0 = time.time()
     r = run("version_check.py", env=dead)
     check(r.returncode == 0 and r.stdout.startswith("SKIPPED: couldn't reach") and "releases/latest" in r.stdout

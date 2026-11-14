@@ -3,7 +3,7 @@ name: vibe-check
 description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.6.2"
+  version: "3.6.3"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -51,7 +51,7 @@ Never tick a step you didn't finish; unticked steps go under *Not checked*. A to
 
 ## How results look: six symbols, one meaning each
 
-Use these everywhere (progress lines, the chat summary, the report, fix cards) and never for anything else: ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs the user's answer · ➖ doesn't apply to this app · 🔧 being fixed now. ❗ only marks something that wasn't checked. Confidence is a word (**🔬 Confirmed**, **🔎 Likely**), never ✅. The exact formats (progress lines, the one-screen chat summary, the fix plan, fix cards and the finish line) are in `references/report-template.md`; follow them.
+Use these everywhere (progress lines, the chat summary, the report, fix cards) and never for anything else: ✅ passed or fixed · ❌ must fix before launch · ⚠️ fix before you scale · ❓ needs the user's answer · ➖ doesn't apply to this app · 🔧 being fixed now. ❗ only marks something that wasn't checked. Confidence is a word (**🔬 Confirmed**, **🔎 Likely**), never ✅. The exact formats (progress lines, chat summary, fix plan, fix cards, finish line) are in `references/report-template.md`.
 
 **Numbers are counted, never written.** The verdict, the score out of 100, the band, the totals table, the area scorecard and the *Since last check* line all come from `coverage.py`; paste them. The score weights blocker checks 3, should-fix checks 2 and nice-to-have checks 1, leaves out checks that don't apply, and **can't go above 69 while any blocker is open**. Bands: 90–100 **Ready to scale** · 75–89 **Ready to launch** · 60–74 **Needs work** · 0–59 **Not safe for real users yet**.
 
@@ -112,12 +112,12 @@ Your version is the `version:` line at the top of this file. Check for a newer r
 2. No script or no Python: read this one URL with your web-fetch tool or `curl -s --max-time 3 https://raw.githubusercontent.com/vikneshchandrasekaran21/Vibe-check/main/skills/vibe-check/SKILL.md` and compare its `version:` line. **Only this URL, only a plain read.**
 3. Neither possible: skip it.
 
-- **Newer version out:** say so in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool from `references/updating.md`, then **carry on** without waiting. Put the same notice at the top of the report.
+- **Newer version out:** in an interactive session, unless the script says `ASK: no`, **ask right away, as a choice**: *Update now (Recommended)* · *Continue this check on vY*. Then follow `references/updating.md` for what each choice does in their tool (nothing is installed before the user picks). Unattended runs, or `ASK: no`: one line, then **carry on**. Either way, the notice goes at the top of the report.
 - **Up to date:** say nothing; the version goes in the report header.
 - **Couldn't connect** (offline, or a sandbox without internet): don't stop; the report header gets *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"* plus the update step.
 - **Turned off** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing, fetch nothing.
 
-Never retry, never look the version up any other way, and never let this step delay the audit.
+Never retry, look the version up another way, or let this step delay the audit.
 
 ## Step 1: Profile the app
 

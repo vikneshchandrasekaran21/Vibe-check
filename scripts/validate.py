@@ -322,6 +322,15 @@ for _must in ["## Which project (right after the update check)", "**Steps 0a and
     if _must not in skill_main: err(f"SKILL.md 'Which project' is missing '{_must}'")
 if "def where(" not in (SK / "scripts" / "profile.py").read_text(): err("profile.py must have --where (which project is this?)")
 if "<project name>" not in (REFS / "self-check.md").read_text(): err("self-check.md must check the first line names the project")
+# 26. v3.6.3 update choice: ask, run npx skills update only after the pick, remember "later"
+_up = (REFS / "updating.md").read_text() if (REFS / "updating.md").exists() else ""
+for _must in ["Update now (Recommended)", "Continue this check on", "run exactly `npx skills update`", "never with `sudo`",
+              "update_declined:", "start a new session", "Never update in the middle of a check without the user's pick", "unattended"]:
+    if _must not in _up: err(f"updating.md is missing '{_must}'")
+if "**ask right away, as a choice**" not in skill_main or "`ASK: no`" not in skill_main: err("SKILL.md Step 0 must ask about updates as a choice (unless ASK: no)")
+_vc = (SK / "scripts" / "version_check.py").read_text()
+if "def declined(" not in _vc or "ASK: yes" not in _vc or "HOW: " not in _vc: err("version_check.py must print ASK and HOW after UPDATE AVAILABLE")
+if "subprocess" in _vc or "os.system" in _vc: err("version_check.py must never run the update itself (the agent runs it after the user's pick)")
 # 24. v3.6 skill shape (Anthropic's skill-authoring guidance)
 _words = len(re.sub(r"^---\n.*?\n---\n", "", skill_main, flags=re.S).split())
 if _words > 4700: err(f"SKILL.md body is {_words} words; keep it under 4,700 and move detail into a workflow file")
