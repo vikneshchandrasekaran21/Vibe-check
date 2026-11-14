@@ -43,7 +43,9 @@ def summary(ledger: Path) -> dict:
     for f in (SKILL / "references").glob("*.md"):
         for s, cid in re.findall(r"^- \[ \] (🔴|🟡|🟢) ([A-Z]+-\d{3}) ", f.read_text("utf-8"), re.M):
             sev[cid] = s
-    for cid, s in re.findall(r"^\| (BS-\d{2}) \| (🔴|🟡|🟢)", skill, re.M):
+    bs_file = SKILL / "references" / "blind-spots.md"
+    bs_text = bs_file.read_text("utf-8") if bs_file.exists() else skill
+    for cid, s in re.findall(r"^\| (BS-\d{2}) \| (🔴|🟡|🟢)", bs_text, re.M):
         sev[cid] = s
     level = (re.search(r"^\s*Level:\s*\**\s*(quick|full|launch|enterprise)", text, re.I | re.M) or [None, "full"])[1].lower()
     counts = {"pass": 0, "fail": 0, "n/a": 0, "cant_tell": 0}

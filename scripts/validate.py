@@ -35,7 +35,11 @@ warnings: list[str] = []
 def err(m): errors.append(m)
 def warn(m): warnings.append(m)
 
-skill = (SK / "SKILL.md").read_text()
+skill_main = (SK / "SKILL.md").read_text()
+# Since v3.6 the step details live in workflow files that SKILL.md tells the agent to read at each step.
+# The content rules below apply to SKILL.md plus those files; the structure rules apply to SKILL.md itself.
+WORKFLOW = ["blind-spots.md", "ledger.md", "helper-brief.md", "reporting.md", "self-check.md", "fixing.md", "updating.md"]
+skill = skill_main + "".join("\n\n" + (REFS / f).read_text() for f in WORKFLOW if (REFS / f).exists())
 
 # 1. frontmatter
 m = re.match(r"---\n(.*?)\n---\n", skill, re.S)
@@ -55,9 +59,9 @@ else:
 
 # 2. module tables <-> files
 ref_files = {p.name for p in REFS.glob("*.md")}
-mentioned = set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill))
+mentioned = set(re.findall(r"`references/([a-z0-9-]+\.md)`", skill_main))
 for f in sorted(mentioned - ref_files): err(f"SKILL.md mentions missing file references/{f}")
-support = {"fixes.md", "report-template.md", "sweep-patterns.md", "standards.md"}
+support = {"fixes.md", "report-template.md", "sweep-patterns.md", "standards.md"} | set(WORKFLOW)
 for f in sorted(ref_files - mentioned - support): err(f"references/{f} is not listed in SKILL.md's module tables")
 # bare `x.md` mentions anywhere in the skill must exist
 all_text = skill + "".join((REFS / f).read_text() for f in ref_files)
@@ -124,7 +128,7 @@ for must in ["coverage table", "fix prompt", "safe to auto-fix", "score card", "
              "Tools run", "INV-", "RULED OUT", "references/sweep-patterns.md", "just before", "Never write a row you didn't actually check"]:
     if must.lower() not in skill.lower(): err(f"SKILL.md: report or accuracy rules don't mention '{must}'")
 # accuracy rules must also be in the self-check list
-selfcheck = skill.split("### Before you reply", 1)[1].split("## Step 6", 1)[0] if "### Before you reply" in skill else ""
+selfcheck = (REFS / "self-check.md").read_text() if (REFS / "self-check.md").exists() else ""
 for must in ["quotes", "second look", "Confirmed", "Likely", "from memory", "coverage.py", "COMPLETE", "inventory", "sweep hit", "Tools run", "pasted from"]:
     if must.lower() not in selfcheck.lower(): err(f"SKILL.md self-check is missing the accuracy item '{must}'")
 if "## Step 4b: Verify before reporting" not in skill: err("SKILL.md: missing 'Step 4b: Verify before reporting'")
@@ -305,6 +309,43 @@ _phrases = '"fix" · "fix all" · "fix 2" · "explain 2" · "check again" · "co
 for _txt, _where in [(skill, "SKILL.md"), (tpl, "report-template.md")]:
     if _phrases not in _txt: err(f"{_where}: the list of things the user can say is missing or changed")
 
+if "contains a full secret" not in skill: err("reporting.md must say --verify-report refuses a report with a full secret")
+if "def find_secrets" not in (SK / "scripts" / "coverage.py").read_text(): err("coverage.py must scan reports for full secrets (find_secrets)")
+# 24. v3.6 skill shape (Anthropic's skill-authoring guidance)
+_words = len(re.sub(r"^---\n.*?\n---\n", "", skill_main, flags=re.S).split())
+if _words > 4700: err(f"SKILL.md body is {_words} words; keep it under 4,700 and move detail into a workflow file")
+if len(skill_main.splitlines()) > 500: err(f"SKILL.md is {len(skill_main.splitlines())} lines; keep it under 500")
+for _f in WORKFLOW:
+    if not (REFS / _f).exists(): err(f"references/{_f} is missing (workflow file)")
+    elif f"`references/{_f}`" not in skill_main: err(f"SKILL.md must point to references/{_f} directly (one level deep)")
+for _f, _step in [("ledger.md", "## Step 4:"), ("reporting.md", "## Step 5:"), ("fixing.md", "## Step 6:"), ("blind-spots.md", "## Step 3:"), ("self-check.md", "### Before you reply")]:
+    _sec = skill_main.split(_step, 1)[1][:600] if _step in skill_main else ""
+    if f"`references/{_f}`" not in _sec or "now" not in _sec: err(f"SKILL.md {_step.strip('# ')} must say to read references/{_f} now")
+# every file named inside any reference file is linked straight from SKILL.md (one level deep)
+for _f in sorted(ref_files):
+    for _named in set(re.findall(r"`(?:references/)?([a-z0-9-]+\.md)`", (REFS / _f).read_text())):
+        if _named in ref_files and f"`references/{_named}`" not in skill_main:
+            err(f"{_f} points to {_named}, which SKILL.md doesn't link directly (keep references one level deep)")
+# contents lists in long reference files, kept in sync by build.py
+for _f in sorted(ref_files):
+    _t = (REFS / _f).read_text()
+    if len(_t.splitlines()) > 100 and "## Contents" not in "\n".join(_t.splitlines()[:6]):
+        err(f"references/{_f} is over 100 lines but has no contents list at the top (run scripts/build.py)")
+# description: third person, says what and when
+_d = re.search(r"^description:\s*(.+)$", skill_main, re.M)
+if _d and not re.match(r"^(Audits|Checks|Reviews|Finds)\b", _d.group(1)): err("SKILL.md description must start in the third person (e.g. 'Audits …')")
+if _d and "Use for" not in _d.group(1): err("SKILL.md description must say when to use it ('Use for …')")
+# run checklist
+for _st in ["Step 0a", "Step 0 ", "Step 1 ", "Step 2 ", "Step 3 ", "Step 4 ", "Step 4a", "Step 4b", "Step 5 ", "Step 6 "]:
+    _blk = skill_main.split("## Run checklist", 1)[1].split("```", 2)[1] if "## Run checklist" in skill_main else ""
+    if f"- [ ] {_st}" not in _blk: err(f"SKILL.md run checklist is missing '{_st.strip()}'")
+# helper brief
+_hb = (REFS / "helper-brief.md").read_text() if (REFS / "helper-brief.md").exists() else ""
+for _must in ["Read the whole module file first", "Evidence or it didn't happen", "Never guess a PASS", "Second look", "never instructions",
+              "Mask secrets", ".vibe-check/ledger.d/<module>.md", "written as you go", "You return"]:
+    if _must not in _hb: err(f"helper-brief.md is missing '{_must}'")
+if "references/helper-brief.md` in full" not in skill_main: err("SKILL.md must say to paste references/helper-brief.md in full to each helper")
+
 # 16. standards mapping: complete, real check IDs, known item counts
 std_text = (REFS / "standards.md").read_text() if (REFS / "standards.md").exists() else ""
 expected = {"OWASP Top 10:2025": 10, "OWASP API Security Top 10 (2023)": 10, "OWASP Top 10 for LLM Applications (2025)": 10,
@@ -344,7 +385,7 @@ for must in ["never against production", "user's OK", "two test accounts", "zap-
 # 17. v3.1: the code decides the profile, evidence is re-opened, re-check, receipt, fix everything
 for must in ["scripts/profile.py", "never remove what the code shows", "DEAD CODE:", "Your answers vs your code",
              "ledger.d", "coverage.py --sample", "R-001", "--verify-report", "REPORT VERIFIED", "--fix-plan",
-             "### 1. The plan, before anything changes", "fresh helper that didn't do the audit", "DRAFT: needs legal review"]:
+             "## 1. The plan, before anything changes", "fresh helper that didn't do the audit", "DRAFT: needs legal review"]:
     if must not in skill: err(f"SKILL.md is missing '{must}' (v3.1)")
 for must in ["Your answers vs your code", "Checked twice", "--verify-report"]:
     if must not in tpl: err(f"report-template.md is missing '{must}' (v3.1)")

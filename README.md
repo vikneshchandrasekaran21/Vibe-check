@@ -79,6 +79,7 @@ An AI can't promise it found every bug, but vibe-check makes sure **every check 
 - **Every check has a permanent ID** (`SEC-014`). Each result goes into a ledger with its evidence: passed, failed, doesn't apply, or couldn't check.
 - **The coverage is counted by a script.** `coverage.py` compares the ledger with the checklist and won't let the report through if a check is missing, an ID is invented, the evidence is vague or copy-pasted, or a failure has no confidence label.
 - **The code decides the profile, not the answers.** `profile.py` looks for date-of-birth fields, school or student data, payment SDKs and payment links, health, bank or ID data, AI calls, chat and more. If you say "no payments" but there's a Razorpay link in the code, the payment checks run anyway, and the report shows *Your answers vs your code*.
+- **No full secrets in what you share.** The report, the chat summary and the ledger are scanned with the same secret patterns before the report is accepted; keys must be masked (`sk_l…`).
 - **Evidence is re-opened, and the audit doesn't grade itself.** `coverage.py` checks that every cited `file:line` exists and every quoted line of code is really there. A fresh helper re-checks every 🔴 and a sample of passes. `--verify-report` rejects a report whose numbers don't match the ledger.
 - **"Fix everything" works through the whole list:** a fix plan that survives new sessions, one decision per item, each fix re-checked by its own check ID, and a before-and-after score.
 - **It lists every version the app runs.** `versions.py` finds the runtime, frameworks, CMS and plugins, Docker images and key packages with exact versions. Each one is checked against today's security releases, end-of-life dates and the actively-exploited list, with the source linked. Never from memory.
@@ -375,6 +376,13 @@ skills/vibe-check/          ← the skill (source of truth)
 │   ├── share_stats.py        opt-in: shows, then (only if you say yes) shares anonymous counts
 │   └── version_check.py      tells you when a newer vibe-check is out (sends nothing about you)
 └── references/
+    ├── blind-spots.md        step 3: the 19 AI blind spots (every level)
+    ├── ledger.md             step 4: the ledger format, row types, tools and fallbacks
+    ├── helper-brief.md       step 4: the brief pasted to every helper agent
+    ├── reporting.md          step 5: what the report contains, saving, verifying, the chat summary
+    ├── self-check.md         step 5: the checklist before replying
+    ├── fixing.md             step 6: fix plan, branch or checkpoints, fix cards, undo, scope guard
+    ├── updating.md           how to update vibe-check in each tool
     ├── security.md           core: security, auth, encryption, data leakage
     ├── reliability.md        core: data, reliability, load and stress, testing
     ├── devops.md             core: CI/CD, deploys, monitoring, backups, access, incidents

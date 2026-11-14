@@ -67,6 +67,24 @@ AREAS = [  # every checklist module belongs to exactly one area (validate.py che
 SYMBOLS = {"PASS": "✅", "BLOCKER": "❌", "SHOULD": "⚠️", "ASK": "❓", "NA": "➖", "FIXING": "🔧"}
 
 
+def find_secrets(path: Path):
+    """Lines in a report, summary or ledger that look like a full secret, using sweep.py's own secret patterns."""
+    if not path.exists():
+        return []
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_vc_sweep", Path(__file__).resolve().parent / "sweep.py")
+    sw = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sw)  # type: ignore[union-attr]
+    found = []
+    for n, line in enumerate(path.read_text("utf-8", errors="replace").splitlines(), 1):
+        for pid, _cid, title, rx, _kind in sw.SECRET_KINDS:
+            m = rx.search(line)
+            if m and "…" not in m.group(0):
+                found.append((n, pid, title))
+                break
+    return found
+
+
 def band_of(score: int) -> str:
     return next(name for low, name in BANDS if score >= low)
 
@@ -214,7 +232,8 @@ def print_result(res, diff):
 def load_checklist():
     """Return (ordered modules, {id: (module, severity, name)}, {prefix: module})."""
     checks, prefixes, modules = {}, {}, ["blind-spots"]
-    skill = (SKILL / "SKILL.md").read_text("utf-8")
+    bs_file = SKILL / "references" / "blind-spots.md"   # the blind spots live in their own file (v3.6)
+    skill = bs_file.read_text("utf-8") if bs_file.exists() else (SKILL / "SKILL.md").read_text("utf-8")
     for num, sev, name in re.findall(r"^\| (BS-\d{2}) \| (🔴|🟡|🟢) \*\*(.+?)\*\*", skill, re.M):
         checks[num] = ("blind-spots", sev, name)
     prefixes["BS"] = "blind-spots"
@@ -783,6 +802,11 @@ def main() -> int:
                 errors.append("REPORT: no totals table ('| **Checked** | **N of M** |' pasted from coverage.py)")
             elif [int(x) for x in ck.groups()] != [T["checked"], T["apply"]]:
                 errors.append(f"REPORT: totals say checked {ck.group(1)} of {ck.group(2)}; the ledger says {T['checked']} of {T['apply']}")
+            # secret guard: nothing that leaves the project may hold a full secret (same patterns as sweep.py)
+            for _shared in [report_path, ledger_path.parent / "summary.md", ledger_path]:
+                for _line_no, _kind, _title in find_secrets(_shared):
+                    errors.append(f"REPORT: {_shared.name}:{_line_no} looks like a full {_title}. Mask it: first 4 characters "
+                                  "and where it is (e.g. `sk_l…` in src/lib/stripe.ts:3)")
             if diff and "Since last check" not in rep_text:
                 errors.append("REPORT: there is an earlier run in .vibe-check/history/, so the report needs the 'Since last check' line")
             if not errors:

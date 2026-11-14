@@ -1,5 +1,21 @@
 # Report template
 
+<!-- contents: kept up to date by scripts/build.py -->
+## Contents
+- The six symbols (everywhere: report, chat, fixes)
+- While it runs (progress)
+- In the chat (the one-screen summary)
+- Fix plan (before anything changes)
+- Fix card (one per fix)
+- Finish line
+- Writing tips
+- Score card, badge and footer
+  - Score card (always)
+  - Badge (only when there are no blockers, on a Full or Enterprise check)
+  - Star request (only for 🟢, once)
+  - Footer (always, removable)
+<!-- /contents -->
+
 Use this structure. Keep it skimmable. Plain words first, technical details second.
 
 ````markdown

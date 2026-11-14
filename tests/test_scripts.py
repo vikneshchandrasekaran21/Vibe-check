@@ -149,7 +149,7 @@ def build_app(root: Path) -> None:
 
 
 def all_ids() -> list:
-    ids = re.findall(r"^\| (BS-\d{2}) \|", (ROOT / "skills/vibe-check/SKILL.md").read_text(), re.M)
+    ids = re.findall(r"^\| (BS-\d{2}) \|", (ROOT / "skills/vibe-check/references/blind-spots.md").read_text(), re.M)
     for f in sorted((ROOT / "skills/vibe-check/references").glob("*.md")):
         ids += re.findall(r"^- \[ \] \S+ ([A-Z0-9]+-\d{3}) ", f.read_text(), re.M)
     return ids
@@ -348,6 +348,19 @@ def main() -> int:
         report.write_text(good_report.replace(ckm.group(0), f"**Checked** | **{int(ckm.group(1)) - 3} of {ckm.group(2)}**"))
         r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
         check(r.returncode == 1 and "totals say checked" in r.stdout, "coverage: a report with a typed 'Checked N of M' should be rejected")
+        # v3.6: secret guard: a full key in the report or the chat summary is refused; a masked one is fine
+        report.write_text(good_report + f"\nEvidence: lib/stripe.ts:3 holds {STRIPE}\n")
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "looks like a full" in r.stdout and STRIPE not in r.stdout,
+              f"secret guard: a full key in the report should be refused (and not printed):\n{r.stdout[-400:]}")
+        report.write_text(good_report + f"\nEvidence: lib/stripe.ts:3 holds `{STRIPE[:4]}…`\n")
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 0 and "REPORT VERIFIED" in r.stdout, f"secret guard: a masked key should be accepted:\n{r.stdout[-400:]}")
+        (out / "summary.md").write_text(f"AWS key found: {AWS}\n")
+        r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))
+        check(r.returncode == 1 and "summary.md" in r.stdout, "secret guard: a full key in summary.md should be refused")
+        (out / "summary.md").unlink()
+        report.write_text(good_report)
         sc_now = re.search(r"Score (\d+)/100", good_report).group(1)
         report.write_text(good_report.replace("Score " + sc_now + "/100", "Score 88/100", 1))
         r = run("coverage.py", str(out / "ledger.md"), "--verify-report", str(report))

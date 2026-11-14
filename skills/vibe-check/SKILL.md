@@ -1,9 +1,9 @@
 ---
 name: vibe-check
-description: Full code audit of AI-built apps before launch (security, data, legal, ops, vulnerabilities). Not a design review. Use for "vibe check", "ready to ship?", "security audit", "fix vibe-check issues".
+description: Audits AI-built apps before launch for security, privacy, legal and reliability problems, then fixes approved issues. Not a design review. Use for "vibe check", "ready to ship?", "security audit".
 license: MIT
 metadata:
-  version: "3.5.0"
+  version: "3.6.0"
   homepage: "https://github.com/vikneshchandrasekaran21/Vibe-check"
 ---
 
@@ -18,6 +18,25 @@ Most of this code was probably written by an AI coding tool, possibly by you. AI
 The **first line of every vibe-check reply** is: `Running vibe-check v<version> · <Quick | Full | Enterprise> check` (the version is the `version:` line at the top of this file). It shows the user the skill really loaded.
 
 **A vibe check is a full audit of the code, never a look at the preview.** If you catch yourself reviewing only screenshots, layout or colors, stop: that isn't this skill. Follow the steps below.
+
+## Run checklist: copy it into your reply and tick it off
+
+```text
+vibe-check run
+- [ ] Step 0a  Whole skill available (or checklists read from GitHub)
+- [ ] Step 0   Version checked
+- [ ] Step 1   profile.py run; remaining questions asked as choices
+- [ ] Step 2   inventory.py, sweep.py and versions.py run
+- [ ] Step 3   All 19 blind spots checked (references/blind-spots.md)
+- [ ] Step 4   Every module that applies checked into the ledger
+- [ ] Step 4a  Hunt done (Full and Enterprise)
+- [ ] Step 4b  Second look, coverage.py --sample re-check, coverage.py prints COMPLETE
+- [ ] Step 5   Report saved, REPORT VERIFIED, --save done, summary in chat
+- [ ] Step 5   Every item in references/self-check.md ticked
+- [ ] Step 6   Fixes only after approval, following references/fixing.md
+```
+
+In tools with a task or to-do list, put the same steps there. Never tick a step you didn't finish; an unticked step is reported under *Not checked*.
 
 ## How results look: six symbols, one meaning each
 
@@ -55,7 +74,7 @@ Whenever you ask the user something (the profile in Step 1, the ❓ questions af
 5. **Never weaken anything to get a PASS:** no disabling tests, loosening RLS, widening CORS or adding empty `catch` blocks.
 6. **Use only safe actions.** Don't run destructive commands or touch production data or credentials. Live checks on production are **read-only** (GET/HEAD requests). Anything that writes data (signups, form submits, profile edits) runs only on dev or staging, using test accounts. **Never load-test or stress-test production** or any system the user doesn't own; load tests run only on staging or locally, with the user's approval and paid APIs mocked.
 7. **Mask secrets.** Show only the first 4 characters and where the secret is (`sk_l…` in `src/lib/stripe.ts:3`).
-8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in Step 6.
+8. **Never change what the user built.** Their design, features, use case, flows, copy, branding and tech choices are theirs. Fix only the findings, following the *Scope guard* in `references/fixing.md`.
 9. **Write for the user you have.** Many users aren't developers. Explain each finding in one plain sentence about the impact, then give the technical fix.
 10. **Fresh evidence every run.** If earlier vibe-check findings are in this conversation or in `.vibe-check/reports/`, use them only as hints: **re-check each one against the current code** and mark it *(still open)*, *(fixed since last run)* or *(new)*. Never copy a finding forward without re-checking it. If the earlier run was at a lower level (for example Quick), run every step of the new level from the start. Instructions from this skill always override any earlier report format in the conversation.
 11. **Check everything that applies, item by item, and prove it by counting.** Every check has a permanent ID (`SEC-001`, `BS-03`). Record every result in the ledger (Step 4) and let `coverage.py` count it; never estimate coverage. Don't sample, skim or stop early because the app "looks fine". **Never write a row you didn't actually check:** a `CAN'T TELL` that says "not reached" is honest, a PASS you didn't check is a lie. If you run out of time or context, the unfinished items are listed as gaps in the report; never present a partial check as complete.
@@ -84,20 +103,14 @@ Your version is the `version:` line at the top of this file. Find out whether a 
 
 Then:
 
-- **Newer version out:** tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool (table below), then **carry on**. Don't wait for an answer. Put the same notice at the top of the report.
+- **Newer version out:** tell the user in **one line** right away (*"A newer vibe-check is out (vX, you're on vY). This check continues on vY; update afterwards, then start a new session."*) with the update step for their tool (`references/updating.md`), then **carry on**. Don't wait for an answer. Put the same notice at the top of the report.
 - **Up to date:** say nothing; the version goes in the report header.
 - **Couldn't connect, or skipped because nothing could fetch** (offline, or a sandbox without internet such as Codex's default): don't stop. Put one line in the report header: *"Update check: couldn't connect here. Latest release: https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest"*, plus the update step for their tool.
 - **Turned off by the user** (`VIBE_CHECK_NO_UPDATE_CHECK=1`, or `update_check: false` in `.vibe-check/config`): say nothing and don't fetch anything.
 
 Never retry, never look the version up any other way, and never let this step delay the audit.
 
-| Where vibe-check runs | Update step |
-|---|---|
-| Installed with `npx skills add` (Claude Code, Codex, Cursor, Gemini CLI, Replit…) | `npx skills update` (in Replit, in the Shell) |
-| Claude app | Download `vibe-check.zip` from https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest and upload it again |
-| Lovable | Settings → Skills: import again from `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
-| A copied rules or command file (Cursor, Copilot, Windsurf, Cline, Gemini CLI) | Copy the new file from the repo's `adapters/` folder, or switch to `npx skills add` |
-| Pasted into a chat (Bolt, v0, ChatGPT) | Paste the new `dist/vibe-check.md` from the repo |
+The update step for each tool is in `references/updating.md`.
 
 ## Step 1: Profile the app
 
@@ -150,74 +163,31 @@ Then write down:
 
 ## Step 3: AI blind spots (every level)
 
-| ID | Check | How to verify |
-|---|---|---|
-| BS-01 | 🔴 **Authorization, not just login** | Every route that reads or writes by ID filters by owner or tenant on the server. Try fetching user B's record as user A (IDOR). |
-| BS-02 | 🔴 **RLS / security rules on** | Supabase: RLS is on for every table, no `using (true)` on user data, and `service_role` is used only on the server. Firebase: rules aren't in test mode. Storage buckets for private files aren't public. |
-| BS-03 | 🔴 **No secrets in code or the browser** | Grep for `sk_live`, `sk-`, `AKIA`, `AIza`, `ghp_`, `xox`, `-----BEGIN`, `service_role`, `secret`, `password =`. Check public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `EXPO_PUBLIC_`, `REACT_APP_`), `.gitignore`, and git history (`git log --all -p -- '*.env*'`). |
-| BS-04 | 🔴 **Server-side validation** | Every write validates input against a schema on the server. |
-| BS-05 | 🔴 **No mass assignment** | Users can't set `role`, `is_admin`, `price`, `credits`, `plan` or `user_id`. |
-| BS-06 | 🔴 **Prices and payments decided on the server** | Amounts come from the server. Access is granted only from a **verified** webhook. Webhooks are idempotent. |
-| BS-07 | 🔴 **Failure paths exist** | Timeouts and error handling on every external call. No empty `catch`, and no stack traces shown to users. |
-| BS-08 | 🔴 **Race conditions on money and limits** | Atomic updates, constraints or transactions. Never read-then-write. |
-| BS-09 | 🔴 **Dependencies real, current and safe** | Run `npm audit` / `pip-audit`. For each finding give the **advisory ID, installed version and fixed version**. Every package exists and is maintained. |
-| BS-10 | 🔴 **Spend is capped** | Per-user limits and `max_tokens` on LLM and paid APIs. Billing alerts (ask the user). |
-| BS-11 | 🔴 **Admin, debug and extra domains locked** | Admin routes are checked on the server. Debug is off. No test or seed accounts. No public source maps, `.git` or `.env`. Platform default domains (`*.workers.dev`, `*.vercel.app` and so on) are disabled or redirected. |
-| BS-12 | 🔴 **Email actually sends** | Verification, password reset and alert emails reach an inbox: a provider is configured and SPF, DKIM and DMARC are set. Apps break silently when email is missing. |
-| BS-13 | 🔴 **AI features are safe** (if the app uses an LLM) | See `ai-features.md`. |
-| BS-14 | 🟡 **No N+1 queries or unbounded reads** | Pagination, and no queries inside loops. |
-| BS-15 | 🟡 **Tests actually test** | No tests that always pass, mirror the code, or were skipped to make CI green. |
-| BS-16 | 🟡 **One way of doing things** | No duplicate helpers or libraries from different AI sessions. |
-| BS-17 | 🟡 **Time, locale and encoding** | UTC storage, a date library, UTF-8 end to end. Translated pages and policies match the original. |
-| BS-18 | 🟡 **Boilerplate matches reality** | The privacy policy, terms and marketing claims match the data map and features, and nothing is overstated ("cannot be reversed", "bank-grade", "fully encrypted"). |
-| BS-19 | 🔴 **Versions from training data** | AI tools pin the versions they remember: old runtimes, framework majors, Docker tags and plugin versions, sometimes already end-of-life or with published security fixes. Run `scripts/versions.py` and check each component against today's release pages (`references/vulnerabilities.md`). |
+**Read `references/blind-spots.md` now and check all 19**, at every level (Quick included), even in code you remember writing carefully. Each has an ID (`BS-01`…) and a ledger row like any other check.
 
 ## Step 4: Run the modules (one at a time, into the ledger)
 
-**The ledger is the audit's memory.** Create `.vibe-check/ledger.md` at the start:
+**Read `references/ledger.md` now**: the ledger format, every row type, the *Tools run* table and the fallback for each missing tool. In short: create `.vibe-check/ledger.md`; one row per check ID, `PASS`, `FAIL 🔬 Confirmed` / `FAIL 🔎 Likely`, `N/A` or `CAN'T TELL`, each with its own evidence; `INV-`, `H-` and `V-` rows for the inventory, every sweep hit and every component; ranges and `*` only for N/A, and core modules never N/A as a whole.
 
-```markdown
-# vibe-check ledger
-Level: Full
-Date: YYYY-MM-DD
+- **One module at a time.** Re-open the module file **just before** checking it (never from memory), check every item, and write its rows to the ledger immediately. On a big app, resume with `python3 <skill-folder>/scripts/coverage.py --remaining` instead of getting shallower.
+- **Evidence is checked against the files:** `coverage.py` re-opens every cited `file:line` and every quoted line of code. Re-read before you quote.
+- **Split the work when you can.** In tools with helper agents, give each module (or group of small modules) to a fresh helper, **pasting `references/helper-brief.md` in full** plus the module name and the inventory, sweep, versions and profile files. Each helper writes `.vibe-check/ledger.d/<module>.md`, which `coverage.py` reads with the main ledger.
 
-| ID | Result | Evidence / reason |
-|---|---|---|
-| SEC-001 | PASS | src/lib/auth.ts:4 uses Clerk; no custom password code (grep "bcrypt\|jwt.sign": 0 hits) |
-| SEC-030 | FAIL 🔎 Likely | app/notes/[id]/page.tsx:41 renders note.body with dangerouslySetInnerHTML |
-| SEC-047 | CAN'T TELL | invite codes come from an external service; question for the user |
-| PLT-011..PLT-015 | N/A | not on Firebase |
-| HLT-* | N/A | no health, medical or fitness data |
-| INV-api_routes | 47/47 | every route traced to its auth check |
-| H-001..H-003 | RULED OUT | Supabase anon key: public by design, RLS on (SEC-017 PASS) |
-| H-004 | FINDING SEC-022 | live Stripe key in src/lib/stripe.ts:3 |
-| V-002 | OUTDATED | PHP 8.3.35, security release 8.3.36 is out: https://www.php.net/releases/ (opened today) |
-| V-005..V-031 | CURRENT | npm audit --omit=dev: 0 vulnerabilities |
-```
-
-- **Results:** `PASS`, `FAIL 🔬 Confirmed` / `FAIL 🔎 Likely`, `N/A`, `CAN'T TELL`. Every row needs its own evidence or reason. Copy-pasted evidence is rejected.
-- **Ranges and `*` are for N/A only** (a platform section you don't use, a profile module that doesn't apply). Core modules are never N/A as a whole.
-- **`INV-<category>` rows:** checked/found for every inventory category that has items. **`H-` rows:** a verdict for every sweep hit. **`V-` rows:** a verdict for every component in `.vibe-check/versions.md`, with its source.
-- **Split the work when you can.** In tools with helper agents (subagents), give each module, or group of small modules, to its own fresh helper with the inventory, sweep, versions and profile files. Each helper writes its rows to `.vibe-check/ledger.d/<module>.md`; `coverage.py` reads them together with the main ledger. Without helpers, work one module at a time and resume with `coverage.py --remaining`.
-- **Evidence is checked against the files.** Every `file:line` you cite must exist, and code you quote in backticks must appear in the cited file exactly: `coverage.py` re-opens the files and rejects anything that doesn't match. Re-read before you quote.
-- **One module at a time.** Re-open the module file and read it **just before** checking it (never from memory), check every item, and **write its rows to the ledger immediately.** That saves progress: on a big app, if the conversation gets long, run `python3 <skill-folder>/scripts/coverage.py --remaining` and continue from what's left instead of getting shallower.
-- **Tools run:** add a `## Tools run` table to the ledger: every tool you ran or tried (`npm audit`, type-check, lint, tests, build, secret scanner, Lighthouse…), the exact command, and the result, including *"not installed"* or *"failed: <error>"*.
-
-**Core modules** (Full and Enterprise):
+**Core modules** (Full and Enterprise, every one):
 
 | Module | File |
 |---|---|
-| Security and authentication, encryption, data leakage | `references/security.md` |
-| Data, reliability and testing: APIs, DB, background work, performance, load and stress, tests | `references/reliability.md` |
-| DevOps and operations: CI/CD, environments, deploys and rollback, monitoring and alerts, cron monitoring, backups and restore, secrets and access, costs, domains and SSL, incidents | `references/devops.md` |
-| Functional QA: buttons, links, forms, states, error and success messages, edge cases, sessions, journeys per role | `references/functional-qa.md` |
+| Security, authentication, encryption, data leakage | `references/security.md` |
+| APIs, database, background work, performance, load, tests | `references/reliability.md` |
+| CI/CD, environments, deploys, monitoring, backups, secrets, costs, domains, incidents | `references/devops.md` |
+| Buttons, links, forms, states, messages, edge cases, journeys per role | `references/functional-qa.md` |
 | Legal, privacy, licensing (fonts, images, code) | `references/legal-privacy.md` |
-| UX, accessibility, launch basics, email, abuse | `references/launch-ux.md` |
-| Lawsuit magnets and jurisdictions: trackers before consent, third-party fonts, accessibility, auto-renewal, Impressum, Quebec French, marketing consent, country table | `references/lawsuits.md` |
-| Supply chain and CI security: dependencies, GitHub Actions, third-party scripts | `references/supply-chain.md` |
-| **Hunt: find what no checklist describes** (threat model, invariants, abuse cases, path differences, assumptions, variants, chains) | `references/hunt.md` |
-| Known vulnerabilities in everything the app runs: runtime, framework, CMS and plugins, packages in every ecosystem, server and container image, end-of-life, actively exploited (CISA KEV) | `references/vulnerabilities.md` |
-| Maintainability and handover: code health, docs, account ownership | `references/maintainability.md` |
+| Accessibility, launch basics, email, abuse | `references/launch-ux.md` |
+| Lawsuit magnets and jurisdictions | `references/lawsuits.md` |
+| Supply chain: dependencies, GitHub Actions, third-party scripts | `references/supply-chain.md` |
+| **Hunt:** what no checklist describes | `references/hunt.md` |
+| Known vulnerabilities in everything the app runs | `references/vulnerabilities.md` |
+| Maintainability and handover | `references/maintainability.md` |
 | Platform traps (Supabase, Firebase, Vercel, Cloudflare, builders) | `references/platforms.md` |
 
 **Profile modules** (load only the ones that match Step 1):
@@ -241,21 +211,6 @@ Date: YYYY-MM-DD
 Mark each item **PASS / FAIL / N/A / CAN'T TELL**, with evidence. Priority: 🔴 blocks launch · 🟡 fix before scale or paying users · 🟢 recommended.
 
 The ledger is the tally. Don't keep counts in your head: `coverage.py` produces the coverage table and score line in Step 5.
-
-### Tools and fallbacks
-
-**Always try the project's own tools** and record each in the ledger's *Tools run* table: the package audit (`npm audit` / `pnpm audit` / `pip-audit`), type-check (`tsc --noEmit` or the framework's check), lint, the test suite, and the build. Then use what's available: gitleaks or trufflehog, `npx license-checker`, Lighthouse, axe, Playwright, and `curl -I` against live URLs. **If a tool is missing or blocked, don't skip the check:** use the fallback, and say which method you used.
-
-| Check | Fallback |
-|---|---|
-| License scan | Read the `license` field of each dependency from the lockfile or `node_modules/*/package.json` |
-| Secret scan | The grep patterns in blind spot #3, over files and `git log -p` |
-| Click-through QA | Static review: every `onClick`, `<a href>`, form `action` and route traced to a handler that exists (see `functional-qa.md`) |
-| Lighthouse / axe | Manual review of the main pages against `launch-ux.md` |
-| Dashboard-only settings (backups, MFA, billing alerts, branch protection, uptime monitors) | Check config files and `gh` / platform CLIs if logged in; otherwise mark CAN'T TELL and ask the user |
-| Build | List it under "Not checked", with the exact command for the user to run |
-
-**vibe-check connector:** if tools from the vibe-check connector are available (for example `scan_live_site`, `crawl_app`, `check_supabase`, `check_email_domain`, `check_dependencies`, `save_report`), use them for the live and hosted checks and to save the report. Otherwise use the local tools and fallbacks above. Send the connector URLs, lockfiles and summaries only, never source code or secrets.
 
 ## Step 4a: Hunt (find what no checklist describes)
 
@@ -285,87 +240,18 @@ AI reviewers produce false alarms and invented details. Before writing the repor
 
 ## Step 5: Report
 
-Use the format in `references/report-template.md`. It must contain, in this order:
-
-1. **How to read this** (the six-symbol line) and the **Result** block pasted from `coverage.py`: verdict, Score N/100 and band, *Since last check* when there's an earlier run, the totals table ("Checked N of M") and the area scorecard. Then one or two plain sentences on why.
-2. **❌ Blockers:** each with plain-language impact, evidence, the fix, the **recipe** from `references/fixes.md` that covers its check ID, **safe to auto-fix: yes/no**, and a **copy-paste fix prompt**.
-3. **⚠️ Fix before scale:** each with evidence, fix and safe to auto-fix.
-4. **Questions for you** (every CAN'T TELL) and **Needs a lawyer**.
-5. **What passed**, with evidence.
-6. **Coverage and standards:** paste the tables `coverage.py` printed, including the **Standards** table (OWASP Top 10:2025, API Top 10, LLM Top 10, Mobile Top 10, ASVS 5.0 chapters and CWE Top 25, mapped in `references/standards.md`). Call it a coverage view, never a certification. Then paste the table `coverage.py` printed (one row per module: ✅ checked / ◐ partly / ❗ not checked / ➖ not applicable, with pass, fail, N/A, can't-tell and not-done counts). Never type these numbers yourself. Under it: the **inventory** counts (checked/found per category), the **sweep** summary (hits, findings, ruled out), the **Tools run** table, and the method for each module (tools or fallbacks). Every ◐ or ❗ says why and what would complete it.
-7. **Not checked:** anything skipped, with the exact command or step for the user. Then **Only a human can confirm** (pentest, mobile binary review, legal sign-off, restore drill, and the standards items marked *Human*) and **When to run vibe-check again** (before each launch, after adding payments, sign-in, uploads, AI or a new country, and at least monthly).
-8. **Score card** (plus, only for 🟢 on a Full or Enterprise check, the badge snippet and one ⭐ line), then the removable footer.
-
-**Save** the full report to `.vibe-check/reports/YYYY-MM-DD.md`, and copy the ledger next to it as `.vibe-check/reports/YYYY-MM-DD-ledger.md` and make sure `.vibe-check/` is in `.gitignore` (add it if needed; this is the only file change allowed during the audit). Never save findings anywhere they could become public.
-
-**Then verify the report against the ledger:** `python3 <skill-folder>/scripts/coverage.py --verify-report .vibe-check/reports/YYYY-MM-DD.md` must print `REPORT VERIFIED` (it checks the score, the totals, the coverage rows, the score card and, when there's an earlier run, the *Since last check* line). If a number in the report doesn't match the ledger, fix the report (never the other way round). **Then keep the run:** `coverage.py --save` stores it in `.vibe-check/history/`, so the next run can show what was fixed, what's new and what came back. `.vibe-check/results.json` holds the same numbers for the badge and the opt-in stats.
-
-**Optional, once: share anonymous counts.** In an interactive session (never unattended or scheduled), unless `.vibe-check/config` says `share_stats: false`, run `python3 <skill-folder>/scripts/share_stats.py` and ask in one line: *"Want to share these anonymous counts to help improve vibe-check? No code, file paths, names or URLs. Here's exactly what would be sent:"* followed by its output. Only if the user says yes, run it with `--send --yes`. If they say no, add `share_stats: false` to `.vibe-check/config` and never ask again. Never ask twice, and never let it delay the report.
-
-**In the chat**, show the **one-screen summary** from `references/report-template.md` (*In the chat*), and save the same text as `.vibe-check/summary.md`: the verdict and score line, *Since last check*, the totals table and area scorecard pasted from `coverage.py`, every ❌ blocker as one plain sentence plus its file, the top 3 ⚠️ items, the counts of ❓ questions, ✅ passes and ➖ checks that don't apply, and the report path. Details come on request (*"explain 2"*). Then **ask the ❓ questions as choices** (*Asking the user*) and update the result with the answers. Then ask what to do next, as a choice: **Fix the N blockers** (Recommended when there are blockers) · **Fix everything I can do safely** · **Let me pick** · **Just the report for now**. End with: *You can say: "fix" · "fix all" · "fix 2" · "explain 2" · "check again" · "continue fixing" · "undo fix 2"*. If this was a Quick run, add: *"This was a Quick check (blind spots and blockers only). Say 'vibe check this app' for the full check."*
+**Read `references/reporting.md` now and follow it.** In short:
+1. Run `coverage.py` until it prints `COMPLETE`, and **paste** its Result block (verdict, Score N/100 and band, *Since last check*, totals, area scorecard), coverage and Standards tables (mapping in `references/standards.md`; a coverage view, never a certification). Never type a number.
+2. Write the full report in the format of `references/report-template.md`: ❌ blockers with evidence, recipe, safe to auto-fix and a fix prompt; ⚠️ items; ❓ questions; needs a lawyer; what passed; coverage; not checked; the score card.
+3. Save it to `.vibe-check/reports/YYYY-MM-DD.md` with the ledger next to it, make sure `.vibe-check/` is gitignored, then run `coverage.py --verify-report <report>` until it prints `REPORT VERIFIED`, and `coverage.py --save`.
+4. In the chat, show the one-screen summary (also saved as `.vibe-check/summary.md`), ask the ❓ questions as choices, then offer the next step as a choice.
 
 ### Before you reply: self-check
 
-Go through this list and fix anything missing **before** sending the report:
-
-- [ ] `profile.py` ran first; any answer that contradicts the code is listed under **Your answers vs your code**, and no module with code evidence was skipped without a `DEAD CODE:` proof.
-- [ ] The independent re-check ran (`coverage.py --sample`, `R-` rows from a fresh helper or fresh pass), and anything overturned was changed.
-- [ ] `coverage.py --verify-report` printed `REPORT VERIFIED` for the saved report.
-- [ ] `inventory.py` and `sweep.py` ran (or the report says why not and the inventory and sweep were done by hand).
-- [ ] `coverage.py` printed `COMPLETE`, or every remaining gap is a `CAN'T TELL` with its reason and listed under "Not checked". The coverage table and score line in the report are **pasted from its output**, not typed.
-- [ ] The Standards table from `coverage.py` is in the report, called a coverage view (not a certification), plus *Only a human can confirm* and *When to run vibe-check again*.
-- [ ] Live tests (`references/live-tests.md`) ran against local or staging with the user's OK, or are marked `CAN'T TELL` with the command, and nothing ran against production.
-- [ ] The hunt ran (Full and Enterprise): a threat model, enough `T-` hypotheses across enough methods, every one proven, disproven or untested with evidence, and `PROVEN NEW` findings marked 🎯 *Found by hunting*.
-- [ ] Every inventory category is accounted for (checked/found), every sweep hit has a verdict (FINDING or RULED OUT), and every component in `.vibe-check/versions.md` has a version verdict with its source.
-- [ ] The *Tools run* table lists every tool tried, with its command and result, including "not installed".
-- [ ] Every finding has evidence (`file:line`, command output, URL response or config value) and every 🔴 has a fix prompt.
-- [ ] Every FAIL **quotes** its evidence (code lines re-read just now, or command output), and the line numbers match the current files.
-- [ ] Every 🔴 and 🟡 had a second look, is labelled 🔬 Confirmed or 🔎 Likely, and each 🔴 says what was ruled out. Nothing labelled ❓ is presented as a blocker.
-- [ ] Every legal, policy, platform or pricing statement comes from this skill's files or a source opened in this run (URL given). Nothing comes from memory.
-- [ ] Every finding is marked safe to auto-fix yes/no.
-- [ ] Findings carried over from an earlier run were re-checked and marked still open, fixed or new.
-- [ ] No secrets are printed in full. The score card contains no private details.
-- [ ] The report is saved, the path is given, and `.vibe-check/` is gitignored.
-- [ ] The reply starts with `Running vibe-check v<version> · <level> check`. The report header shows the skill-files result (Step 0a), the vibe-check version and the Step 0 result: the update notice at the top if a newer version is out, or the "couldn't connect" line with the latest-release link.
-- [ ] The chat shows the one-screen summary (saved as `.vibe-check/summary.md`) with the Result block pasted from `coverage.py`, the six symbols used only for their meanings, and the questions asked as choices (with the question tool when there is one).
-- [ ] `coverage.py --save` stored this run in `.vibe-check/history/`.
-- [ ] The reply ends with the next-step choice and the phrases the user can say.
+**Open `references/self-check.md` and go through every item before you send the reply.** Fix anything missing and check again; never send a report with an unticked item.
 
 ## Step 6: Fix (only after the user approves)
 
-Fix only what the user approves ("fix", "fix all", "fix 2", "fix the blockers"…). In a new session, read `.vibe-check/fix-plan.md`, `.vibe-check/fix-log.md` and the latest report first; "continue fixing" picks up where the log stopped.
-
-### 1. The plan, before anything changes
-Run `coverage.py --fix-plan` (writes `.vibe-check/fix-plan.md`: every FAIL, CAN'T TELL and 🎯 hunt finding in priority order, statuses kept between sessions). Show it in the chat as the **Fix plan** from `references/report-template.md`, grouped as **🤖 I can fix these safely** (one OK for all), **🧑 Needs your decision** (asked one at a time, as choices), **🖥️ Only you can do these** (dashboard settings, key rotation, DNS: exact steps), and **⚖️ Needs a lawyer**. Say where the changes will go (next point). Nothing changes until the user says go.
-
-### 2. Where the changes go: branch or checkpoints
-- **Code tools with git** (Claude Code, Cursor, Codex, Windsurf, Cline, Copilot, Gemini CLI…): create a branch `vibe-check/fixes-YYYY-MM-DD` and tell the user. **One commit per fix** (`vibe-check: fix <ID> <short title>`). Never push, merge or force anything; the user does that.
-- **App builders that work only on the main branch** (Lovable, Replit, Bolt, v0, Base44 and similar): **no branch.** Before each fix, make the tool's own checkpoint or version if it has one, and save a copy of each file you'll change in `.vibe-check/backup/<fix number>/`.
-- **No git at all:** the same file copies in `.vibe-check/backup/`, so "undo fix N" can restore them.
-- **Unsaved changes already in the project** (`git status` not clean): stop and ask once, as a choice: *"You have unsaved changes. Save them in their own commit first (Recommended) · Fix on top of them · Stop"*. Never mix the user's work into a fix commit.
-- Record the branch (or checkpoint method) at the top of `.vibe-check/fix-log.md`.
-
-### 3. One fix at a time, each with a fix card
-For each item, top down: mark it `IN PROGRESS`, post `🔧 Fix N of M · <title>`, apply the recipe (below), then **check it**: types and lint, the tests, a test for this bug, and **the same check ID re-run** (plus its hunt variants). Then show the **fix card** from `references/report-template.md` (Before · Changed · Checked · Saved · Users) and append it to `.vibe-check/fix-log.md`.
-- **If any check fails after the change, undo it first** (restore the files or reset to the commit before it), then show the ❌ *not applied* card with the reason and a choice. Never leave a half-applied fix, and never mark it done to keep going.
-- A fix is `DONE` only when its check ID re-runs as PASS, and the card says how it was verified. Decisions are asked as choices, one at a time, least disruptive option first. Items that change what users see still need a yes (scope guard).
-- **Things code can't finish:** legal pages become drafts marked *"DRAFT: needs legal review"*; dashboard settings, key rotation and DNS get exact steps and a question to confirm they're done. None is marked `DONE` on your word alone.
-- **"undo fix N"** reverts that fix's commit (or restores its backup copy), sets it back to `TODO`, and says so with a card.
-
-### 4. The finish line
-Update the ledger rows for everything fixed or answered, run `coverage.py`, `--verify-report` and `--save`, and show the **Finish line** from `references/report-template.md`: fixed, not applied, only-you steps, the score and band before and after (from `coverage.py`, never added up by hand), and **where the fixes are and how to keep them** (*"merge the branch vibe-check/fixes-2026-11-14"*). Offer "check again".
-
-Follow `references/fixes.md`: **every 🔴 check ID is listed on the `Covers:` line of a recipe**. Use that recipe's safe fix, avoid its trap, and do its verify step. Then: prove the bug, apply the recipe adapted to the stack, add a test, re-run the check, and commit one issue at a time. If a fix needs the user (a dashboard setting, rotating a key, DNS, a legal decision), give exact step-by-step instructions.
-
-### Scope guard: fix the issue, keep the product
-
-- **Touch only what the finding needs.** Keep diffs as small as possible. Don't edit unrelated files, lines, styles or formatting. Leave existing patterns, naming and structure alone.
-- **Legitimate users shouldn't notice.** A correct fix changes behaviour only for attackers, bad input or failure cases. Pages, layouts, features and flows stay as they were.
-- **Ask before visible changes.** A consent screen, a "Delete account" button, a CAPTCHA, a rate-limit message, a login wall, or removing a feature all need an explanation, the least disruptive option, and the user's yes.
-- **New UI matches the existing design:** the project's own components, styles, fonts, colours and tone.
-- **No side quests.** No package upgrades beyond what a fix needs, no migrations, no refactors, no "clean up". Put other ideas under "Other suggestions (not changed)".
-- **Keep data safe.** Never delete or rewrite existing user data. Schema changes are additive migrations, tried in staging first.
-- **Report what changed:** the files changed and what users will (or won't) notice, after each fix.
-- Before writing a fix, read the official docs for the version actually installed. If a fix breaks something, reproduce the problem and read the full error before changing more code.
+**Read `references/fixing.md` now and follow it for every fix**: the fix plan, branch or checkpoints, one fix card per fix, automatic undo when a check fails, "undo fix N", the finish line, the recipes in `references/fixes.md` and the scope guard. The parts that never bend: fix only what the user approved; one fix at a time, each re-checked by its own check ID; never push, merge or force; never change what the user built (ground rule 8).
 
 Never call the audit complete while a 🔴 item is FAIL or an unresolved CAN'T TELL, unless the user explicitly accepts the risk. Record that acceptance in the report.

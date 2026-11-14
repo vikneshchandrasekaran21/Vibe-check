@@ -1,5 +1,18 @@
 # Security and authentication
 
+<!-- contents: kept up to date by scripts/build.py -->
+## Contents
+- Authentication and sessions
+- Access control
+- Secrets and keys
+- Injection and input
+- Transport, headers and crypto
+- Dependencies and supply chain
+- Rate limiting and abuse
+- Data leakage
+- Often missed by developers and testers
+<!-- /contents -->
+
 Mark each item PASS / FAIL / N/A / CAN'T TELL, with evidence. 🔴 blocks launch · 🟡 before scale · 🟢 recommended.
 
 ## Authentication and sessions

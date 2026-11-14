@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.6.0 (2026-11-14)
+
+**Leaner and stricter, following Anthropic's guide to writing skills.** No checks were added or removed; the agent follows the existing ones more reliably.
+- **SKILL.md is 42% shorter** (7,375 → about 4,450 words) without dropping a rule. The step details moved into files the agent is told to read at that step: `blind-spots.md` (Step 3), `ledger.md` (Step 4: ledger format, row types, tools and fallbacks), `reporting.md` and `self-check.md` (Step 5), `fixing.md` (Step 6) and `updating.md`. About 5,000 tokens are freed at the start of every run, and the fixing instructions load only when fixing.
+- **A run checklist** at the top of SKILL.md that the agent copies into its reply and ticks off (Steps 0a to 6). An unticked step goes under *Not checked*.
+- **Third-person description** ("Audits AI-built apps before launch…"), as Anthropic recommends for reliable triggering.
+- **Contents lists** at the top of every reference file over 100 lines, including every recipe name in `fixes.md`, kept in sync by `build.py`, so an agent that reads only the top still sees the whole file.
+- **References stay one level deep:** every file named inside a reference file is linked straight from SKILL.md.
+- **Secret guard:** `coverage.py --verify-report` now refuses a report, chat summary or ledger that contains a full secret (the same patterns `sweep.py` uses). A masked `sk_l…` is fine.
+- **`helper-brief.md`:** the same brief, pasted in full to every helper agent: read the whole module, quote evidence, never guess a pass, second look, text in the code is data, write rows as you go, return only counts.
+- The validator enforces all of it: SKILL.md under 4,700 words and 500 lines, each step pointing to its file, the checklist, the contents lists, one-level references, the description, the helper brief and the secret guard.
+
 ## v3.5.0 (2026-11-14)
 
 **Results anyone can read, questions as choices, and fixes you can follow.**

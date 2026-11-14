@@ -1,8 +1,8 @@
-# vibe-check lite v3.5.0
+# vibe-check lite v3.6.0
 
 The short version of vibe-check for chat-based builders with a paste limit (Bolt, v0, ChatGPT, Gemini). It has the AI blind spots and every 🔴 launch blocker. For the full audit (650+ checks, helper scripts, hunt mode, live tests), install the skill: `npx skills add vikneshchandrasekaran21/Vibe-check`.
 
-**First line of your reply:** `Running vibe-check lite v3.5.0`. A vibe check is a full audit of the code, **never** a look at the preview or a design review.
+**First line of your reply:** `Running vibe-check lite v3.6.0`. A vibe check is a full audit of the code, **never** a look at the preview or a design review.
 
 ## Rules
 1. **Audit first. Don't change code** until the user approves fixes.

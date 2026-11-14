@@ -1,5 +1,96 @@
 # Fix playbook
 
+<!-- contents: kept up to date by scripts/build.py -->
+## Contents
+- How to fix (applies to every recipe)
+- Access control
+  - Missing authorization / IDOR
+  - Supabase RLS
+  - Firebase rules
+  - Mass assignment
+- Secrets
+  - Leaked secret (in code, the client bundle or git history)
+- Data leakage
+  - API returns too much data
+  - Account enumeration
+  - Private data in shared caches
+- Input and injection
+  - Server-side validation
+  - SQL / NoSQL injection
+  - XSS
+  - File uploads
+  - Open redirect
+  - SSRF
+- Money
+  - Prices from the client / payments trusted from the redirect
+  - Webhook verification and idempotency
+  - Race conditions (credits, coupons, stock)
+- Reliability
+  - Timeouts and error handling
+  - Retries
+  - Indexes and migrations
+  - Backups and restore test
+  - Error tracking and uptime (quickest path)
+- Abuse and cost
+  - Rate limiting
+  - LLM spend caps
+- Headers and transport
+  - Security headers (Next.js example)
+  - Cookies
+- AI features
+  - Prompt injection and unsafe output
+- Legal and privacy
+  - Privacy policy that doesn't match the app
+  - Analytics before consent
+  - Account and data deletion
+  - GPL/AGPL dependency in closed-source code
+  - Outdated, end-of-life or vulnerable runtime, framework or plugin
+  - Reset and magic links built from the Host header
+  - Email, password or 2FA changes without re-authentication
+  - Secrets compared with ==
+  - Sensitive files reachable on the live site
+  - Container runs as root or has secrets baked in
+- More recipes (every 🔴 check points to one)
+  - Sign-in, sessions and password storage
+  - Keys for your own API and MCP endpoints
+  - HTTPS everywhere
+  - Encryption at rest and very sensitive fields
+  - Command injection, template injection and XML entities
+  - Secrets in URLs and guessable links
+  - GraphQL and real-time channels
+  - Admin tools, debug modes, default passwords and extra domains
+  - Subdomain takeover
+  - Supply chain: packages, CI and third-party scripts
+  - Environments, deploys and rollback
+  - Accounts, access and spending
+  - Logs without secrets or personal data
+  - Card data and payment rules
+  - Broken journeys, buttons, forms and messages
+  - Accessibility basics
+  - Email that arrives, and consent to marketing
+  - Legal pages and honest selling
+  - Fonts, images and code you don't own
+  - Chat widgets, session replay and embeds
+  - Children's data
+  - Health data
+  - Community safety
+  - AI data, tools and agents
+  - Mobile store requirements and secure storage
+  - Desktop apps and browser extensions
+  - Languages and countries
+  - Enterprise readiness
+  - Logic bugs found by hunting
+  - A safe target for live tests
+  - Handover: running the app
+  - Hidden instructions for AI tools
+  - Views and database functions that skip row-level security
+  - Checks that fail open
+  - SAML single sign-on
+  - Client IP, one-time codes and password hashing limits
+  - Authenticated encryption
+  - Security alerts
+<!-- /contents -->
+
 Use these patterns when fixing findings (Step 5), and for the **Fix** and **Prompt to fix it** lines in the report. Adapt each one to the project's stack and the versions actually installed. Check the official docs for that version before writing code.
 
 ## How to fix (applies to every recipe)

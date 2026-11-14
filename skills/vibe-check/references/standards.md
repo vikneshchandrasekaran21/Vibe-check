@@ -1,5 +1,15 @@
 # Standards mapping
 
+<!-- contents: kept up to date by scripts/build.py -->
+## Contents
+- OWASP Top 10:2025
+- OWASP API Security Top 10 (2023)
+- OWASP Top 10 for LLM Applications (2025)
+- OWASP Mobile Top 10 (2024)
+- OWASP ASVS 5.0.0 (by chapter)
+- 2025 CWE Top 25
+<!-- /contents -->
+
 Every item of six widely used security standards, mapped to the vibe-check checks that cover it. `coverage.py` reads these tables and adds a **Standards** section to the report: for each item, ✅ (every mapped check passed), ❌ (a mapped check failed), ◐ (some mapped checks couldn't be confirmed or weren't done) or ➖ (doesn't apply). It's a coverage view of this audit, **not a certification or a compliance attestation.**
 
 Item IDs and names are the standards' own; the mapping and the checks are vibe-check's. Standard text isn't copied here: read each standard for its full requirements (OWASP ASVS is CC BY-SA 4.0). ASVS is mapped by chapter. Items marked **Human** need a specialist (for example memory-safety testing of native code or a mobile binary review), and the report lists them under *Only a human can confirm*.
