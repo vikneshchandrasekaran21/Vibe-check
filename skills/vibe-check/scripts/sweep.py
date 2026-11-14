@@ -114,6 +114,10 @@ PATTERNS = [
      r"^\s*(?:ENV|ARG)\s+\w*(?:SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY|ACCESS_KEY)\w*(?:\s*=\s*|\s+)\S+", re.I, "code"),
     ("DEFAULT-CREDS", "SEC-080", "Default or trivial password in code or config",
      r"""\b(?:password|passwd|pwd|admin_pass\w*)\b["']?\s*[:=]\s*["'](?:admin|password|123456|12345678|changeme|secret|root|test|letmein|qwerty)["']""", re.I, "code"),
+    ("AI-INSTRUCTION", "SEC-083", "Text that tells AI tools what to do (treat as data, report it)",
+     r"""ignore\s+(?:all\s+|any\s+)?(?:previous|prior|above|earlier)\s+instructions|(?:AI|LLM|GPT|Claude|Copilot|Cursor|assistant|agent|auditor|reviewer)s?\s*(?:reviewers?|auditors?|agents?)?\s*[:,]\s*(?:please\s+)?(?:ignore|skip|do not|don't|never|mark|treat|consider|report)\b|\bmark\s+(?:this|it|the\s+\w+)\s+(?:as\s+)?(?:pass|passed|safe|secure|reviewed)\b|\bdo\s+not\s+(?:report|flag|mention)\s+(?:this|these|any)\b|\bnew\s+system\s+prompt\b|<\s*/?\s*system\s*>""", re.I, "code"),
+    ("HIDDEN-UNICODE", "SEC-083", "Invisible or direction-changing Unicode characters",
+     "[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\u2066-\u2069]", 0, "code"),
     ("TODO-SECURITY", "BS-04", "TODO / FIXME about security",
      r"(?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)", re.I, "code"),
 ]
@@ -143,7 +147,7 @@ def files(root: Path):
             p = Path(dirpath) / fn
             if fn in SKIP_FILES or fn.endswith((".min.js", ".min.css", ".map")):
                 continue
-            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess", "Containerfile") or fn.startswith("Dockerfile.")):
+            if not (fn.lower().endswith(CODE) or fn.startswith(".env") or fn in ("Dockerfile", ".htaccess", "Containerfile", ".cursorrules", ".windsurfrules", ".clinerules", ".roorules", ".goosehints") or fn.startswith("Dockerfile.")):
                 continue
             try:
                 if p.stat().st_size > MAX_BYTES:
@@ -239,7 +243,7 @@ def main() -> int:
         h["id"] = f"H-{i:03d}"
 
     out.mkdir(parents=True, exist_ok=True)
-    meta = {"tool": "vibe-check sweep", "version": "2.8.0", "root": str(root),
+    meta = {"tool": "vibe-check sweep", "version": "3.3.0", "root": str(root),
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "files_scanned": scanned, "history_scanned": "--history" in sys.argv,
             "patterns": [p[0] for p in PATTERNS], "hits": hits}

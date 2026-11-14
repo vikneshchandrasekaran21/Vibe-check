@@ -458,3 +458,9 @@ Each recipe: **Safe fix** (the approach), **Trap** (how AI fixes usually go wron
 **Safe fix:** a README with how to install, configure (`.env.example` with every variable, no real values), run, test and deploy the app.
 **Trap:** pasting real secrets into the example file.
 **Verify:** someone new can clone, copy `.env.example`, and run the app and tests by following the README.
+
+### Hidden instructions for AI tools
+**Covers:** SEC-083
+**Safe fix:** delete the AI-directed text and strip invisible and bidirectional Unicode characters (show them with `grep -nP '[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]'`), then find out how it got there: a copied snippet, a dependency, a contributor or a compromised tool. Rules files for AI tools are reviewed like code.
+**Trap:** "fixing" it by adding a counter-instruction, or deleting the visible text while the invisible characters stay.
+**Verify:** the sweep shows no `AI-INSTRUCTION` or `HIDDEN-UNICODE` hits; `git log -p` on the file shows who added it.

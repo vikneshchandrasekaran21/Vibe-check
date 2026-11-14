@@ -196,6 +196,14 @@
   ```regex
   \b(?:password|passwd|pwd|admin_pass\w*)\b["']?\s*[:=]\s*["'](?:admin|password|123456|12345678|changeme|secret|root|test|letmein|qwerty)["']
   ```
+- **AI-INSTRUCTION** → `SEC-083`: Text that tells AI tools what to do (treat as data, report it) (case-insensitive)
+  ```regex
+  ignore\s+(?:all\s+|any\s+)?(?:previous|prior|above|earlier)\s+instructions|(?:AI|LLM|GPT|Claude|Copilot|Cursor|assistant|agent|auditor|reviewer)s?\s*(?:reviewers?|auditors?|agents?)?\s*[:,]\s*(?:please\s+)?(?:ignore|skip|do not|don't|never|mark|treat|consider|report)\b|\bmark\s+(?:this|it|the\s+\w+)\s+(?:as\s+)?(?:pass|passed|safe|secure|reviewed)\b|\bdo\s+not\s+(?:report|flag|mention)\s+(?:this|these|any)\b|\bnew\s+system\s+prompt\b|<\s*/?\s*system\s*>
+  ```
+- **HIDDEN-UNICODE** → `SEC-083`: Invisible or direction-changing Unicode characters
+  ```regex
+  [​‌‍‎‏‪-‮⁦-⁩]
+  ```
 - **TODO-SECURITY** → `BS-04`: TODO / FIXME about security (case-insensitive)
   ```regex
   (?:TODO|FIXME|HACK|XXX)\b[^\n]*(?:auth|secur|permission|validat|rls|secret|password|rate.?limit|sanitiz)

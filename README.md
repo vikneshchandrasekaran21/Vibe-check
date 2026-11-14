@@ -46,7 +46,7 @@ It works like a senior team in one command, covering what security, QA, legal an
 |---|---|
 | 🔍 **Audit** | **19 AI blind-spot checks** plus **600+ checks** in 26 modules. It asks a few questions about your app and runs only the modules that apply |
 | 📋 **Report** | A clear verdict (**🟢 SHIP / 🟡 SHIP AFTER FIXES / 🔴 DO NOT SHIP**), each problem in plain words with evidence (`file:line`), questions for you, a "needs a lawyer" list, and a **coverage table** showing exactly which modules were checked, partly checked or skipped, and why |
-| 🛠️ **Fixes** | A built-in **fix playbook** of 68 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
+| 🛠️ **Fixes** | A built-in **fix playbook** of 69 fix recipes: **every 🔴 check points to one**, each with the safe fix, the usual trap (how AI fixes go wrong) and how to verify it. **"Fix safe items"** applies the invisible, easy-to-undo fixes in one go, and everything else waits for your OK |
 | 💾 **History** | Reports are saved in your project (`.vibe-check/reports/`, kept out of git), so the next session knows what was found and fixed |
 | 🧑‍💻 **For everyone** | Written for non-developers too. Every finding comes with a **copy-paste prompt** you can give any AI tool to fix it |
 
@@ -79,7 +79,7 @@ An AI can't promise it found every bug, but vibe-check makes sure **every check 
 - **"Fix everything" works through the whole list:** a fix plan that survives new sessions, one decision per item, each fix re-checked by its own check ID, and a before-and-after score.
 - **It lists every version the app runs.** `versions.py` finds the runtime, frameworks, CMS and plugins, Docker images and key packages with exact versions. Each one is checked against today's security releases, end-of-life dates and the actively-exploited list, with the source linked. Never from memory.
 - **It lists the whole app first.** `inventory.py` lists every page, API route, function, webhook, form, button, env var, table, bucket, upload, payment, email and AI call. The report shows counts like *API routes checked: 47/47*.
-- **It reads every file.** `sweep.py` searches every file, and the git history, for 51 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
+- **It reads every file.** `sweep.py` searches every file, and the git history, for 53 risky patterns (leaked keys, unsafe HTML, SQL built from strings, template injection, Host-header reset links, open CORS, secrets in Docker images, Google Fonts, trackers…). Every match gets a verdict after the second look.
 - **One module at a time, saved as it goes,** so a long audit on a big app resumes where it stopped instead of getting shallower.
 - **The project's own tools run,** with every result recorded: package audit, type-check, lint, tests and build, including any tool that wasn't installed.
 - **A test bench** of planted bugs checks the scripts on every change.
@@ -105,7 +105,7 @@ Pick your tool, paste the line into your **Mac/PC Terminal**, and press Enter. T
 | **Claude app** (desktop or claude.ai) | No terminal: [download `vibe-check.zip`](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest/download/vibe-check.zip) → **Settings → Customize → Skills → Add → Upload skill**. Keep it zipped |
 | **Replit** | In the Replit **Shell**: `npx skills add vikneshchandrasekaran21/Vibe-check -a replit -y` |
 | **Lovable** | **Settings → Skills → Add → import from GitHub**, and paste `https://github.com/vikneshchandrasekaran21/Vibe-check/tree/main/skills/vibe-check` |
-| **Bolt, v0, ChatGPT** | No install: copy [`dist/vibe-check.md`](dist/vibe-check.md) and paste it into the chat |
+| **Bolt, v0, ChatGPT** | No install: copy [`dist/vibe-check-lite.md`](dist/vibe-check-lite.md) (48 KB: every blocker) and paste it into the chat. If your tool accepts long files, the full [`dist/vibe-check.md`](dist/vibe-check.md) has everything |
 
 Then **open a new chat or session** in your app's folder and say: **"vibe check this app"** (in Replit and Lovable, type **`/vibe-check`**). That's it.
 
@@ -175,7 +175,7 @@ Then in any project chat, type `/vibe-check run the full audit on the whole code
 
 ### 6. Bolt, v0, ChatGPT (paste-in)
 
-No install needed. Open [`dist/vibe-check.md`](dist/vibe-check.md), copy everything, paste it into the chat and add:
+No install needed. Open [`dist/vibe-check-lite.md`](dist/vibe-check-lite.md) (the short version: AI blind spots and every 🔴 blocker, small enough for chat paste limits), copy everything, paste it into the chat and add. If your tool accepts very long messages or files, use the full [`dist/vibe-check.md`](dist/vibe-check.md) instead:
 
 > Run this audit on my project. I'm not a developer, so explain each finding simply.
 
@@ -194,13 +194,13 @@ Installed skills don't update by themselves. **vibe-check tells you when a new v
 | Replit (folder uploaded in Workspace settings) | Upload the new folder again |
 | The Claude app (zip) | Download `vibe-check.zip` from the [latest release](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest) and upload it again |
 | A copied rules or command file (Cursor, Copilot, Windsurf, Cline, Gemini CLI) | Copy the new file from [`adapters/`](adapters/) over the old one |
-| Paste-in (Bolt, v0, ChatGPT) | Paste the new [`dist/vibe-check.md`](dist/vibe-check.md) |
+| Paste-in (Bolt, v0, ChatGPT) | Paste the new [`dist/vibe-check-lite.md`](dist/vibe-check-lite.md) (or the full `dist/vibe-check.md`) |
 
 Then **start a new session**: an open session keeps the old version loaded.
 
 **Get an email for new releases:** on GitHub, click **Watch → Custom → Releases** at the top of this repo.
 
-**About the version check:** vibe-check itself only ever *reads* its own public files on GitHub: this version check, and its checklists if your tool didn't install them. It reads the latest version number from this repo on GitHub and sends nothing about you: no code, no report, no project name. It gives up after 3 seconds and never blocks the audit. To turn it off, set `VIBE_CHECK_NO_UPDATE_CHECK=1`, or add `update_check: false` to `.vibe-check/config` in your project.
+**About the version check:** vibe-check itself only ever *reads* its own public files on GitHub: this version check, and its checklists if your tool didn't install them. The one exception is optional: at the end of an audit it offers, **once**, to share **anonymous counts** (version, stack type, how many checks passed or failed and which check IDs). It shows you exactly what would be sent first, sends nothing unless you say yes, and never sends code, file paths, names or URLs. Say no and it won't ask again. It reads the latest version number from this repo on GitHub and sends nothing about you: no code, no report, no project name. It gives up after 3 seconds and never blocks the audit. To turn it off, set `VIBE_CHECK_NO_UPDATE_CHECK=1`, or add `update_check: false` to `.vibe-check/config` in your project.
 
 ## Use
 
@@ -322,7 +322,7 @@ Every check is tagged **🔴 blocks launch**, **🟡 fix before scale or paying 
 - ❌ It never sends your code, reports or data anywhere. It only ever reads its own public files on GitHub (an optional version check, and its checklists if your tool didn't install them), sending nothing about you (see [Updating](#-updating)).
 - ❌ It never changes your app's design, features or flows (see the guarantee above).
 
-### ⭐ vibe-check Pro (coming soon)
+### ⭐ vibe-check Pro
 
 A paid **connector** you plug into Claude Code, Cursor and other agents, for the checks a text file can't do:
 - 🌐 **Live site scan:** TLS, HTTPS, headers, exposed files, extra domains, SSL and domain expiry
@@ -332,7 +332,7 @@ A paid **connector** you plug into Claude Code, Cursor and other agents, for the
 - 📊 **Dashboard**, report history and shareable **PDF reports**
 - 🔔 **Weekly monitoring and alerts**
 
-Your code stays on your machine. Only URLs, lockfiles and summaries are sent. 👉 **[Join the waitlist](https://github.com/vikneshchandrasekaran21/Vibe-check/issues/new?title=Pro%20waitlist&labels=pro-waitlist&body=Interested%20in%20vibe-check%20Pro.%20I%20build%20with%3A%20)**
+Your code stays on your machine. Only URLs, lockfiles and summaries are sent. 👉 Sign-up link coming in the next release: click **Watch → Custom → Releases** at the top of this repo to hear first.
 
 ---
 
@@ -347,6 +347,7 @@ skills/vibe-check/          ← the skill (source of truth)
 │   ├── sweep.py              searches every file and git history for risky patterns (secrets masked)
 │   ├── versions.py           lists everything the app runs with exact versions (runtime, frameworks, plugins, images)
 │   ├── coverage.py           counts the ledger against the checklist; fails on any gap
+│   ├── share_stats.py        opt-in: shows, then (only if you say yes) shares anonymous counts
 │   └── version_check.py      tells you when a newer vibe-check is out (sends nothing about you)
 └── references/
     ├── security.md           core: security, auth, encryption, data leakage
@@ -374,15 +375,19 @@ skills/vibe-check/          ← the skill (source of truth)
     ├── desktop-extensions.md profile: Electron, Tauri, browser extensions
     ├── live-tests.md         profile: tests against the running app on local or staging (two accounts, roles, logged out, ZAP, nuclei)
     ├── i18n.md               profile: languages, regions, formats
-    ├── fixes.md              fix playbook: 68 recipes, each listing the checks it covers (every 🔴 check has one)
+    ├── fixes.md              fix playbook: 69 recipes, each listing the checks it covers (every 🔴 check has one)
     ├── report-template.md    report format
     ├── standards.md          OWASP Top 10:2025, API, LLM, Mobile, ASVS 5.0 chapters and CWE Top 25, mapped to vibe-check checks
     └── sweep-patterns.md     the sweep patterns, for doing it by hand  [generated]
 dist/vibe-check.md          ← everything in one file (for paste-in tools)   [generated]
+dist/vibe-check-lite.md     ← short version for chat paste limits: blind spots + every 🔴 check   [generated]
 dist/vibe-check.zip         ← upload-ready skill for the Claude app           [generated]
 adapters/                   ← Cursor, Copilot, Windsurf, Cline, Gemini, AGENTS.md  [generated]
 scripts/build.py            ← regenerates dist/ and adapters/
 scripts/validate.py         ← checks the skill is complete and consistent (runs in CI)
+maintainers/law-updates.md  ← weekly checklist for laws and standards (dates warned when stale)
+maintainers/metrics.md      ← how to see usage: GitHub traffic, downloads, opt-in stats
+SECURITY.md                 ← how to report a problem in vibe-check privately
 tests/test_scripts.py       ← test bench: a small app with planted bugs the scripts must catch
 scripts/release.sh          ← publishes a release (the tag always matches the version in SKILL.md)
 ```
