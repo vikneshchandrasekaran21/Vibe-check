@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.4.1 (2026-11-14)
+
+**New look on GitHub.**
+- **New README header:** an animated dot-matrix banner (`assets/banner.svg`, made by `scripts/banner.py`; pure SVG with no scripts, and still for people who turn motion off) and live badges for release, checks, fix recipes, stars, licence and self-test.
+- **The validator checks that the badge numbers match the real check and recipe counts**, and that the banner file exists.
+
 ## v3.4.0 (2026-11-14)
 
 **Checked against the popular "security checks for vibe-coded apps" lists.** About 140 items from nine lists were mapped to vibe-check checks; almost all were already covered. These were missing or only partly covered, and are now added:

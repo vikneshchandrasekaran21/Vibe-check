@@ -1,14 +1,17 @@
 <div align="center">
 
-# ✅ vibe-check
+<img src="assets/banner.svg" alt="vibe-check: pre-launch audit for AI-built apps" width="100%">
 
-### The pre-launch audit for AI-built apps
+**Find and fix what your AI coding agent misses, before real users do.**
 
-Before you ship, have your AI coding agent find and fix what it usually misses, without changing what you built.
+Security · privacy · legal · reliability · launch, checked against your actual code, without changing what you built.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-SKILL.md-blue.svg)](https://agentskills.io)
-[![check](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml/badge.svg)](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml)
+[![Release](https://img.shields.io/github/v/release/vikneshchandrasekaran21/Vibe-check?style=for-the-badge&color=22c55e&label=release)](https://github.com/vikneshchandrasekaran21/Vibe-check/releases/latest)
+[![Checks](https://img.shields.io/badge/checks-653-18181b?style=for-the-badge)](skills/vibe-check/references)
+[![Fix recipes](https://img.shields.io/badge/fix_recipes-75-18181b?style=for-the-badge)](skills/vibe-check/references/fixes.md)
+[![Stars](https://img.shields.io/github/stars/vikneshchandrasekaran21/Vibe-check?style=for-the-badge&logo=github&color=18181b)](https://github.com/vikneshchandrasekaran21/Vibe-check/stargazers)
+[![License](https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![check](https://img.shields.io/github/actions/workflow/status/vikneshchandrasekaran21/Vibe-check/check.yml?style=for-the-badge&label=self-test)](https://github.com/vikneshchandrasekaran21/Vibe-check/actions/workflows/check.yml)
 
 ```bash
 npx skills add vikneshchandrasekaran21/Vibe-check -g -a claude-code -y

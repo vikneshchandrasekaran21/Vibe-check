@@ -261,6 +261,15 @@ if (ROOT / "bench" / "hunt-app" / "hunt-answers.json").exists() or any(p.name.en
     err("the hunt answer key must stay outside bench/hunt-app/")
 if ".vibe-check/proofs" not in skill: err("SKILL.md must say hunt proofs go in .vibe-check/proofs")
 
+# 22. README badges show the real numbers
+_readme = (ROOT / "README.md").read_text() if (ROOT / "README.md").exists() else ""
+_b = re.search(r"badge/checks-(\d+)-", _readme)
+if _b and int(_b.group(1)) != len(all_ids): err(f"README checks badge says {_b.group(1)} but the real number is {len(all_ids)}")
+_r = re.search(r"badge/fix_recipes-(\d+)-", _readme)
+_nrec = len(re.findall(r"^### ", (REFS / "fixes.md").read_text(), re.M)) if (REFS / "fixes.md").exists() else 0
+if _r and int(_r.group(1)) != _nrec: err(f"README fix-recipes badge says {_r.group(1)} but the real number is {_nrec}")
+if "assets/banner.svg" in _readme and not (ROOT / "assets" / "banner.svg").exists(): err("README shows assets/banner.svg but the file is missing")
+
 # 16. standards mapping: complete, real check IDs, known item counts
 std_text = (REFS / "standards.md").read_text() if (REFS / "standards.md").exists() else ""
 expected = {"OWASP Top 10:2025": 10, "OWASP API Security Top 10 (2023)": 10, "OWASP Top 10 for LLM Applications (2025)": 10,
